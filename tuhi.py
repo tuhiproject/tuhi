@@ -26,14 +26,23 @@ WACOM_COMPANY_ID = 0x4755
 
 
 class Tuhi(GObject.Object):
+    __gsignals__ = {
+        "device-added":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+    }
+
     def __init__(self):
-        self.server = TuhiDBusServer()
+        GObject.Object.__init__(self)
+        self.server = TuhiDBusServer(self)
+        self.server.connect('bus-name-owned', self._on_bus_name_owned)
         self.bluez = BlueZDeviceManager()
 
         self.bluez.connect('device-added', self._on_device_added)
-        self.bluez.connect_to_bluez()
 
         self.drawings = []
+
+    def _on_bus_name_owned(self, dbus_server):
+        self.bluez.connect_to_bluez()
 
     def _on_device_added(self, manager, device):
         if device.vendor_id != WACOM_COMPANY_ID:
@@ -41,6 +50,7 @@ class Tuhi(GObject.Object):
 
         device.connect('connected', self._on_device_connected)
         device.connect_device()
+        self.emit('device-added', device)
 
     def _on_device_connected(self, device):
         logger.debug('{}: connected'.format(device.address))

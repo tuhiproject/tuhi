@@ -80,17 +80,20 @@ class TuhiDrawing(object):
         return json.dumps(json_data)
 
 
-class TuhiDBusDevice(object):
+class TuhiDBusDevice(GObject.Object):
     """
     Class representing a DBus object for a Tuhi device. This class only
     handles the DBus bits, communication with the device is done elsewhere.
     """
-    def __init__(self, btaddr, connection):
-        self.name = 'UNKNOWN'
-        self.btaddr = btaddr
+    def __init__(self, device, connection):
+        GObject.Object.__init__(self)
+
+        self.name = device.name
+        self.btaddr = device.address
         self.width, self.height = 0, 0
         self.drawings = []
-        self.objpath = "{}/{}".format(BASE_PATH, btaddr)
+        objpath = device.address.replace(':', '_')
+        self.objpath = "{}/{}".format(BASE_PATH, objpath)
 
         self._register_object(connection)
 
@@ -144,17 +147,25 @@ class TuhiDBusDevice(object):
         return self.drawings[index].json()
 
 
-class TuhiDBusServer(object):
+class TuhiDBusServer(GObject.Object):
     """
     Class for the DBus server.
     """
-    def __init__(self):
+    __gsignals__ = {
+            "bus-name-owned":
+                (GObject.SIGNAL_RUN_FIRST, None, ()),
+    }
+
+    def __init__(self, tuhi):
+        GObject.Object.__init__(self)
+        self._devices = []
         self._dbus = Gio.bus_own_name(Gio.BusType.SESSION,
                                       BUS_NAME,
                                       Gio.BusNameOwnerFlags.NONE,
                                       self._bus_aquired,
                                       self._bus_name_aquired,
                                       self._bus_name_lost)
+        tuhi.connect('device-added', self._on_device_added)
 
     def _bus_aquired(self, connection, name):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
@@ -165,9 +176,8 @@ class TuhiDBusServer(object):
                                            self._method_cb,
                                            self._property_read_cb,
                                            self._property_write_cb)
-
-        # FIXME this shold be using the btaddr
-        self._devices = [TuhiDBusDevice(0, connection)]
+        self._connection = connection
+        self.emit('bus-name-owned')
 
     def _bus_name_aquired(self, connection, name):
         pass
@@ -192,6 +202,10 @@ class TuhiDBusServer(object):
 
     def cleanup(self):
         Gio.bus_unown_name(self._dbus)
+
+    def _on_device_added(self, tuhi, device):
+        dev = TuhiDBusDevice(device, self._connection)
+        self._devices.append(dev)
 
 
 def main(args):
