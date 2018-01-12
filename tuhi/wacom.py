@@ -36,8 +36,13 @@ WACOM_CHRC_LIVE_PEN_DATA_UUID = '00001524-1212-efde-1523-785feabcd123'
 WACOM_OFFLINE_SERVICE_UUID = 'ffee0001-bbaa-9988-7766-554433221100'
 WACOM_OFFLINE_CHRC_PEN_DATA_UUID = 'ffee0003-bbaa-9988-7766-554433221100'
 
-WACOM_SLATE_WIDTH = 14800
-WACOM_SLATE_HEIGHT = 21600
+WACOM_SLATE_WIDTH = 21600
+WACOM_SLATE_HEIGHT = 14800
+
+ORIENTATION_PORTRAIT = 'portrait'
+ORIENTATION_UPSIDEDOWN_PORTRAIT = 'tiartrop'
+ORIENTATION_LANDSCAPE = 'landscape'
+ORIENTATION_UPSIDEDOWN_LANDSCAPE = 'epacsdnal'
 
 # FIXME: this should be generated once and stored for future use (dconf?)
 SMARTPAD_UUID = 'dead00beef00'
@@ -141,6 +146,7 @@ class WacomDevice(GObject.Object):
         self.device = device
         self.nordic_answer = None
         self.pen_data_buffer = []
+        self.orientation = ORIENTATION_PORTRAIT
         self.thread = None
         self.width = WACOM_SLATE_WIDTH
         self.height = WACOM_SLATE_HEIGHT
@@ -179,10 +185,23 @@ class WacomDevice(GObject.Object):
                 if bytes(data) == b'\xff\xff\xff\xff\xff\xff':
                     logger.info(f'Pen left proximity')
                 else:
-                    y = list2le(data[0:2])
-                    x = list2le(data[2:4])
+                    x = list2le(data[0:2])
+                    y = list2le(data[2:4])
                     pressure = list2le(data[4:6])
-                    logger.info(f'New Pen Data: ({x},{y}), pressure: {pressure}')
+                    if self.orientation == ORIENTATION_PORTRAIT:
+                        t = x
+                        x = self.height - y
+                        y = t
+                    elif self.orientation == ORIENTATION_UPSIDEDOWN_PORTRAIT:
+                        t = x
+                        x = y
+                        y = self.width - t
+                    elif self.orientation == ORIENTATION_LANDSCAPE:
+                        pass
+                    elif self.orientation == ORIENTATION_UPSIDEDOWN_LANDSCAPE:
+                        x = self.width - x
+                        y = self.height - y
+                    self.logger.info(f'New Pen Data: ({x},{y}), pressure: {pressure}')
                 data = data[6:]
 
     def _on_pen_data_received(self, name, data):
@@ -304,8 +323,8 @@ class WacomDevice(GObject.Object):
 
     def get_dimensions(self, arg):
         possible_args = {
-            'height': 3,
-            'width': 4,
+            'width': 3,
+            'height': 4,
         }
         args = [possible_args[arg], 0x00]
         data = self.send_nordic_command_sync(command=0xea,
@@ -493,8 +512,8 @@ class WacomDevice(GObject.Object):
                 stroke = Stroke()
                 drawing.append(stroke)
 
-            y, dy, yrel = self.get_coordinate(bitmask, 0, args, y, dy)
-            x, dx, xrel = self.get_coordinate(bitmask, 1, args, x, dx)
+            x, dx, xrel = self.get_coordinate(bitmask, 0, args, x, dx)
+            y, dy, yrel = self.get_coordinate(bitmask, 1, args, y, dy)
             p, dp, prel = self.get_coordinate(bitmask, 2, args, p, dp)
 
             x += dx
@@ -545,9 +564,13 @@ class WacomDevice(GObject.Object):
             else:
                 logger.debug(f'device is discharging: {battery}%')
             if self.is_slate():
-                self.width = self.get_dimensions('width')
-                self.height = self.get_dimensions('height')
-                logger.debug(f'dimensions: {self.width}x{self.height}')
+                self.width = w = self.get_dimensions('width')
+                self.height = h = self.get_dimensions('height')
+                if self.orientation in [ORIENTATION_PORTRAIT,
+                                        ORIENTATION_UPSIDEDOWN_PORTRAIT]:
+                    w = self.height
+                    h = self.width
+                logger.debug(f'dimensions: {w}x{h}')
 
                 fw_high = self.get_firmware_version(0)
                 fw_low = self.get_firmware_version(1)
