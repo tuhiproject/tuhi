@@ -11,20 +11,50 @@
 #  GNU General Public License for more details.
 #
 
-from tuhi.dbusserver import TuhiDBusServer
-from gi.repository import GObject
+import logging
 import sys
+from gi.repository import GObject
+
+from tuhi.dbusserver import TuhiDBusServer
+from tuhi.ble import BlueZDeviceManager
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('tuhi')
+
+WACOM_COMPANY_ID = 0x4755
+
+
+class Tuhi(GObject.Object):
+    def __init__(self):
+        self.server = TuhiDBusServer()
+        self.bluez = BlueZDeviceManager()
+
+        self.bluez.connect('device-added', self._on_device_added)
+        self.bluez.connect_to_bluez()
+
+    def _on_device_added(self, manager, device):
+        if device.vendor_id != WACOM_COMPANY_ID:
+            return
+
+        device.connect('connected', self._on_device_connected)
+        device.connect_device()
+
+    def _on_device_connected(self, device):
+        logger.debug('{}: connected'.format(device.address))
+
+        d = WacomDevice(device)
+        d.start()
+
 
 def main(args):
-    t = TuhiDBusServer()
+    t = Tuhi()
     try:
-        import tuhi.ble
-        tuhi.ble.main(None)
         GObject.MainLoop().run()
     except KeyboardInterrupt:
         pass
     finally:
-        t.cleanup()
+        pass
+
 
 if __name__ == "__main__":
     main(sys.argv)
