@@ -446,7 +446,7 @@ class WacomDevice(GObject.Object):
                 formatted_args.append(0)
                 debug_data.append('  ')
         logger.debug(f'{" ".join(debug_data)}')
-        return bitmask, opcode, formatted_args, offset + args_length
+        return bitmask, opcode, args, formatted_args, offset + args_length
 
     def get_coordinate(self, bitmask, n, data, v, dv):
         # drop the first 2 bytes as they are not valuable here
@@ -473,7 +473,7 @@ class WacomDevice(GObject.Object):
         drawing = None
         stroke = None
         while offset < len(data):
-            bitmask, opcode, args, offset = self.next_pen_data(data, offset)
+            bitmask, opcode, raw_args, args, offset = self.next_pen_data(data, offset)
             if opcode == 0x3800:
                 logger.info(f'beginning of sequence')
                 drawing = Drawing((self.width, self.height), timestamp)
@@ -481,6 +481,8 @@ class WacomDevice(GObject.Object):
                 continue
             elif opcode == 0xeeff:
                 # some sort of headers
+                time_offset = list2be(raw_args[4:])
+                logger.info(f'time offset since boot: {time_offset * 0.005} secs')
                 stroke = Stroke()
                 drawing.append(stroke)
                 continue
