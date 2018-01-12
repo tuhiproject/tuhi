@@ -34,14 +34,14 @@ class Tuhi(GObject.Object):
     def __init__(self):
         GObject.Object.__init__(self)
         self.server = TuhiDBusServer(self)
-        self.server.connect('bus-name-owned', self._on_bus_name_owned)
+        self.server.connect('bus-name-acquired', self._on_bus_name_acquired)
         self.bluez = BlueZDeviceManager()
 
         self.bluez.connect('device-added', self._on_device_added)
 
         self.drawings = []
 
-    def _on_bus_name_owned(self, dbus_server):
+    def _on_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()
 
     def _on_device_added(self, manager, device):

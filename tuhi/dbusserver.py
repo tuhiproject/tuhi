@@ -153,7 +153,7 @@ class TuhiDBusServer(GObject.Object):
     Class for the DBus server.
     """
     __gsignals__ = {
-        "bus-name-owned":
+        "bus-name-acquired":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
@@ -178,10 +178,9 @@ class TuhiDBusServer(GObject.Object):
                                            self._property_read_cb,
                                            self._property_write_cb)
         self._connection = connection
-        self.emit('bus-name-owned')
 
     def _bus_name_aquired(self, connection, name):
-        pass
+        self.emit('bus-name-acquired')
 
     def _bus_name_lost(self, connection, name):
         pass
