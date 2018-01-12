@@ -11,9 +11,8 @@
 #  GNU General Public License for more details.
 
 import logging
-import sys
-from enum import Enum
-from gi.repository import GObject, GLib, Gio
+from gi.repository import GObject, Gio
+from .wacom import WACOM_CHRC_LIVE_PEN_DATA_UUID, WACOM_OFFLINE_CHRC_PEN_DATA_UUID, NORDIC_UART_CHRC_RX_UUID
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('ble')
@@ -22,6 +21,7 @@ ORG_BLUEZ_GATTCHARACTERISTIC1 = 'org.bluez.GattCharacteristic1'
 ORG_BLUEZ_GATTSERVICE1 = 'org.bluez.GattService1'
 ORG_BLUEZ_DEVICE1 = 'org.bluez.Device1'
 ORG_BLUEZ_ADAPTER1 = 'org.bluez.Adapter1'
+
 
 class BlueZCharacteristic(GObject.Object):
     """
@@ -78,13 +78,13 @@ class BlueZDevice(GObject.Object):
 
     :param om: The ObjectManager for name org.bluez path /
     :param obj: The org.bluez.Device1 DBus proxy object
-    
+
     """
     __gsignals__ = {
-            "connected":
-                (GObject.SIGNAL_RUN_FIRST, None, ()),
-            "disconnected":
-                (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        "connected":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "disconnected":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self, om, obj):
@@ -201,11 +201,11 @@ class BlueZDevice(GObject.Object):
     # out somehow
     def _start_notifications(self):
         self._start_gatt_notification(WACOM_CHRC_LIVE_PEN_DATA_UUID,
-                                     self._pen_data_changed_cb)
+                                      self._pen_data_changed_cb)
         self._start_gatt_notification(WACOM_OFFLINE_CHRC_PEN_DATA_UUID,
-                                     self._pen_data_received_cb)
+                                      self._pen_data_received_cb)
         self._start_gatt_notification(NORDIC_UART_CHRC_RX_UUID,
-                                     self._receive_nordic_data_cb)
+                                      self._receive_nordic_data_cb)
 
     def _start_gatt_notification(self, uuid, callback):
         try:
@@ -229,6 +229,7 @@ class BlueZDevice(GObject.Object):
     def __repr__(self):
         return 'Device {}:{}'.format(self.name, self.objpath)
 
+
 class BlueZDeviceManager(GObject.Object):
     """
     Manager object that connects to org.bluez's root object and handles the
@@ -237,8 +238,8 @@ class BlueZDeviceManager(GObject.Object):
     device should be ignored.
     """
     __gsignals__ = {
-            "device-added":
-                (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        "device-added":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self, **kwargs):
@@ -247,20 +248,20 @@ class BlueZDeviceManager(GObject.Object):
 
     def connect_to_bluez(self):
         self._om = Gio.DBusObjectManagerClient.new_for_bus_sync(
-                    Gio.BusType.SYSTEM,
-                    Gio.DBusObjectManagerClientFlags.NONE,
-                    'org.bluez',
-                    '/',
-                    None,
-                    None,
-                    None)
+            Gio.BusType.SYSTEM,
+            Gio.DBusObjectManagerClientFlags.NONE,
+            'org.bluez',
+            '/',
+            None,
+            None,
+            None)
         self._om.connect('object-added', self._on_om_object_added)
         self._om.connect('object-removed', self._on_om_object_removed)
 
         # We rely on nested object paths, so let's sort the objects by
         # object path length and process them in order, this way we're
         # guaranteed that the objects we need already exist.
-        for obj in self._om.get_objects(): 
+        for obj in self._om.get_objects():
             self._process_object(obj)
 
     def _on_om_object_added(self, om, obj):
@@ -269,7 +270,7 @@ class BlueZDeviceManager(GObject.Object):
         logger.debug('Object added: {}'.format(objpath))
         needs_resolve = self._process_object(obj)
 
-        # we had at least one characteristic added, need to resolve the 
+        # we had at least one characteristic added, need to resolve the
         # devices.
         # FIXME: this isn't the most efficient way...
         if needs_resolve:
@@ -307,4 +308,3 @@ class BlueZDeviceManager(GObject.Object):
     def _process_characteristic(self, obj):
         objpath = obj.get_object_path()
         logger.debug('Characteristic {}'.format(objpath))
-
