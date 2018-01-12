@@ -538,11 +538,11 @@ class WacomDevice(GObject.Object):
             if self.is_slate():
                 self.width = self.get_dimensions('width')
                 self.height = self.get_dimensions('height')
-                self.debug(f'dimensions: {self.width}x{self.height}')
+                logger.debug(f'dimensions: {self.width}x{self.height}')
 
                 fw_high = self.get_firmware_version(0)
                 fw_low = self.get_firmware_version(1)
-                self.debug(f'firmware is {fw_high}-{fw_low}')
+                logger.debug(f'firmware is {fw_high}-{fw_low}')
                 self.ec_command()
             if self.read_offline_data() == 0:
                 logger.info("no data to retrieve")
