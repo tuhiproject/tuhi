@@ -111,7 +111,20 @@ class WacomCorruptDataException(WacomException):
 
 
 class WacomDevice(GObject.Object):
+    """
+    Class to communicate with the Wacom device. Communication is handled in
+    a separate thread.
+
+    :param device: the BlueZDevice object that is this wacom device
+    """
+
+    __gsignals__ = {
+            "drawing":
+                (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+    }
+
     def __init__(self, device):
+        GObject.Object.__init__(self)
         self.device = device
         self.nordic_answer = None
         self.pen_data_buffer = []
@@ -505,7 +518,8 @@ class WacomDevice(GObject.Object):
             # note: \x38\x62\x74 translates to '8bt'
             if bytes(prefix) == b'\x62\x38\x62\x74':
                 drawings = self.parse_pen_data(pen_data, timestamp)
-                # FIXME: Do something with the drawing
+                for drawing in drawings:
+                    self.emit('drawing', drawing)
             self.ack_transaction()
             transaction_count += 1
         return transaction_count

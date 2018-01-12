@@ -33,6 +33,8 @@ class Tuhi(GObject.Object):
         self.bluez.connect('device-added', self._on_device_added)
         self.bluez.connect_to_bluez()
 
+        self.drawings = []
+
     def _on_device_added(self, manager, device):
         if device.vendor_id != WACOM_COMPANY_ID:
             return
@@ -44,7 +46,12 @@ class Tuhi(GObject.Object):
         logger.debug('{}: connected'.format(device.address))
 
         d = WacomDevice(device)
+        d.connect('drawing', self._on_drawing_received)
         d.start()
+
+    def _on_drawing_received(self, device, drawing):
+        logger.debug('Drawing received')
+        self.drawings.append(drawing)
 
 
 def main(args):
