@@ -68,15 +68,19 @@ class NordicData(list):
         self.opcode = bs[0]
         self.length = bs[1]
 
+
 class Stroke(object):
+    RELATIVE = 1
+    ABSOLUTE = 2
+
     def __init__(self):
         self.points = []
 
     def add_pos(self, x, y):
-        self.points.append(('M', x, y))
+        self.points.append((Stroke.ABSOLUTE, x, y))
 
     def add_rel(self, x, y, p=None):
-        self.points.append(('l', x, y, p))
+        self.points.append((Stroke.RELATIVE, x, y, p))
 
 
 class Drawing(list):
