@@ -15,12 +15,8 @@
 import binascii
 import logging
 import threading
-import sys
 import time
 from gi.repository import GObject
-
-from tuhi.dbusserver import TuhiDBusServer
-from tuhi.ble import BlueZDeviceManager
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('wacom')
@@ -48,6 +44,7 @@ ORIENTATION_UPSIDEDOWN_LANDSCAPE = 'epacsdnal'
 SMARTPAD_UUID = 'dead00beef00'
 SMARTPAD_UUID = '1d6adc5fac76'
 SMARTPAD_UUID = '4810d75d5d4d'
+
 
 def signed_char_to_int(v):
     if v & 0x80:
@@ -137,8 +134,8 @@ class WacomDevice(GObject.Object):
     """
 
     __gsignals__ = {
-            "drawing":
-                (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        "drawing":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self, device):
@@ -589,4 +586,3 @@ class WacomDevice(GObject.Object):
     def start(self):
         self.thread = threading.Thread(target=self.run)
         self.thread.start()
-
