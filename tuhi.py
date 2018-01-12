@@ -65,7 +65,7 @@ class Tuhi(GObject.Object):
 
 
 def main(args):
-    t = Tuhi()
+    Tuhi()
     try:
         GObject.MainLoop().run()
     except KeyboardInterrupt:
