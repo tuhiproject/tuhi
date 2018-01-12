@@ -196,23 +196,19 @@ class WacomDevice(GObject.Object):
     def send_nordic_command(self, command, arguments):
         chrc = self.device.characteristics[NORDIC_UART_CHRC_TX_UUID]
         data = [command, len(arguments), *arguments]
-        logger.debug(f'sending  ' +
-                     f'{command:02x} / {len(arguments):02x} / {list2hex(arguments)}')
+        logger.debug(f'sending  {command:02x} / {len(arguments):02x} / {list2hex(arguments)}')
         chrc.write_value(data)
 
     def check_nordic_incoming(self):
         if self.nordic_answer is None:
-            raise WacomTimeoutException(f"{self.name}:" +
-                                        " Timeout while reading data")
+            raise WacomTimeoutException(f"{self.name}: Timeout while reading data")
 
         answer = self.nordic_answer
         self.nordic_answer = None
         length = answer[1]
         args = answer[2:]
         if length != len(args):
-            raise WacomException(f"error while processing answer, should" +
-                                 " get an answer of size {length} instead" +
-                                 " of {len(args)}")
+            raise WacomException(f"error while processing answer, should get an answer of size {length} instead of {len(args)}")
         return NordicData(answer)
 
     def wait_nordic_data(self, expected_opcode, timeout):
@@ -317,8 +313,7 @@ class WacomDevice(GObject.Object):
                                              arguments=args)
         if len(data) != 6:
             str_data = binascii.hexlify(bytes(data))
-            raise WacomCorruptDataException(f'unexpected answer for ' +
-                                            f'get_dimensions: {str_data}')
+            raise WacomCorruptDataException(f'unexpected answer for get_dimensions: {str_data}')
         return list2le(data[2:4])
 
     def ec_command(self):
@@ -506,8 +501,7 @@ class WacomDevice(GObject.Object):
             y += dy
             p += dp
 
-            logger.info(f'point at {x},{y} ({dx:+}, {dy:+}) ' +
-                             f'with pressure {p} ({dp:+})')
+            logger.info(f'point at {x},{y} ({dx:+}, {dy:+}) with pressure {p} ({dp:+})')
 
             if bitmask & 0b00111100 == 0:
                 continue
@@ -523,8 +517,7 @@ class WacomDevice(GObject.Object):
         transaction_count = 0
         while self.is_data_available():
             count, timestamp = self.get_stroke_data()
-            logger.info(f"receiving {count} bytes" +
-                             f" drawn on {time.asctime(timestamp)}")
+            logger.info(f"receiving {count} bytes drawn on {time.asctime(timestamp)}")
             self.start_reading()
             pen_data = self.wait_for_end_read()
             str_pen = binascii.hexlify(bytes(pen_data))
@@ -563,8 +556,7 @@ class WacomDevice(GObject.Object):
             if self.read_offline_data() == 0:
                 logger.info("no data to retrieve")
         except WacomEEAGAINException:
-            logger.warning("no data, please make sure the LED is blue and" +
-                                "the button is pressed to switch it back to green")
+            logger.warning("no data, please make sure the LED is blue and the button is pressed to switch it back to green")
 
     def run(self):
         time.sleep(2)
