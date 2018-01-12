@@ -17,6 +17,7 @@ from gi.repository import GObject
 
 from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
+from tuhi.wacom import WacomDevice
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('tuhi')
