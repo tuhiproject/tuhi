@@ -52,6 +52,7 @@ INTF_MANAGER = 'org.freedesktop.tuhi1.Manager'
 INTF_DEVICE = 'org.freedesktop.tuhi1.Device'
 JSON_FILE_FORMAT_VERSION = 1
 
+
 class TuhiDrawing(object):
     class TuhiDrawingStroke(object):
         def __init__(self):
@@ -72,10 +73,10 @@ class TuhiDrawing(object):
 
     def json(self):
         json_data = {
-                'version': JSON_FILE_FORMAT_VERSION,
-                'devicename': self.device.name,
-                'dimensions' : [self.device.width, self.device.height],
-                'strokes': [s.to_dict for s in self.strokes]
+            'version': JSON_FILE_FORMAT_VERSION,
+            'devicename': self.device.name,
+            'dimensions': [self.device.width, self.device.height],
+            'strokes': [s.to_dict for s in self.strokes]
         }
         return json.dumps(json_data)
 
@@ -152,8 +153,8 @@ class TuhiDBusServer(GObject.Object):
     Class for the DBus server.
     """
     __gsignals__ = {
-            "bus-name-owned":
-                (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "bus-name-owned":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self, tuhi):
