@@ -64,19 +64,6 @@ def list2hex(l):
     return ' '.join(['{:02x}'.format(x) for x in l])
 
 
-def list2le(l):
-    r = 0
-    for i in range(len(l)):
-        r |= l[i] << (i * 8)
-    return r
-
-
-def list2be(l):
-    rl = l[:]
-    rl.reverse()
-    return list2le(l)
-
-
 class NordicData(list):
     def __init__(self, bs):
         super().__init__(bs[2:])
@@ -163,7 +150,7 @@ class WacomDevice(GObject.Object):
         logger.debug(binascii.hexlify(bytes(value)))
 
         if value[0] == 0x10:
-            pressure = list2le(value[2:4])
+            pressure = int.from_bytes(value[2:4], byteorder='big')
             buttons = int(value[10])
             logger.info(f'New Pen Data: pressure: {pressure}, button: {buttons}')
         elif value[0] == 0xa2:
@@ -182,9 +169,9 @@ class WacomDevice(GObject.Object):
                 if bytes(data) == b'\xff\xff\xff\xff\xff\xff':
                     logger.info(f'Pen left proximity')
                 else:
-                    x = list2le(data[0:2])
-                    y = list2le(data[2:4])
-                    pressure = list2le(data[4:6])
+                    x = int.from_bytes(data[0:2], byteorder='big')
+                    y = int.from_bytes(data[2:4], byteorder='big')
+                    pressure = int.from_bytes(data[4:6], byteorder='big')
                     if self.orientation == ORIENTATION_PORTRAIT:
                         t = x
                         x = self.height - y
@@ -330,7 +317,7 @@ class WacomDevice(GObject.Object):
         if len(data) != 6:
             str_data = binascii.hexlify(bytes(data))
             raise WacomCorruptDataException(f'unexpected answer for get_dimensions: {str_data}')
-        return list2le(data[2:4])
+        return int.from_bytes(data[2:4], byteorder='big')
 
     def ec_command(self):
         args = [0x06, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -359,9 +346,9 @@ class WacomDevice(GObject.Object):
                                              expected_opcode=0xc2)
         n = 0
         if self.is_slate():
-            n = list2le(data[0:2])
+            n = int.from_bytes(data[0:2], byteorder='big')
         else:
-            n = list2be(data[0:2])
+            n = int.from_bytes(data[0:2], byteorder='little')
         logger.debug(f'Drawings available: {n}')
         return n > 0
 
@@ -369,7 +356,7 @@ class WacomDevice(GObject.Object):
         data = self.send_nordic_command_sync(command=0xcc,
                                              expected_opcode=0xcf)
         # logger.debug(f'cc returned {data} ')
-        count = list2le(data[0:4])
+        count = int.from_bytes(data[0:4], byteorder='big')
         str_timestamp = ''.join([hex(d)[2:] for d in data[4:]])
         timestamp = time.strptime(str_timestamp, "%y%m%d%H%M%S")
         return count, timestamp
@@ -381,7 +368,7 @@ class WacomDevice(GObject.Object):
         # the btsnoop logs but I only rarely get a c7 response here
         count = 0
         if data.opcode == 0xc7:
-            count = list2le(data[0:4])
+            count = int.from_bytes(data[0:4], byteorder='big')
             data = self.wait_nordic_data(0xcd, 5)
             # logger.debug(f'cc returned {data} ')
 
@@ -468,7 +455,7 @@ class WacomDevice(GObject.Object):
         full_coord_bitmask = 0b11 << (2 * n)
         delta_coord_bitmask = 0b10 << (2 * n)
         if (bitmask & full_coord_bitmask) == full_coord_bitmask:
-            v = list2le(data[2 * n:2 * n + 2])
+            v = int.from_bytes(data[2 * n:2 * n + 2], byteorder='big')
             dv = 0
         elif bitmask & delta_coord_bitmask:
             dv += signed_char_to_int(data[2 * n + 1])
@@ -492,7 +479,7 @@ class WacomDevice(GObject.Object):
                 continue
             elif opcode == 0xeeff:
                 # some sort of headers
-                time_offset = list2be(raw_args[4:])
+                time_offset = int.from_bytes(raw_args[4:], byteorder='little')
                 logger.info(f'time offset since boot: {time_offset * 0.005} secs')
                 stroke = Stroke()
                 drawing.append(stroke)
