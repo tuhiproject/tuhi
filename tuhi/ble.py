@@ -300,7 +300,6 @@ class BlueZDeviceManager(GObject.Object):
         # FIXME: call StartDiscovery if we want to pair
 
     def _process_device(self, obj):
-        objpath = obj.get_object_path()
         dev = BlueZDevice(self._om, obj)
         self.devices.append(dev)
         self.emit("device-added", dev)
