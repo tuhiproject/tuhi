@@ -47,9 +47,7 @@ SMARTPAD_UUID = '4810d75d5d4d'
 
 
 def signed_char_to_int(v):
-    if v & 0x80:
-        return v - (1 << 8)
-    return v
+    return int.from_bytes([v], byteorder='little', signed=True)
 
 
 def b2hex(bs):
