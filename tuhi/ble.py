@@ -202,6 +202,24 @@ class BlueZDevice(GObject.Object):
         if isinstance(result, Exception):
             logger.error('Connection failed: {}'.format(result))
 
+    def disconnect_device(self):
+        """
+        Disconnect the bluetooth device via bluez. This function is
+        asynchronous and returns immediately.
+        """
+        i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
+        if not i.get_cached_property('Connected').get_boolean():
+            logger.info('{}: Device is already disconnected'.format(self.address))
+            self.emit('disconnected')
+            return
+
+        logger.info('{}: Disconnecting'.format(self.address))
+        i.Disconnect(result_handler=self._on_disconnect_result)
+
+    def _on_disconnect_result(self, obj, result, user_data):
+        if isinstance(result, Exception):
+            logger.error('Disconnection failed: {}'.format(result))
+
     def _on_properties_changed(self, obj, properties, invalidated_properties):
         properties = properties.unpack()
 

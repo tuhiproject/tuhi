@@ -78,6 +78,7 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device = tuhi_dbus_device
         self._wacom_device = WacomDevice(bluez_device)
         self._wacom_device.connect('drawing', self._on_drawing_received)
+        self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
         self.drawings = []
 
         bluez_device.connect('connected', self._on_bluez_device_connected)
@@ -122,6 +123,9 @@ class TuhiDevice(GObject.Object):
             d.strokes.append(stroke)
 
         self._tuhi_dbus_device.add_drawing(d)
+
+    def _on_fetching_finished(self, device, bluez_device):
+        bluez_device.disconnect_device()
 
 
 class Tuhi(GObject.Object):
