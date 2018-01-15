@@ -161,3 +161,74 @@ An expanded file looks like this:
 }
 ```
 
+Device notes
+============
+
+When following any device notes below, replace the example bluetooth
+addresses with your device's bluetooth address.
+
+Bamboo Spark
+------------
+
+The Bluetooth connection on the Bamboo Spark behaves differently depending
+on whether there are drawings pending or not. Generally, if no drawings are
+pending, it is harder to connect to the device. Save yourself the pain and
+make sure you have drawings pending while debugging.
+
+### If the device has no drawings available:
+
+* start `bluetoothctl`, commands below are to be issued in its interactive shell
+* enable discovery mode (`scan on`)
+* hold the Bamboo Spark button until the blue light is flashing
+* You should see the device itself show up, but none of its services
+  ```
+  [NEW] Device E2:43:03:67:0E:01 Bamboo Spark
+  ```
+* While the LED is still flashing, `connect E2:43:03:67:0E:01`
+  ```
+  Attempting to connect to E2:43:03:67:0E:01
+  [CHG] Device E2:43:03:67:0E:01 Connected: yes
+  ... lots of services being resolved
+  [CHG] Device E2:43:03:67:0E:01 ServicesResolved: yes
+  [CHG] Device E2:43:03:67:0E:01 ServicesResolved: no
+  [CHG] Device E2:43:03:67:0E:01 Connected: no
+  ```
+  Note how the device disconnects again at the end. Doesn't matter, now you
+  have the services cached.
+* Don't forget to eventually turn disable discovery mode off (`scan off`)
+
+Now you have the device cached in bluez and you can work with that data.
+However, you **cannot connect to the device while it has no drawings
+pending**. Running `connect` and pressing the Bamboo Spark button shortly
+does nothing.
+
+### If the device has drawings available:
+
+* start `bluetoothctl`, commands below are to be issued in its interactive shell
+* enable discovery mode (`scan on`)
+* press the Bamboo Spark button shortly
+* You should see the device itself show up, but none of its services
+  ```
+  [NEW] Device E2:43:03:67:0E:01 Bamboo Spark
+  ```
+* `connect E2:43:03:67:0E:01`, then press the Bamboo Spark button
+  ```
+  Attempting to connect to E2:43:03:67:0E:01
+  [CHG] Device E2:43:03:67:0E:01 Connected: yes
+  ... lots of services being resolved
+  [CHG] Device E2:43:03:67:0E:01 ServicesResolved: yes
+  [CHG] Device E2:43:03:67:0E:01 ServicesResolved: no
+  [CHG] Device E2:43:03:67:0E:01 Connected: no
+  ```
+  Note how the device disconnects again at the end. Doesn't matter, now you
+  have the services cached.
+* `connect E2:43:03:67:0E:01`, then press the Bamboo Spark button re-connects to the device
+  The device will disconnect after approximately 10s. You need to start
+  issuing the commands to talk to the controller before that happens.
+* Don't forget to eventually turn disable discovery mode off (`scan off`)
+
+You **must** run `connect` before pressing the button. Just pressing the
+button does nothing unless bluez is trying to connect to the device.
+
+**Warning**: A successful communication with the controller deletes the
+drawings from the controller, so you may not be able to re-connect.
