@@ -233,9 +233,7 @@ class BlueZDevice(GObject.Object):
 class BlueZDeviceManager(GObject.Object):
     """
     Manager object that connects to org.bluez's root object and handles the
-    devices. If device_filter_callback is set, it is called for each device
-    and expected to return True if the device should be used or False if the
-    device should be ignored.
+    devices.
     """
     __gsignals__ = {
         "device-added":
