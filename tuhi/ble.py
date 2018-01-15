@@ -110,6 +110,7 @@ class BlueZDevice(GObject.Object):
         self.characteristics = {}
         self.resolve(om)
         self.interface.connect('g-properties-changed', self._on_properties_changed)
+        # FIXME: this should switch to ServicesResolved
         if self.interface.get_cached_property('Connected').get_boolean():
             self.emit('connected')
 
@@ -164,6 +165,7 @@ class BlueZDevice(GObject.Object):
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if i.get_cached_property('Connected').get_boolean():
             logger.info('{}: Device is already connected'.format(self.address))
+            # FIXME: this should switch to ServicesResolved
             self.emit('connected')
             return
 
