@@ -461,10 +461,15 @@ class WacomDevice(GObject.Object):
         return v, dv, is_rel
 
     def parse_pen_data(self, data, timestamp):
+        """
+        :param timestamp: a tuple with 9 entries, corresponding to the
+        local time
+        """
         offset = 0
         x, y, p = 0, 0, 0
         dx, dy, dp = 0, 0, 0
 
+        timestamp = int(time.mktime(timestamp))
         drawings = []
         drawing = None
         stroke = None

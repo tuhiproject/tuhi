@@ -48,10 +48,10 @@ class TuhiDrawing(object):
                     d[key] = val
             return d
 
-    def __init__(self, name, dimensions):
+    def __init__(self, name, dimensions, timestamp):
         self.name = name
         self.dimensions = dimensions
-        self.timestamp = 0
+        self.timestamp = timestamp
         self.strokes = []
 
     def json(self):
@@ -61,6 +61,7 @@ class TuhiDrawing(object):
             'version': JSON_FILE_FORMAT_VERSION,
             'devicename': self.name,
             'dimensions': list(self.dimensions),
+            'timestamp': self.timestamp,
             'strokes': [s.to_dict() for s in self.strokes]
         }
         return json.dumps(json_data)
@@ -95,7 +96,7 @@ class TuhiDevice(GObject.Object):
 
     def _on_drawing_received(self, device, drawing):
         logger.debug('Drawing received')
-        d = TuhiDrawing(device.name, (0, 0))
+        d = TuhiDrawing(device.name, (0, 0), drawing.timestamp)
         for s in drawing:
             stroke = TuhiDrawing.Stroke()
             lastx, lasty, lastp = None, None, None
