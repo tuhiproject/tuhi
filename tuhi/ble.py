@@ -109,17 +109,6 @@ class BlueZDevice(GObject.Object):
         self.interface = obj.get_interface(ORG_BLUEZ_DEVICE1)
         assert(self.interface is not None)
 
-        self.address = self.interface.get_cached_property('Address').get_string()
-        self.name = self.interface.get_cached_property('Name').get_string()
-        self.uuids = self.interface.get_cached_property('UUIDs')
-        self.vendor_id = 0
-        md = self.interface.get_cached_property('ManufacturerData')
-        if md is not None:
-            self.vendor_id = md.keys()[0]
-
-        assert(self.name is not None)
-        assert(self.address is not None)
-        assert(self.uuids is not None)
         logger.debug('Device {} - {} - {}'.format(self.objpath, self.address, self.name))
 
         self.characteristics = {}
@@ -128,6 +117,25 @@ class BlueZDevice(GObject.Object):
         # FIXME: this should switch to ServicesResolved
         if self.interface.get_cached_property('Connected').get_boolean():
             self.emit('connected')
+
+    @property
+    def name(self):
+        return self.interface.get_cached_property('Name').unpack()
+
+    @property
+    def address(self):
+        return self.interface.get_cached_property('Address').unpack()
+
+    @property
+    def uuids(self):
+        return self.interface.get_cached_property('UUIDs').unpack()
+
+    @property
+    def vendor_id(self):
+        md = self.interface.get_cached_property('ManufacturerData')
+        if md is not None:
+            return md.keys()[0]
+        return None
 
     def resolve(self, om):
         """
