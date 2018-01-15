@@ -30,7 +30,7 @@ DBus Interface
 
 The following interfaces are provided:
 
-````
+```
 org.freedesktop.tuhi1.Manager
 
    Property: Devices (ao)
@@ -99,7 +99,7 @@ org.freedesktop.tuhi1.Device
 
       Returns a string representing the JSON data from the last drawings or
       the empty string if no data is available or the index is invalid.
-````
+```
 
 JSON File Format
 ----------------
@@ -108,7 +108,7 @@ Below is the example file format (with comments, not present in the real
 files). The JSON objects are "drawing" (the root object), "strokes",
 "points".  Pseudo-code is used to illustrate the objects in the file.
 
-````
+```
 class Drawing {
         version: uint32
         devicename: string
@@ -116,26 +116,26 @@ class Drawing {
         timestamp: uint64
         strokes: [ Stroke, Stroke, ...]
 }
-````
+```
 
 The **strokes** list contains all strokes of a single drawing, each stroke
 consisting of a number of **points**.
 
-````
+```
 class Stroke {
         points: [Point, Point, ...]
 }
-````
+```
 
 The **points** list contains the actual pen data.
 
-````
+```
 class Point {
         toffset: uint32
         position: [uint32, uint32]
         pressure: uint32
 }
-````
+```
 
 An expanded file looks like this:
 
