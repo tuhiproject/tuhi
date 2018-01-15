@@ -76,8 +76,8 @@ class Stroke(object):
     def __init__(self):
         self.points = []
 
-    def add_pos(self, x, y):
-        self.points.append((Stroke.ABSOLUTE, x, y))
+    def add_pos(self, x, y, p=None):
+        self.points.append((Stroke.ABSOLUTE, x, y, p))
 
     def add_rel(self, x, y, p=None):
         self.points.append((Stroke.RELATIVE, x, y, p))
@@ -509,7 +509,7 @@ class WacomDevice(GObject.Object):
             if xrel or yrel or prel:
                 stroke.add_rel(dx, dy, dp)
             else:
-                stroke.add_pos(x, y)
+                stroke.add_pos(x, y, p)
 
         return drawings
 

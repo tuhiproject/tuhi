@@ -12,7 +12,6 @@
 #
 
 import logging
-import json
 
 from gi.repository import GObject, Gio, GLib
 
@@ -53,35 +52,6 @@ BASE_PATH = '/org/freedesktop/tuhi1'
 BUS_NAME = 'org.freedesktop.tuhi1'
 INTF_MANAGER = 'org.freedesktop.tuhi1.Manager'
 INTF_DEVICE = 'org.freedesktop.tuhi1.Device'
-JSON_FILE_FORMAT_VERSION = 1
-
-
-class TuhiDrawing(object):
-    class TuhiDrawingStroke(object):
-        def __init__(self):
-            pass
-
-        def to_dict(self):
-            d = {}
-            for key in ['toffset', 'position', 'pressure']:
-                val = getattr(self, key, None)
-                if val is not None:
-                    d['key'] = val
-            return d
-
-    def __init__(self, device):
-        self.device = device
-        self.timestamp = 0
-        self.strokes = []
-
-    def json(self):
-        json_data = {
-            'version': JSON_FILE_FORMAT_VERSION,
-            'devicename': self.device.name,
-            'dimensions': [self.device.width, self.device.height],
-            'strokes': [s.to_dict for s in self.strokes]
-        }
-        return json.dumps(json_data)
 
 
 class TuhiDBusDevice(GObject.Object):
@@ -149,6 +119,9 @@ class TuhiDBusDevice(GObject.Object):
     def _json_data(self, args):
         index = args[0]
         return self.drawings[index].json()
+
+    def add_drawing(self, drawing):
+        self.drawings.append(drawing)
 
 
 class TuhiDBusServer(GObject.Object):

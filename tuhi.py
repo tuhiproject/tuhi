@@ -11,18 +11,59 @@
 #  GNU General Public License for more details.
 #
 
+import json
 import logging
 import sys
 from gi.repository import GObject
 
 from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
-from tuhi.wacom import WacomDevice
+from tuhi.wacom import WacomDevice, Stroke
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('tuhi')
 
 WACOM_COMPANY_ID = 0x4755
+
+
+class TuhiDrawing(object):
+    class Stroke(object):
+        def __init__(self):
+            self.points = []
+
+        def to_dict(self):
+            d = {}
+            d['points'] = [p.to_dict() for p in self.points]
+            return d
+
+    class Point(object):
+        def __init__(self):
+            pass
+
+        def to_dict(self):
+            d = {}
+            for key in ['toffset', 'position', 'pressure']:
+                val = getattr(self, key, None)
+                if val is not None:
+                    d[key] = val
+            return d
+
+    def __init__(self, name, dimensions):
+        self.name = name
+        self.dimensions = dimensions
+        self.timestamp = 0
+        self.strokes = []
+
+    def json(self):
+        JSON_FILE_FORMAT_VERSION = 1
+
+        json_data = {
+            'version': JSON_FILE_FORMAT_VERSION,
+            'devicename': self.name,
+            'dimensions': list(self.dimensions),
+            'strokes': [s.to_dict() for s in self.strokes]
+        }
+        return json.dumps(json_data)
 
 
 class TuhiDevice(GObject.Object):
@@ -31,11 +72,6 @@ class TuhiDevice(GObject.Object):
     real device) with the frontend DBusServer object that exports the device
     over Tuhi's DBus interface
     """
-    __gsignals__ = {
-        "drawings-updated":
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-    }
-
     def __init__(self, bluez_device, tuhi_dbus_device):
         GObject.Object.__init__(self)
         self._tuhi_dbus_device = tuhi_dbus_device
@@ -59,8 +95,32 @@ class TuhiDevice(GObject.Object):
 
     def _on_drawing_received(self, device, drawing):
         logger.debug('Drawing received')
-        self.drawings.append(drawing)
-        self.emit('drawings-updated', self.drawings)
+        d = TuhiDrawing(device.name, (0, 0))
+        for s in drawing:
+            stroke = TuhiDrawing.Stroke()
+            lastx, lasty, lastp = None, None, None
+            for type, x, y, p in s.points:
+                if x is not None:
+                    if type == Stroke.RELATIVE:
+                        x += lastx
+                    lastx = x
+                if y is not None:
+                    if type == Stroke.RELATIVE:
+                        y += lasty
+                    lasty = y
+                if p is not None:
+                    if type == Stroke.RELATIVE:
+                        p += lastp
+                    lastp = p
+
+                lastx, lasty, lastp = x, y, p
+                point = TuhiDrawing.Point()
+                point.position = (lastx, lasty)
+                point.pressure = lastp
+                stroke.points.append(point)
+            d.strokes.append(stroke)
+
+        self._tuhi_dbus_device.add_drawing(d)
 
 
 class Tuhi(GObject.Object):
