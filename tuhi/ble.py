@@ -12,7 +12,6 @@
 
 import logging
 from gi.repository import GObject, Gio
-from .wacom import WACOM_CHRC_LIVE_PEN_DATA_UUID, WACOM_OFFLINE_CHRC_PEN_DATA_UUID, NORDIC_UART_CHRC_RX_UUID
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('ble')
@@ -198,35 +197,6 @@ class BlueZDevice(GObject.Object):
             chrc.start_notify()
         except KeyError:
             pass
-
-    # this is wacom-specific, not BlueZDevice specific, needs to be moved
-    # out somehow
-    def _start_notifications(self):
-        self._start_gatt_notification(WACOM_CHRC_LIVE_PEN_DATA_UUID,
-                                      self._pen_data_changed_cb)
-        self._start_gatt_notification(WACOM_OFFLINE_CHRC_PEN_DATA_UUID,
-                                      self._pen_data_received_cb)
-        self._start_gatt_notification(NORDIC_UART_CHRC_RX_UUID,
-                                      self._receive_nordic_data_cb)
-
-    def _start_gatt_notification(self, uuid, callback):
-        try:
-            chrc = self.characteristics[uuid]
-            chrc.connect_properties(callback)
-        except KeyError:
-            pass
-
-    def _pen_data_changed_cb(self, obc, changed_props, invalidated_props):
-        print('pen data changed')
-
-    def _pen_data_received_cb(self, obc, changed_props, invalidated_props):
-        print('pen data received')
-
-    def _receive_nordic_data_cb(self, obc, changed_props, invalidated_props):
-        print('nordic data received')
-
-    def start(self):
-        self.retrieve_data()
 
     def __repr__(self):
         return 'Device {}:{}'.format(self.name, self.objpath)
