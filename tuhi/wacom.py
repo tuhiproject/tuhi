@@ -18,8 +18,7 @@ import threading
 import time
 from gi.repository import GObject
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('wacom')
+logger = logging.getLogger('tuhi.wacom')
 
 WACOM_COMPANY_ID = 0x4755
 NORDIC_UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'

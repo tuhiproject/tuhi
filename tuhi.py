@@ -11,6 +11,7 @@
 #  GNU General Public License for more details.
 #
 
+import argparse
 import json
 import logging
 import sys
@@ -20,7 +21,8 @@ from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
 from tuhi.wacom import WacomDevice, Stroke
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s: %(name)s: %(message)s',
+                    level=logging.INFO)
 logger = logging.getLogger('tuhi')
 
 WACOM_COMPANY_ID = 0x4755
@@ -158,6 +160,17 @@ class Tuhi(GObject.Object):
 
 
 def main(args):
+    desc = "Daemon to extract the pen stroke data from Wacom SmartPad devices"
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('-v', '--verbose',
+                        help='Show some debugging informations',
+                        action='store_true',
+                        default=False)
+
+    ns = parser.parse_args(args[1:])
+    if ns.verbose:
+        logger.setLevel(logging.DEBUG)
+
     Tuhi()
     try:
         GObject.MainLoop().run()
