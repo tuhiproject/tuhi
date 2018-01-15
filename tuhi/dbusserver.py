@@ -11,10 +11,14 @@
 #  GNU General Public License for more details.
 #
 
+import logging
 import sys
 import json
 
 from gi.repository import GObject, Gio, GLib
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('dbus')
 
 INTROSPECTION_XML = """
 <node>
@@ -180,6 +184,7 @@ class TuhiDBusServer(GObject.Object):
         self._connection = connection
 
     def _bus_name_aquired(self, connection, name):
+        logger.debug('Bus name aquired')
         self.emit('bus-name-acquired')
 
     def _bus_name_lost(self, connection, name):
