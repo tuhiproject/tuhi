@@ -39,6 +39,7 @@ class Tuhi(GObject.Object):
 
         self.bluez.connect('device-added', self._on_device_added)
 
+        self.devices = {}
         self.drawings = []
 
     def _on_bus_name_acquired(self, dbus_server):
@@ -48,16 +49,26 @@ class Tuhi(GObject.Object):
         if device.vendor_id != WACOM_COMPANY_ID:
             return
 
+        d = WacomDevice(device)
+        d.connect('drawing', self._on_drawing_received)
+        self.devices[device.address] = d
+
         device.connect('connected', self._on_device_connected)
+        device.connect('disconnected', self._on_device_disconnected)
         device.connect_device()
         self.emit('device-added', device)
 
     def _on_device_connected(self, device):
         logger.debug('{}: connected'.format(device.address))
 
-        d = WacomDevice(device)
-        d.connect('drawing', self._on_drawing_received)
+        d = self.devices[device.address]
         d.start()
+
+    def _on_device_disconnected(self, device):
+        # FIXME: immediately try to reconnect, at least until the DBusServer
+        # is hooked up correctly
+        logger.debug('{}: disconnected'.format(device.address))
+        device.connect_device()
 
     def _on_drawing_received(self, device, drawing):
         logger.debug('Drawing received')
