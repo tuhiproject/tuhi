@@ -83,7 +83,7 @@ class BlueZDevice(GObject.Object):
         "connected":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
         "disconnected":
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self, om, obj):
@@ -184,7 +184,7 @@ class BlueZDevice(GObject.Object):
                 self.emit('connected')
             else:
                 logger.info('Disconnected')
-                self.emit('disconnected', self)
+                self.emit('disconnected')
 
     def connect_gatt_value(self, uuid, callback):
         """
