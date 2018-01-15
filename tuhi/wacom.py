@@ -564,7 +564,6 @@ class WacomDevice(GObject.Object):
             logger.warning("no data, please make sure the LED is blue and the button is pressed to switch it back to green")
 
     def run(self):
-        time.sleep(2)
         logger.debug('{}: starting'.format(self.device.address))
         self.retrieve_data()
 
