@@ -24,11 +24,16 @@ ORG_BLUEZ_ADAPTER1 = 'org.bluez.Adapter1'
 
 class BlueZCharacteristic(GObject.Object):
     """
-    Abstraction for a org.bluez.GattCharacteristic1 object
+    Abstraction for a org.bluez.GattCharacteristic1 object.
 
-    :param obj: the org.bluez.GattCharacteristic1 DBus proxy object
+    Use start_notify() to receive notifications about the characteristics.
+    Hook up a property with connect_property() first.
+
     """
     def __init__(self, obj):
+        """
+        :param obj: the org.bluez.GattCharacteristic1 DBus proxy object
+        """
         self.obj = obj
         self.objpath = obj.get_object_path()
         self.interface = obj.get_interface(ORG_BLUEZ_GATTCHARACTERISTIC1)
@@ -47,6 +52,9 @@ class BlueZCharacteristic(GObject.Object):
         provide. When the property chages, callback is invoked as:
 
             callback(propname, value)
+
+        The common way is connect_property('Value', do_something) to get
+        notified about Value changes on this characteristic.
         """
         self._property_callbacks[propname] = callback
 
@@ -73,11 +81,15 @@ class BlueZDevice(GObject.Object):
     Abstraction for a org.bluez.Device1 object
 
     The device initializes itself based on the given object manager and
-    object, specifically: it resolves its services an gatt characteristics.
+    object, specifically: it resolves its services and gatt characteristics.
+    The device resolves itself where possible, if one of its
+    services/characteristics comes in late, call resolve().
 
-    :param om: The ObjectManager for name org.bluez path /
-    :param obj: The org.bluez.Device1 DBus proxy object
+    To connect to the real device, call connect_to_device(). The 'connected'
+    and 'disconnected' signals are emitted when the connection is
+    established.
 
+    The device's characteristics are in self.characteristics[uuid]
     """
     __gsignals__ = {
         "connected":
@@ -87,6 +99,10 @@ class BlueZDevice(GObject.Object):
     }
 
     def __init__(self, om, obj):
+        """
+        :param om: The ObjectManager for name org.bluez path /
+        :param obj: The org.bluez.Device1 DBus proxy object
+        """
         GObject.Object.__init__(self)
         self.objpath = obj.get_object_path()
         self.obj = obj
@@ -217,6 +233,11 @@ class BlueZDeviceManager(GObject.Object):
         self.devices = []
 
     def connect_to_bluez(self):
+        """
+        Connect to bluez's DBus interface. Once called, devices will be
+        resolved as they come in. The device-added signal is emitted for
+        each device.
+        """
         self._om = Gio.DBusObjectManagerClient.new_for_bus_sync(
             Gio.BusType.SYSTEM,
             Gio.DBusObjectManagerClientFlags.NONE,
