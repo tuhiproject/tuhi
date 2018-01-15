@@ -12,7 +12,6 @@
 #
 
 import logging
-import sys
 import json
 
 from gi.repository import GObject, Gio, GLib
@@ -211,17 +210,3 @@ class TuhiDBusServer(GObject.Object):
     def _on_device_added(self, tuhi, device):
         dev = TuhiDBusDevice(device, self._connection)
         self._devices.append(dev)
-
-
-def main(args):
-    t = TuhiDBusServer()
-    try:
-        GObject.MainLoop().run()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        t.cleanup()
-
-
-if __name__ == "__main__":
-    main(sys.argv)
