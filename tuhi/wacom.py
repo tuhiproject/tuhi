@@ -136,6 +136,8 @@ class WacomDevice(GObject.Object):
         self.height = WACOM_SLATE_HEIGHT
         self.name = device.name
 
+        self._is_running = False
+
         device.connect_gatt_value(WACOM_CHRC_LIVE_PEN_DATA_UUID,
                                   self._on_pen_data_changed)
         device.connect_gatt_value(WACOM_OFFLINE_CHRC_PEN_DATA_UUID,
@@ -571,10 +573,16 @@ class WacomDevice(GObject.Object):
             logger.warning("no data, please make sure the LED is blue and the button is pressed to switch it back to green")
 
     def run(self):
+        if self._is_running:
+            logger.error('{}: already synching, ignoring this request'.format(self.device.address))
+            return
+
         logger.debug('{}: starting'.format(self.device.address))
+        self._is_running = True
         try:
             self.retrieve_data()
         finally:
+            self._is_running = False
             self.emit("done")
 
     def start(self):
