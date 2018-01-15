@@ -15,8 +15,7 @@ import logging
 
 from gi.repository import GObject, Gio, GLib
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('dbus')
+logger = logging.getLogger('tuhi.dbus')
 
 INTROSPECTION_XML = """
 <node>

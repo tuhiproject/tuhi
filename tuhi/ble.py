@@ -13,8 +13,7 @@
 import logging
 from gi.repository import GObject, Gio
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('ble')
+logger = logging.getLogger('tuhi.ble')
 
 ORG_BLUEZ_GATTCHARACTERISTIC1 = 'org.bluez.GattCharacteristic1'
 ORG_BLUEZ_GATTSERVICE1 = 'org.bluez.GattService1'
