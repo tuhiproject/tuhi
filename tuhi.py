@@ -25,54 +25,71 @@ logger = logging.getLogger('tuhi')
 WACOM_COMPANY_ID = 0x4755
 
 
+class TuhiDevice(GObject.Object):
+    """
+    Glue object to combine the backend bluez DBus object (that talks to the
+    real device) with the frontend DBusServer object that exports the device
+    over Tuhi's DBus interface
+    """
+    __gsignals__ = {
+        "drawings-updated":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+    }
+
+    def __init__(self, bluez_device, tuhi_dbus_device):
+        GObject.Object.__init__(self)
+        self._tuhi_dbus_device = tuhi_dbus_device
+        self._wacom_device = WacomDevice(bluez_device)
+        self._wacom_device.connect('drawing', self._on_drawing_received)
+        self.drawings = []
+
+        bluez_device.connect('connected', self._on_bluez_device_connected)
+        bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
+        bluez_device.connect_device()
+
+    def _on_bluez_device_connected(self, bluez_device):
+        logger.debug('{}: connected'.format(bluez_device.address))
+        self._wacom_device.start()
+
+    def _on_bluez_device_disconnected(self, bluez_device):
+        # FIXME: immediately try to reconnect, at least until the DBusServer
+        # is hooked up correctly
+        logger.debug('{}: disconnected'.format(bluez_device.address))
+        bluez_device.connect_device()
+
+    def _on_drawing_received(self, device, drawing):
+        logger.debug('Drawing received')
+        self.drawings.append(drawing)
+        self.emit('drawings-updated', self.drawings)
+
+
 class Tuhi(GObject.Object):
     __gsignals__ = {
         "device-added":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        "device-connected":
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self):
         GObject.Object.__init__(self)
-        self.server = TuhiDBusServer(self)
-        self.server.connect('bus-name-acquired', self._on_bus_name_acquired)
+        self.server = TuhiDBusServer()
+        self.server.connect('bus-name-acquired', self._on_tuhi_bus_name_acquired)
         self.bluez = BlueZDeviceManager()
-
-        self.bluez.connect('device-added', self._on_device_added)
+        self.bluez.connect('device-added', self._on_bluez_device_added)
 
         self.devices = {}
-        self.drawings = []
 
-    def _on_bus_name_acquired(self, dbus_server):
+    def _on_tuhi_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()
 
-    def _on_device_added(self, manager, device):
-        if device.vendor_id != WACOM_COMPANY_ID:
+    def _on_bluez_device_added(self, manager, bluez_device):
+        if bluez_device.vendor_id != WACOM_COMPANY_ID:
             return
 
-        d = WacomDevice(device)
-        d.connect('drawing', self._on_drawing_received)
-        self.devices[device.address] = d
-
-        device.connect('connected', self._on_device_connected)
-        device.connect('disconnected', self._on_device_disconnected)
-        device.connect_device()
-        self.emit('device-added', device)
-
-    def _on_device_connected(self, device):
-        logger.debug('{}: connected'.format(device.address))
-
-        d = self.devices[device.address]
-        d.start()
-
-    def _on_device_disconnected(self, device):
-        # FIXME: immediately try to reconnect, at least until the DBusServer
-        # is hooked up correctly
-        logger.debug('{}: disconnected'.format(device.address))
-        device.connect_device()
-
-    def _on_drawing_received(self, device, drawing):
-        logger.debug('Drawing received')
-        self.drawings.append(drawing)
+        tuhi_dbus_device = self.server.create_device(bluez_device)
+        d = TuhiDevice(bluez_device, tuhi_dbus_device)
+        self.devices[bluez_device.address] = d
 
 
 def main(args):

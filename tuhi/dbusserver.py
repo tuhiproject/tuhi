@@ -160,7 +160,7 @@ class TuhiDBusServer(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
-    def __init__(self, tuhi):
+    def __init__(self):
         GObject.Object.__init__(self)
         self._devices = []
         self._dbus = Gio.bus_own_name(Gio.BusType.SESSION,
@@ -169,7 +169,6 @@ class TuhiDBusServer(GObject.Object):
                                       self._bus_aquired,
                                       self._bus_name_aquired,
                                       self._bus_name_lost)
-        tuhi.connect('device-added', self._on_device_added)
 
     def _bus_aquired(self, connection, name):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
@@ -207,6 +206,7 @@ class TuhiDBusServer(GObject.Object):
     def cleanup(self):
         Gio.bus_unown_name(self._dbus)
 
-    def _on_device_added(self, tuhi, device):
+    def create_device(self, device):
         dev = TuhiDBusDevice(device, self._connection)
         self._devices.append(dev)
+        return dev
