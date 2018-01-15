@@ -77,10 +77,11 @@ org.freedesktop.tuhi1.Device
       interactivity (e.g. the user may need to press the sync button).
 
       When the device connects, the daemon downloads all drawings from the
-      device. If successfull, the drawings are deleted from the device. The
-      data is held by the daemon in non-persistent storage until the daemon
-      is stopped or we run out of memory, whichever happens earlier.  Use
-      GetJSONData() to retrieve the data from the daemon.
+      device and disconnects from the device. If successfull, the drawings
+      are deleted from the device. The data is held by the daemon in
+      non-persistent storage until the daemon is stopped or we run out of
+      memory, whichever happens earlier.  Use GetJSONData() to retrieve the
+      data from the daemon.
 
       When drawings become available from the device, the DrawingsAvailable
       property updates to the number of available drawings.
