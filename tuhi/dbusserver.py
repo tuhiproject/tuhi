@@ -86,6 +86,7 @@ class TuhiDBusDevice(GObject.Object):
 
         if methodname == 'Listen':
             self._listen()
+            invocation.return_value()
         elif methodname == 'GetJSONData':
             json = GLib.Variant.new_string(self._json_data(args))
             invocation.return_value(GLib.Variant.new_tuple(json))
