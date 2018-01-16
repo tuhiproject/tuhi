@@ -148,7 +148,7 @@ class WacomDevice(GObject.Object):
         logger.debug(binascii.hexlify(bytes(value)))
 
         if value[0] == 0x10:
-            pressure = int.from_bytes(value[2:4], byteorder='big')
+            pressure = int.from_bytes(value[2:4], byteorder='little')
             buttons = int(value[10])
             logger.info(f'New Pen Data: pressure: {pressure}, button: {buttons}')
         elif value[0] == 0xa2:
@@ -167,9 +167,9 @@ class WacomDevice(GObject.Object):
                 if bytes(data) == b'\xff\xff\xff\xff\xff\xff':
                     logger.info(f'Pen left proximity')
                 else:
-                    x = int.from_bytes(data[0:2], byteorder='big')
-                    y = int.from_bytes(data[2:4], byteorder='big')
-                    pressure = int.from_bytes(data[4:6], byteorder='big')
+                    x = int.from_bytes(data[0:2], byteorder='little')
+                    y = int.from_bytes(data[2:4], byteorder='little')
+                    pressure = int.from_bytes(data[4:6], byteorder='little')
                     if self.orientation == ORIENTATION_PORTRAIT:
                         t = x
                         x = self.height - y
@@ -315,7 +315,7 @@ class WacomDevice(GObject.Object):
         if len(data) != 6:
             str_data = binascii.hexlify(bytes(data))
             raise WacomCorruptDataException(f'unexpected answer for get_dimensions: {str_data}')
-        return int.from_bytes(data[2:4], byteorder='big')
+        return int.from_bytes(data[2:4], byteorder='little')
 
     def ec_command(self):
         args = [0x06, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -344,9 +344,9 @@ class WacomDevice(GObject.Object):
                                              expected_opcode=0xc2)
         n = 0
         if self.is_slate():
-            n = int.from_bytes(data[0:2], byteorder='big')
-        else:
             n = int.from_bytes(data[0:2], byteorder='little')
+        else:
+            n = int.from_bytes(data[0:2], byteorder='big')
         logger.debug(f'Drawings available: {n}')
         return n > 0
 
@@ -354,7 +354,7 @@ class WacomDevice(GObject.Object):
         data = self.send_nordic_command_sync(command=0xcc,
                                              expected_opcode=0xcf)
         # logger.debug(f'cc returned {data} ')
-        count = int.from_bytes(data[0:4], byteorder='big')
+        count = int.from_bytes(data[0:4], byteorder='little')
         str_timestamp = ''.join([hex(d)[2:] for d in data[4:]])
         timestamp = time.strptime(str_timestamp, "%y%m%d%H%M%S")
         return count, timestamp
@@ -366,7 +366,7 @@ class WacomDevice(GObject.Object):
         # the btsnoop logs but I only rarely get a c7 response here
         count = 0
         if data.opcode == 0xc7:
-            count = int.from_bytes(data[0:4], byteorder='big')
+            count = int.from_bytes(data[0:4], byteorder='little')
             data = self.wait_nordic_data(0xcd, 5)
             # logger.debug(f'cc returned {data} ')
 
@@ -453,7 +453,7 @@ class WacomDevice(GObject.Object):
         full_coord_bitmask = 0b11 << (2 * n)
         delta_coord_bitmask = 0b10 << (2 * n)
         if (bitmask & full_coord_bitmask) == full_coord_bitmask:
-            v = int.from_bytes(data[2 * n:2 * n + 2], byteorder='big')
+            v = int.from_bytes(data[2 * n:2 * n + 2], byteorder='little')
             dv = 0
         elif bitmask & delta_coord_bitmask:
             dv += signed_char_to_int(data[2 * n + 1])
