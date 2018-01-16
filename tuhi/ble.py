@@ -320,8 +320,14 @@ class BlueZDeviceManager(GObject.Object):
                 continue
 
             objpath = obj.get_object_path()
-            i.StartDiscovery()
-            logger.debug('{}: Discovery started (timeout {})'.format(objpath, timeout))
+            try:
+                i.StartDiscovery()
+                logger.debug('{}: Discovery started (timeout {})'.format(objpath, timeout))
+            except GLib.Error as e:
+                if (e.domain == 'g-io-error-quark' and
+                        e.code == Gio.IOErrorEnum.DBUS_ERROR and
+                        Gio.dbus_error_get_remote_error(e) == 'org.bluez.Error.InProgress'):
+                    logger.debug('{}: Already listening'.format(objpath))
 
         if timeout > 0:
             GObject.timeout_add_seconds(timeout, self._discovery_timeout_expired)
