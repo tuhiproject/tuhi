@@ -150,8 +150,19 @@ class Tuhi(GObject.Object):
     def _on_start_pairing_requested(self, dbus_server):
         self.bluez.start_discovery(30)
 
+    @classmethod
+    def _is_pairing_device(cls, bluez_device):
+        if bluez_device.vendor_id != WACOM_COMPANY_ID:
+            return False
+
+        manufacturer_data = bluez_device.get_manufacturer_data(WACOM_COMPANY_ID)
+        return len(manufacturer_data) == 4
+
     def _on_bluez_device_added(self, manager, bluez_device):
         if bluez_device.vendor_id != WACOM_COMPANY_ID:
+            return
+
+        if Tuhi._is_pairing_device(bluez_device):
             return
 
         tuhi_dbus_device = self.server.create_device(bluez_device)
