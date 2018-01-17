@@ -215,3 +215,6 @@ class TuhiDBusServer(GObject.Object):
             return
 
         self._pairing_devices[address] = bluez_device
+
+    def reset_pairing_devices(self):
+        self._pairing_devices = {}

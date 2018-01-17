@@ -268,6 +268,8 @@ class BlueZDeviceManager(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         "device-updated":
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        "discovery-stopped":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self, **kwargs):
@@ -307,7 +309,7 @@ class BlueZDeviceManager(GObject.Object):
             i.StopDiscovery()
             logger.debug('Discovery stopped on: {}'.format(objpath))
 
-        # FIXME: we should notify the client that the timeout expired
+        self.emit('discovery-stopped')
         return False
 
     def start_discovery(self, timeout):

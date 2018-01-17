@@ -142,6 +142,7 @@ class Tuhi(GObject.Object):
         self.bluez = BlueZDeviceManager()
         self.bluez.connect('device-added', self._on_bluez_device_added)
         self.bluez.connect('device-updated', self._on_bluez_device_updated)
+        self.bluez.connect('discovery-stopped', self._on_discovery_stopped)
 
         self.devices = {}
 
@@ -178,6 +179,9 @@ class Tuhi(GObject.Object):
             return
 
         self.server.add_pairing_device(bluez_device)
+
+    def _on_discovery_stopped(self, bluez_device):
+        self.server.reset_pairing_devices()
 
 
 def main(args):
