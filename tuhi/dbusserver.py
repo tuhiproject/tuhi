@@ -36,6 +36,10 @@ INTROSPECTION_XML = """
        <arg name='status' type='i' />
     </signal>
 
+    <signal name='PairableDevice'>
+       <arg name='info' type='a{sv}' />
+    </signal>
+
   </interface>
 
   <interface name='org.freedesktop.tuhi1.Device'>
@@ -158,6 +162,7 @@ class TuhiDBusServer(GObject.Object):
     def __init__(self):
         GObject.Object.__init__(self)
         self._devices = []
+        self._pairable_devices = {}
         self._dbus = Gio.bus_own_name(Gio.BusType.SESSION,
                                       BUS_NAME,
                                       Gio.BusNameOwnerFlags.NONE,
@@ -226,10 +231,44 @@ class TuhiDBusServer(GObject.Object):
         Called by whoever handles the pairing-start-requested signal
         """
         logger.debug("Pairing has stopped")
+        self._is_pairing = False
         status = GLib.Variant.new_int32(status)
         status = GLib.Variant.new_tuple(status)
         self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
                                      "PairingStopped", status)
+        self._pairable_devices = {}
+
+    def notify_pairable_device(self, device):
+        """
+        Notify the client that a pairable device is available.
+        """
+        if not self._is_pairing:
+            return
+
+        logger.debug("Pairable device: {}".format(device))
+
+        address = device.address
+        if address in self._pairable_devices:
+            return
+
+        self._pairable_devices[address] = device
+
+        b = GLib.VariantBuilder(GLib.VariantType.new('a{sv}'))
+
+        key = GLib.Variant.new_string('name')
+        value = GLib.Variant.new_variant(GLib.Variant.new_string(device.name))
+        de = GLib.Variant.new_dict_entry(key, value)
+        b.add_value(de)
+
+        key = GLib.Variant.new_string('address')
+        value = GLib.Variant.new_variant(GLib.Variant.new_string(device.address))
+        de = GLib.Variant.new_dict_entry(key, value)
+        b.add_value(de)
+
+        array = b.end()
+        self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
+                                     "PairableDevice",
+                                     GLib.Variant.new_tuple(array))
 
     def cleanup(self):
         Gio.bus_unown_name(self._dbus)
