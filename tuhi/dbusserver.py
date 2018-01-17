@@ -31,6 +31,11 @@ INTROSPECTION_XML = """
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
     </method>
 
+    <method name='Pair'>
+      <arg name='address' type='s' direction='in'/>
+      <arg name='result' type='i' direction='out'/>
+    </method>
+
   </interface>
 
   <interface name='org.freedesktop.tuhi1.Device'>
@@ -141,6 +146,8 @@ class TuhiDBusServer(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, ()),
         "start-pairing-requested":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "pair-device-requested":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_STRING,)),
     }
 
     def __init__(self):
@@ -179,6 +186,10 @@ class TuhiDBusServer(GObject.Object):
         if methodname == 'StartPairing':
             self._start_pairing()
             invocation.return_value()
+        elif methodname == 'Pair':
+            self.emit('pair-device-requested', args[0])
+            result = GLib.Variant.new_int32(0)
+            invocation.return_value(GLib.Variant.new_tuple(result))
 
     def _property_read_cb(self, connection, sender, objpath, interface, propname):
         if interface != INTF_MANAGER:
@@ -218,3 +229,9 @@ class TuhiDBusServer(GObject.Object):
 
     def reset_pairing_devices(self):
         self._pairing_devices = {}
+
+    def get_pairing_device(self, address):
+        if address not in self._pairing_devices:
+            return None
+
+        return self._pairing_devices[address]
