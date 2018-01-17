@@ -114,8 +114,7 @@ class BlueZDevice(GObject.Object):
         self.characteristics = {}
         self.resolve(om)
         self.interface.connect('g-properties-changed', self._on_properties_changed)
-        # FIXME: this should switch to ServicesResolved
-        if self.interface.get_cached_property('Connected').get_boolean():
+        if self.connected:
             self.emit('connected')
 
     @property
@@ -136,6 +135,11 @@ class BlueZDevice(GObject.Object):
         if md is not None:
             return md.keys()[0]
         return None
+
+    @property
+    def connected(self):
+        return (self.interface.get_cached_property('Connected').unpack() and
+                self.interface.get_cached_property('ServicesResolved').unpack())
 
     def resolve(self, om):
         """
@@ -186,9 +190,8 @@ class BlueZDevice(GObject.Object):
         asynchronous and returns immediately.
         """
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
-        if i.get_cached_property('Connected').get_boolean():
+        if self.connected:
             logger.info('{}: Device is already connected'.format(self.address))
-            # FIXME: this should switch to ServicesResolved
             self.emit('connected')
             return
 
@@ -205,10 +208,12 @@ class BlueZDevice(GObject.Object):
         if 'Connected' in properties:
             if properties['Connected']:
                 logger.info('Connection established')
-                self.emit('connected')
             else:
                 logger.info('Disconnected')
                 self.emit('disconnected')
+        elif 'ServicesResolved' in properties:
+            if properties['ServicesResolved']:
+                self.emit('connected')
 
     def connect_gatt_value(self, uuid, callback):
         """
