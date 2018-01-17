@@ -82,13 +82,19 @@ class TuhiDevice(GObject.Object):
         self._wacom_device.connect('drawing', self._on_drawing_received)
         self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
         self.drawings = []
+        self.pairing_mode = False
 
         bluez_device.connect('connected', self._on_bluez_device_connected)
         bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
+        self._bluez_device = bluez_device
+
+    def connect_device(self):
+        self._bluez_device.connect_device()
 
     def _on_bluez_device_connected(self, bluez_device):
         logger.debug('{}: connected'.format(bluez_device.address))
-        self._wacom_device.start()
+        self._wacom_device.start(self.pairing_mode)
+        self.pairing_mode = False
 
     def _on_bluez_device_disconnected(self, bluez_device):
         logger.debug('{}: disconnected'.format(bluez_device.address))
@@ -140,6 +146,7 @@ class Tuhi(GObject.Object):
         self.server.connect('bus-name-acquired', self._on_tuhi_bus_name_acquired)
         self.server.connect('pairing-start-requested', self._on_start_pairing_requested)
         self.server.connect('pairing-stop-requested', self._on_stop_pairing_requested)
+        self.server.connect('pair-device-requested', self._on_pair_device_requested)
         self.bluez = BlueZDeviceManager()
         self.bluez.connect('device-added', self._on_bluez_device_added)
         self.bluez.connect('device-updated', self._on_bluez_device_updated)
@@ -164,6 +171,13 @@ class Tuhi(GObject.Object):
         self._pairing_stop_handler = None
         self.bluez.stop_discovery()
         self._pairable_device_handler = None
+
+    def _on_pair_device_requested(self, dbusserver, bluez_device):
+        tuhi_dbus_device = self.server.create_device(bluez_device)
+        d = TuhiDevice(bluez_device, tuhi_dbus_device)
+        d.pairing_mode = True
+        self.devices[bluez_device.address] = d
+        d.connect_device()
 
     @classmethod
     def _is_pairing_device(cls, bluez_device):

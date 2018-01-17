@@ -11,6 +11,7 @@
 #  GNU General Public License for more details.
 #
 
+import os
 import logging
 
 from gi.repository import GObject, Gio, GLib
@@ -32,6 +33,11 @@ INTROSPECTION_XML = """
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
     </method>
 
+    <method name='Pair'>
+      <arg name='address' type='s' direction='in'/>
+      <arg name='result' type='i' direction='out'/>
+    </method>
+
     <signal name='PairingStopped'>
        <arg name='status' type='i' />
     </signal>
@@ -39,7 +45,6 @@ INTROSPECTION_XML = """
     <signal name='PairableDevice'>
        <arg name='info' type='a{sv}' />
     </signal>
-
   </interface>
 
   <interface name='org.freedesktop.tuhi1.Device'>
@@ -157,6 +162,11 @@ class TuhiDBusServer(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         "pairing-stop-requested":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
+        # Signal arguments:
+        #    address
+        #       string of the Bluetooth device address
+        "pair-device-requested":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self):
@@ -199,6 +209,10 @@ class TuhiDBusServer(GObject.Object):
         elif methodname == 'StopPairing':
             self._stop_pairing()
             invocation.return_value()
+        elif methodname == 'Pair':
+            result = self._pair(args[0])
+            result = GLib.Variant.new_int32(result)
+            invocation.return_value(GLib.Variant.new_tuple(result))
 
     def _property_read_cb(self, connection, sender, objpath, interface, propname):
         if interface != INTF_MANAGER:
@@ -225,6 +239,19 @@ class TuhiDBusServer(GObject.Object):
 
         self._is_pairing = False
         self.emit("pairing-stop-requested")
+
+    def _pair(self, address):
+        if not self._is_pairing:
+            return os.errno.ECONNREFUSED
+
+        if address not in self._pairable_devices:
+            return os.errno.ENODEV
+
+        self.emit('pair-device-requested', self._pairable_devices[address])
+
+        # FIXME: we should cache the method invocation here, wait for a
+        # successful result from Tuhi and then return the value
+        return 0
 
     def _on_pairing_stop(self, status):
         """
