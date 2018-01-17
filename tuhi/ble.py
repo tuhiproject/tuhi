@@ -140,6 +140,12 @@ class BlueZDevice(GObject.Object):
         return (self.interface.get_cached_property('Connected').unpack() and
                 self.interface.get_cached_property('ServicesResolved').unpack())
 
+    def get_manufacturer_data(self, vendor_id):
+        md = self.interface.get_cached_property('ManufacturerData')
+        if md is not None and vendor_id in md.keys():
+            return md[vendor_id]
+        return None
+
     def resolve(self, om):
         """
         Resolve the GattServices and GattCharacteristics. This function does
