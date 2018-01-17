@@ -33,10 +33,67 @@ The following interfaces are provided:
 ```
 org.freedesktop.tuhi1.Manager
 
-   Property: Devices (ao)
+  Property: Devices (ao)
+      Array of object paths to known (previously paired, but not necessarily
+      connected) devices. Note that a "paired" device is one that has been
+      initialized via the Wacom SmartPad custom protocol. This
+      initialization is independent of the Bluetooth pairing process. A Tuhi
+      paired device may or may not be paired over Bluetooth.
 
-   Array of object paths to known (previously paired, but not necessarily
-   connected) devices.
+  Method: StartPairing() -> ()
+      Start listening to available devices in pairing mode for an
+      unspecified timeout. When the timeout expires or an error occurs, a
+      PairingStopped signal is sent indicating success or error.
+
+  Method: StopPairing() -> ()
+      Stop listening to available devices in pairing mode. If called after
+      StartPairing() and before a PairingStopped signal has been received,
+      this method triggers the PairingStopped signal. That signal indicates
+      success or an error.
+
+      If this method is called before StartPairing() or after the
+      PairingStopped signal, it is ignored and no signal is generated.
+
+      Note that between callling StopPairing() and the PairingStopped signal
+      arriving, PairableDevice signals may still arrive.
+
+  Method: Pair(s) -> (i)
+      Pairs the given device specified by its bluetooth MAC address, i.e.
+      the value of "address" in the PairableDevice signal argument.
+
+      Pairing a device may take a long time, a client must use asynchronous
+      method invocation to avoid DBus timeouts.
+
+      Invocations of Pair() before StartPairing() has been invoked or after a
+      PairingStopped() signal may result in an error.
+
+      Returns: 0 on success or a negative errno on failure
+
+  Signal: PairableDevice(a{sv})
+      Indicates that a device is available for pairing. This signal may be
+      sent after a StartPairing() call and before PairingStopped(). This
+      signal is sent once per available device.
+
+      The argument is a key-value dictionary, with keys as strings and value
+      as key-dependent entity.
+
+      Tuhi guarantees that the following keys are available:
+      * "name" - the device name as string
+      * "address"  - the device's Bluetooth MAC address as string
+
+      Unknown keys must be ignored by a client.
+
+  Signal: PairingStopped(i)
+      Sent when the pairing has stopped. An argument of 0 indicates a
+      successful termination of the pairing process, either when a device
+      has been paired or the timeout expired.
+
+      Once this signal has been sent, all devices announced through
+      PairableDevice signals should be considered invalidated. Attempting to
+      Pair() one of the devices after the PairingStopped() signal may result
+      in an error.
+
+      In case of error, the argument is a negative errno.
 
 org.freedesktop.tuhi1.Device
 
