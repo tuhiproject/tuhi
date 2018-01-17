@@ -95,6 +95,8 @@ class BlueZDevice(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, ()),
         "disconnected":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "updated":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self, om, obj):
@@ -237,6 +239,8 @@ class BlueZDevice(GObject.Object):
         elif 'ServicesResolved' in properties:
             if properties['ServicesResolved']:
                 self.emit('connected')
+        elif 'RSSI' in properties:
+            self.emit('updated')
 
     def connect_gatt_value(self, uuid, callback):
         """
@@ -261,6 +265,8 @@ class BlueZDeviceManager(GObject.Object):
     """
     __gsignals__ = {
         "device-added":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        "device-updated":
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
@@ -322,6 +328,12 @@ class BlueZDeviceManager(GObject.Object):
             logger.debug('Setting the timeout to {}'.format(timeout))
             GObject.timeout_add_seconds(timeout, self._discovery_timeout_expired)
 
+    def _on_dev_updated(self, dev):
+        """Callback for Device's properties-changed"""
+        logger.debug('Object updated: {}'.format(dev.name))
+
+        self.emit("device-updated", dev)
+
     def _on_om_object_added(self, om, obj):
         """Callback for ObjectManager's object-added"""
         objpath = obj.get_object_path()
@@ -355,11 +367,11 @@ class BlueZDeviceManager(GObject.Object):
     def _process_adapter(self, obj):
         objpath = obj.get_object_path()
         logger.debug('Adapter: {}'.format(objpath))
-        # FIXME: call StartDiscovery if we want to pair
 
     def _process_device(self, obj):
         dev = BlueZDevice(self._om, obj)
         self.devices.append(dev)
+        dev.connect("updated", self._on_dev_updated)
         self.emit("device-added", dev)
 
     def _process_characteristic(self, obj):

@@ -23,6 +23,9 @@ INTROSPECTION_XML = """
     <property type='ao' name='Devices' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
+    <property type='a(ss)' name='PairingDevices' access='read'>
+      <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
+    </property>
 
     <method name='StartPairing'>
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
@@ -143,6 +146,7 @@ class TuhiDBusServer(GObject.Object):
     def __init__(self):
         GObject.Object.__init__(self)
         self._devices = []
+        self._pairing_devices = {}
         self._dbus = Gio.bus_own_name(Gio.BusType.SESSION,
                                       BUS_NAME,
                                       Gio.BusNameOwnerFlags.NONE,
@@ -182,6 +186,12 @@ class TuhiDBusServer(GObject.Object):
 
         if propname == 'Devices':
             return GLib.Variant.new_objv([d.objpath for d in self._devices])
+        elif propname == 'PairingDevices':
+            return GLib.Variant.new_array(GLib.VariantType.new('(ss)'),
+                                          [GLib.Variant.new_tuple(
+                                              GLib.Variant.new_string(k),
+                                              GLib.Variant.new_string(v.name))
+                                           for k, v in self._pairing_devices.items()])
 
         return None
 
@@ -198,3 +208,10 @@ class TuhiDBusServer(GObject.Object):
         dev = TuhiDBusDevice(device, self._connection)
         self._devices.append(dev)
         return dev
+
+    def add_pairing_device(self, bluez_device):
+        address = bluez_device.address
+        if address in self._pairing_devices:
+            return
+
+        self._pairing_devices[address] = bluez_device

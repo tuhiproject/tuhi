@@ -141,6 +141,7 @@ class Tuhi(GObject.Object):
         self.server.connect('start-pairing-requested', self._on_start_pairing_requested)
         self.bluez = BlueZDeviceManager()
         self.bluez.connect('device-added', self._on_bluez_device_added)
+        self.bluez.connect('device-updated', self._on_bluez_device_updated)
 
         self.devices = {}
 
@@ -168,6 +169,15 @@ class Tuhi(GObject.Object):
         tuhi_dbus_device = self.server.create_device(bluez_device)
         d = TuhiDevice(bluez_device, tuhi_dbus_device)
         self.devices[bluez_device.address] = d
+
+    def _on_bluez_device_updated(self, manager, bluez_device):
+        if bluez_device.vendor_id != WACOM_COMPANY_ID:
+            return
+
+        if not Tuhi._is_pairing_device(bluez_device):
+            return
+
+        self.server.add_pairing_device(bluez_device)
 
 
 def main(args):
