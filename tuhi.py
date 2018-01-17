@@ -85,17 +85,13 @@ class TuhiDevice(GObject.Object):
 
         bluez_device.connect('connected', self._on_bluez_device_connected)
         bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
-        bluez_device.connect_device()
 
     def _on_bluez_device_connected(self, bluez_device):
         logger.debug('{}: connected'.format(bluez_device.address))
         self._wacom_device.start()
 
     def _on_bluez_device_disconnected(self, bluez_device):
-        # FIXME: immediately try to reconnect, at least until the DBusServer
-        # is hooked up correctly
         logger.debug('{}: disconnected'.format(bluez_device.address))
-        bluez_device.connect_device()
 
     def _on_drawing_received(self, device, drawing):
         logger.debug('Drawing received')
