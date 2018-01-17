@@ -33,10 +33,27 @@ The following interfaces are provided:
 ```
 org.freedesktop.tuhi1.Manager
 
-   Property: Devices (ao)
+  Property: Devices (ao)
+      Array of object paths to known (previously paired, but not necessarily
+      connected) devices.
 
-   Array of object paths to known (previously paired, but not necessarily
-   connected) devices.
+  Property: PairableDevices (ass)
+      Array of (bluetooth address, name) of pairable devices that are in
+      proximity.
+
+      This property will only return data when the Manager is in Pairing mode
+
+  Method: StartPairing() -> ()
+      Listen to available devices in pairing mode for an unspecified timeout.
+      When the timeout expires, a PairingComplete signal is sent indicating
+      success or error.
+
+      Returns: nothing
+
+  Method: Pair(s) -> (i)
+      Pairs the given device specified by its bluetooth mac address.
+
+      Returns: 0 on success or a negative errno on failure
 
 org.freedesktop.tuhi1.Device
 

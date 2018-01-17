@@ -23,6 +23,19 @@ INTROSPECTION_XML = """
     <property type='ao' name='Devices' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
+    <property type='a(ss)' name='PairingDevices' access='read'>
+      <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
+    </property>
+
+    <method name='StartPairing'>
+      <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
+    </method>
+
+    <method name='Pair'>
+      <arg name='address' type='s' direction='in'/>
+      <arg name='result' type='i' direction='out'/>
+    </method>
+
   </interface>
 
   <interface name='org.freedesktop.tuhi1.Device'>
@@ -131,11 +144,16 @@ class TuhiDBusServer(GObject.Object):
     __gsignals__ = {
         "bus-name-acquired":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "start-pairing-requested":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "pair-device-requested":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_STRING,)),
     }
 
     def __init__(self):
         GObject.Object.__init__(self)
         self._devices = []
+        self._pairing_devices = {}
         self._dbus = Gio.bus_own_name(Gio.BusType.SESSION,
                                       BUS_NAME,
                                       Gio.BusNameOwnerFlags.NONE,
@@ -161,8 +179,17 @@ class TuhiDBusServer(GObject.Object):
     def _bus_name_lost(self, connection, name):
         pass
 
-    def _method_cb(self):
-        pass
+    def _method_cb(self, connection, sender, objpath, interface, methodname, args, invocation):
+        if interface != INTF_MANAGER:
+            return None
+
+        if methodname == 'StartPairing':
+            self._start_pairing()
+            invocation.return_value()
+        elif methodname == 'Pair':
+            self.emit('pair-device-requested', args[0])
+            result = GLib.Variant.new_int32(0)
+            invocation.return_value(GLib.Variant.new_tuple(result))
 
     def _property_read_cb(self, connection, sender, objpath, interface, propname):
         if interface != INTF_MANAGER:
@@ -170,11 +197,20 @@ class TuhiDBusServer(GObject.Object):
 
         if propname == 'Devices':
             return GLib.Variant.new_objv([d.objpath for d in self._devices])
+        elif propname == 'PairingDevices':
+            return GLib.Variant.new_array(GLib.VariantType.new('(ss)'),
+                                          [GLib.Variant.new_tuple(
+                                              GLib.Variant.new_string(k),
+                                              GLib.Variant.new_string(v.name))
+                                           for k, v in self._pairing_devices.items()])
 
         return None
 
     def _property_write_cb(self):
         pass
+
+    def _start_pairing(self):
+        self.emit("start-pairing-requested")
 
     def cleanup(self):
         Gio.bus_unown_name(self._dbus)
@@ -183,3 +219,19 @@ class TuhiDBusServer(GObject.Object):
         dev = TuhiDBusDevice(device, self._connection)
         self._devices.append(dev)
         return dev
+
+    def add_pairing_device(self, bluez_device):
+        address = bluez_device.address
+        if address in self._pairing_devices:
+            return
+
+        self._pairing_devices[address] = bluez_device
+
+    def reset_pairing_devices(self):
+        self._pairing_devices = {}
+
+    def get_pairing_device(self, address):
+        if address not in self._pairing_devices:
+            return None
+
+        return self._pairing_devices[address]

@@ -82,20 +82,22 @@ class TuhiDevice(GObject.Object):
         self._wacom_device.connect('drawing', self._on_drawing_received)
         self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
         self.drawings = []
+        self.pairing_mode = False
 
         bluez_device.connect('connected', self._on_bluez_device_connected)
         bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
-        bluez_device.connect_device()
+        self._bluez_device = bluez_device
+
+    def connect_device(self):
+        self._bluez_device.connect_device()
 
     def _on_bluez_device_connected(self, bluez_device):
         logger.debug('{}: connected'.format(bluez_device.address))
-        self._wacom_device.start()
+        self._wacom_device.start(self.pairing_mode)
+        self.pairing_mode = False
 
     def _on_bluez_device_disconnected(self, bluez_device):
-        # FIXME: immediately try to reconnect, at least until the DBusServer
-        # is hooked up correctly
         logger.debug('{}: disconnected'.format(bluez_device.address))
-        bluez_device.connect_device()
 
     def _on_drawing_received(self, device, drawing):
         logger.debug('Drawing received')
@@ -142,21 +144,63 @@ class Tuhi(GObject.Object):
         GObject.Object.__init__(self)
         self.server = TuhiDBusServer()
         self.server.connect('bus-name-acquired', self._on_tuhi_bus_name_acquired)
+        self.server.connect('start-pairing-requested', self._on_start_pairing_requested)
+        self.server.connect('pair-device-requested', self._on_pair_device_requested)
         self.bluez = BlueZDeviceManager()
         self.bluez.connect('device-added', self._on_bluez_device_added)
+        self.bluez.connect('device-updated', self._on_bluez_device_updated)
+        self.bluez.connect('discovery-stopped', self._on_discovery_stopped)
 
         self.devices = {}
 
     def _on_tuhi_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()
 
+    def _on_start_pairing_requested(self, dbus_server):
+        self.bluez.start_discovery(30)
+
+    @classmethod
+    def _is_pairing_device(cls, bluez_device):
+        if bluez_device.vendor_id != WACOM_COMPANY_ID:
+            return False
+
+        manufacturer_data = bluez_device.get_manufacturer_data(WACOM_COMPANY_ID)
+        return len(manufacturer_data) == 4
+
     def _on_bluez_device_added(self, manager, bluez_device):
         if bluez_device.vendor_id != WACOM_COMPANY_ID:
+            return
+
+        if Tuhi._is_pairing_device(bluez_device):
             return
 
         tuhi_dbus_device = self.server.create_device(bluez_device)
         d = TuhiDevice(bluez_device, tuhi_dbus_device)
         self.devices[bluez_device.address] = d
+
+    def _on_bluez_device_updated(self, manager, bluez_device):
+        if bluez_device.vendor_id != WACOM_COMPANY_ID:
+            return
+
+        if not Tuhi._is_pairing_device(bluez_device):
+            return
+
+        self.server.add_pairing_device(bluez_device)
+
+    def _on_discovery_stopped(self, bluez_device):
+        self.server.reset_pairing_devices()
+
+    def _on_pair_device_requested(self, manager, address):
+        bluez_device = self.server.get_pairing_device(address)
+        if bluez_device is None:
+            # FIXME: we should return the dbus method an error
+            return
+
+        tuhi_dbus_device = self.server.create_device(bluez_device)
+        d = TuhiDevice(bluez_device, tuhi_dbus_device)
+        d.pairing_mode = True
+        self.devices[bluez_device.address] = d
+        d.connect_device()
 
 
 def main(args):
