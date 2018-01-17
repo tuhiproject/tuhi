@@ -285,6 +285,37 @@ class BlueZDeviceManager(GObject.Object):
         for obj in self._om.get_objects():
             self._process_object(obj)
 
+    def _discovery_timeout_expired(self):
+        for obj in self._om.get_objects():
+            i = obj.get_interface(ORG_BLUEZ_ADAPTER1)
+            if i is None:
+                continue
+
+            objpath = obj.get_object_path()
+            i.StopDiscovery()
+            logger.debug('Discovery stopped on: {}'.format(objpath))
+
+        # FIXME: we should notify the client that the timeout expired
+        return False
+
+    def start_discovery(self, timeout):
+        """
+        Start discovery mode for the specified timeout.
+
+        A value of 0 for the timeout means infinite.
+        """
+        for obj in self._om.get_objects():
+            i = obj.get_interface(ORG_BLUEZ_ADAPTER1)
+            if i is None:
+                continue
+
+            objpath = obj.get_object_path()
+            i.StartDiscovery()
+            logger.debug('Discovery started on: {}'.format(objpath))
+        if timeout >= 0:
+            logger.debug('Setting the timeout to {}'.format(timeout))
+            GObject.timeout_add_seconds(timeout, self._discovery_timeout_expired)
+
     def _on_om_object_added(self, om, obj):
         """Callback for ObjectManager's object-added"""
         objpath = obj.get_object_path()
