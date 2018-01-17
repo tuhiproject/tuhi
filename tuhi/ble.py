@@ -11,7 +11,7 @@
 #  GNU General Public License for more details.
 
 import logging
-from gi.repository import GObject, Gio
+from gi.repository import GObject, Gio, GLib
 
 logger = logging.getLogger('tuhi.ble')
 
@@ -256,6 +256,10 @@ class BlueZDeviceManager(GObject.Object):
     __gsignals__ = {
         "device-added":
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        "discovery-started":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "discovery-stopped":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self, **kwargs):
@@ -284,6 +288,54 @@ class BlueZDeviceManager(GObject.Object):
         # guaranteed that the objects we need already exist.
         for obj in self._om.get_objects():
             self._process_object(obj)
+
+    def _discovery_timeout_expired(self):
+        self.stop_discovery()
+        return False
+
+    def start_discovery(self, timeout=0):
+        """
+        Start discovery mode, terminating after the specified timeout (in
+        seconds). If timeout is 0, no timeout is imposed and the discovery
+        mode stays on.
+
+        This emits the discovery-started signal
+        """
+        self.emit("discovery-started")
+        for obj in self._om.get_objects():
+            i = obj.get_interface(ORG_BLUEZ_ADAPTER1)
+            if i is None:
+                continue
+
+            objpath = obj.get_object_path()
+            i.StartDiscovery()
+            logger.debug('{}: Discovery started (timeout {})'.format(objpath, timeout))
+
+        if timeout > 0:
+            GObject.timeout_add_seconds(timeout, self._discovery_timeout_expired)
+
+        # FIXME: Any errors up to here should trigger discovery-stopped
+        # signal with the status code
+
+    def stop_discovery(self):
+        """
+        Stop an ongoing discovery mode. Any errors are logged but ignored.
+
+        This emits the discovery-stopped signal
+        """
+        for obj in self._om.get_objects():
+            i = obj.get_interface(ORG_BLUEZ_ADAPTER1)
+            if i is None:
+                continue
+
+            objpath = obj.get_object_path()
+            try:
+                i.StopDiscovery()
+                logger.debug('{}: Discovery stopped'.format(objpath))
+            except GLib.Error as e:
+                logger.debug('{}: Failed to stop discovery ({})'.format(objpath, e))
+
+        self.emit("discovery-stopped")
 
     def _on_om_object_added(self, om, obj):
         """Callback for ObjectManager's object-added"""

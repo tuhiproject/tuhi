@@ -138,13 +138,30 @@ class Tuhi(GObject.Object):
         GObject.Object.__init__(self)
         self.server = TuhiDBusServer()
         self.server.connect('bus-name-acquired', self._on_tuhi_bus_name_acquired)
+        self.server.connect('pairing-start-requested', self._on_start_pairing_requested)
+        self.server.connect('pairing-stop-requested', self._on_stop_pairing_requested)
         self.bluez = BlueZDeviceManager()
         self.bluez.connect('device-added', self._on_bluez_device_added)
+        self.bluez.connect('discovery-started', self._on_bluez_discovery_started)
+        self.bluez.connect('discovery-stopped', self._on_bluez_discovery_stopped)
 
         self.devices = {}
 
+        self._pairing_stop_handler = None
+
     def _on_tuhi_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()
+
+    def _on_start_pairing_requested(self, dbus_server, stop_handler):
+        self._pairing_stop_handler = stop_handler
+        self.bluez.start_discovery(timeout=30)
+
+    def _on_stop_pairing_requested(self, dbus_server):
+        # If you request to stop, you get a successful stop and we ignore
+        # anything the server does underneath
+        self._pairing_stop_handler(0)
+        self._pairing_stop_handler = None
+        self.bluez.stop_discovery()
 
     def _on_bluez_device_added(self, manager, bluez_device):
         if bluez_device.vendor_id != WACOM_COMPANY_ID:
@@ -153,6 +170,16 @@ class Tuhi(GObject.Object):
         tuhi_dbus_device = self.server.create_device(bluez_device)
         d = TuhiDevice(bluez_device, tuhi_dbus_device)
         self.devices[bluez_device.address] = d
+
+    def _on_bluez_discovery_started(self, manager):
+        # Something else may turn discovery mode on, we don't care about
+        # it then
+        if not self._pairing_stop_handler:
+            return
+
+    def _on_bluez_discovery_stopped(self, manager):
+        if self._pairing_stop_handler is not None:
+            self._pairing_stop_handler(0)
 
 
 def main(args):
