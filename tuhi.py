@@ -20,6 +20,7 @@ from gi.repository import GObject
 from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
 from tuhi.wacom import WacomDevice, Stroke
+from tuhi.config import TuhiConfig
 
 logging.basicConfig(format='%(levelname)s: %(name)s: %(message)s',
                     level=logging.INFO)
@@ -76,14 +77,16 @@ class TuhiDevice(GObject.Object):
     over Tuhi's DBus interface
     """
 
-    def __init__(self, bluez_device, tuhi_dbus_device, paired=True):
+    def __init__(self, bluez_device, tuhi_dbus_device, uuid=None, paired=True):
         GObject.Object.__init__(self)
         self._tuhi_dbus_device = tuhi_dbus_device
-        self._wacom_device = WacomDevice(bluez_device)
+        self._wacom_device = WacomDevice(bluez_device, uuid)
         self._wacom_device.connect('drawing', self._on_drawing_received)
         self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
         self._wacom_device.connect('button-press-required', self._on_button_press_required)
         self.drawings = []
+        # We need either uuid or paired as false
+        assert uuid is not None or paired is False
         self.paired = paired
 
         bluez_device.connect('connected', self._on_bluez_device_connected)
@@ -165,6 +168,8 @@ class Tuhi(GObject.Object):
         self.bluez.connect('discovery-started', self._on_bluez_discovery_started)
         self.bluez.connect('discovery-stopped', self._on_bluez_discovery_stopped)
 
+        self.config = TuhiConfig()
+
         self.devices = {}
 
         self._search_stop_handler = None
@@ -199,8 +204,16 @@ class Tuhi(GObject.Object):
         if Tuhi._is_pairing_device(bluez_device):
             return
 
+        try:
+            config = self.config.devices[bluez_device.address]
+            uuid = config['uuid']
+        except KeyError:
+            logger.info('{}: device without config, must be paired first'.format(bluez_device.address))
+            return
+
+        logger.debug('{}: uuid {}'.format(bluez_device.address, uuid))
         tuhi_dbus_device = self.server.create_device(bluez_device)
-        d = TuhiDevice(bluez_device, tuhi_dbus_device)
+        d = TuhiDevice(bluez_device, tuhi_dbus_device, uuid=uuid)
         self.devices[bluez_device.address] = d
 
     def _on_bluez_discovery_started(self, manager):
