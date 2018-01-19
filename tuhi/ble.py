@@ -325,6 +325,9 @@ class BlueZDeviceManager(GObject.Object):
             if i is None:
                 continue
 
+            # remove the duplicate data filter so we get notifications as they come in
+            i.SetDiscoveryFilter('(a{sv})', {'DuplicateData': GLib.Variant.new_boolean(False)})
+
             objpath = obj.get_object_path()
             try:
                 i.StartDiscovery()
@@ -363,6 +366,9 @@ class BlueZDeviceManager(GObject.Object):
                 logger.debug('{}: Discovery stopped'.format(objpath))
             except GLib.Error as e:
                 logger.debug('{}: Failed to stop discovery ({})'.format(objpath, e))
+
+            # reset the discovery filters
+            i.SetDiscoveryFilter('(a{sv})', {})
 
         self.emit("discovery-stopped")
 
