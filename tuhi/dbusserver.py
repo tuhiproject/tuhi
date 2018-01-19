@@ -103,6 +103,7 @@ class TuhiDBusDevice(GObject.Object):
         self.drawings = []
         self.paired = device.paired
         self._listening = False
+        self._listening_client = None
         objpath = device.address.replace(':', '_')
         self.objpath = "{}/{}".format(BASE_PATH, objpath)
 
@@ -210,26 +211,54 @@ class TuhiDBusDevice(GObject.Object):
     def _start_listening(self, connection, sender):
         if self.listening:
             logger.debug("{} - already listening".format(self))
-            status = GLib.Variant.new_int32(-errno.EAGAIN)
-            status = GLib.Variant.new_tuple(status)
-            connection.emit_signal(sender, self.objpath, INTF_DEVICE,
-                                   "ListeningStopped", status)
+
+            # silently ignore it for the current client but send EAGAIN to
+            # other clients
+            if sender != self._listening_client[0]:
+                status = GLib.Variant.new_int32(-errno.EAGAIN)
+                status = GLib.Variant.new_tuple(status)
+                connection.emit_signal(sender, self.objpath, INTF_DEVICE,
+                                       "ListeningStopped", status)
             return
+
+        s = connection.signal_subscribe(sender='org.freedesktop.DBus',
+                                        interface_name='org.freedesktop.DBus',
+                                        member='NameOwnerChanged',
+                                        object_path='/org/freedesktop/DBus',
+                                        arg0=None,
+                                        flags=Gio.DBusSignalFlags.NONE,
+                                        callback=self._on_name_owner_changed_signal_cb,
+                                        user_data=sender)
+        self._listening_client = (sender, s)
+        logger.debug('Listening started on {} for {}'.format(self.name, sender))
 
         # FIXME: notify the server to start discovery
         self.listening = True
 
-    def _stop_listening(self, connection, sender):
-        if not self.listening:
+    def _on_name_owner_changed_signal_cb(self, connection, sender, object_path,
+                                         interface_name, node,
+                                         out_user_data, user_data):
+        name, old_owner, new_owner = out_user_data
+        if name != user_data:
             return
 
+        self._stop_listening(connection, user_data)
+
+    def _stop_listening(self, connection, sender):
+        if not self.listening or sender != self._listening_client[0]:
+            return
+
+        connection.signal_unsubscribe(self._listening_client[1])
+        self._listening_client = None
+        logger.debug('Listening stopped on {} for {}'.format(self.name, sender))
+
         # FIXME: notify the server to stop discovery
-        self.listening = False
 
         status = GLib.Variant.new_int32(0)
         status = GLib.Variant.new_tuple(status)
         connection.emit_signal(sender, self.objpath, INTF_DEVICE,
                                "ListeningStopped", status)
+        self.listening = False
 
     def _json_data(self, args):
         index = args[0]
