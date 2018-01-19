@@ -151,6 +151,7 @@ class TuhiDevice(GObject.Object):
 
     def _on_uuid_updated(self, wacom_device, pspec, bluez_device):
         self.config.new_device(bluez_device.address, wacom_device.uuid)
+        self.paired = True
 
 
 class Tuhi(GObject.Object):
