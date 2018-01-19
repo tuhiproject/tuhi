@@ -236,9 +236,10 @@ class Tuhi(GObject.Object):
             return
 
         if Tuhi._is_pairing_device(bluez_device):
-            tuhi_dbus_device = self.server.create_device(bluez_device, paired=False)
-            d = TuhiDevice(bluez_device, tuhi_dbus_device, self.config, paired=False)
-            self.devices[bluez_device.address] = d
+            if bluez_device.address not in self.devices:
+                tuhi_dbus_device = self.server.create_device(bluez_device, paired=False)
+                d = TuhiDevice(bluez_device, tuhi_dbus_device, self.config, paired=False)
+                self.devices[bluez_device.address] = d
             logger.debug('{}: call Pair() on device'.format(bluez_device.objpath))
 
 
