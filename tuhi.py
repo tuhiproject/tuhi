@@ -75,12 +75,14 @@ class TuhiDevice(GObject.Object):
     real device) with the frontend DBusServer object that exports the device
     over Tuhi's DBus interface
     """
+
     def __init__(self, bluez_device, tuhi_dbus_device, paired=True):
         GObject.Object.__init__(self)
         self._tuhi_dbus_device = tuhi_dbus_device
         self._wacom_device = WacomDevice(bluez_device)
         self._wacom_device.connect('drawing', self._on_drawing_received)
         self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
+        self._wacom_device.connect('button-press-required', self._on_button_press_required)
         self.drawings = []
         self.paired = paired
 
@@ -138,6 +140,9 @@ class TuhiDevice(GObject.Object):
 
     def _on_fetching_finished(self, device, bluez_device):
         bluez_device.disconnect_device()
+
+    def _on_button_press_required(self, device):
+        self._tuhi_dbus_device.notify_button_press_required()
 
 
 class Tuhi(GObject.Object):

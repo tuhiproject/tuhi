@@ -124,6 +124,8 @@ class WacomDevice(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         "done":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "button-press-required":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self, device):
@@ -578,6 +580,7 @@ class WacomDevice(GObject.Object):
     def pair_device_slate(self):
         self.register_connection()
         logger.info("Press the button now to confirm")
+        self.emit('button-press-required')
         data = self.wait_nordic_data([0xe4, 0xb3], 10)
         if data.opcode == 0xb3:
             # generic ACK
@@ -604,6 +607,7 @@ class WacomDevice(GObject.Object):
         self.send_nordic_command(command=0xe3,
                                  arguments=[0x01])
         logger.info("Press the button now to confirm")
+        self.emit('button-press-required')
         # Wait for the button confirmation event, or any error
         data = self.wait_nordic_data([0xe4, 0xb3], 10)
         if data.opcode == 0xb3:

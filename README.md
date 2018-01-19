@@ -154,6 +154,12 @@ org.freedesktop.tuhi1.Device
 
       Returns a string representing the JSON data from the last drawings or
       the empty string if no data is available or the index is invalid.
+
+  Signal: ButtonPressRequired()
+      Sent when the user is expected to press the physical button on the
+      device. A client should display a notification in response, if the
+      user does not press the button during the (firmware-specific) timeout
+      the current operation will fail.
 ```
 
 JSON File Format

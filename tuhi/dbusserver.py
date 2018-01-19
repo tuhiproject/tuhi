@@ -61,6 +61,8 @@ INTROSPECTION_XML = """
       <arg name='json' type='s' direction='out'/>
     </method>
 
+    <signal name='ButtonPressRequired' />
+
     <signal name='ListenComplete'>
        <arg name='status' type='i' />
     </signal>
@@ -161,6 +163,11 @@ class TuhiDBusDevice(GObject.Object):
 
     def add_drawing(self, drawing):
         self.drawings.append(drawing)
+
+    def notify_button_press_required(self):
+        logger.debug("Sending ButtonPressRequired signal")
+        self._connection.emit_signal(None, self.objpath, INTF_DEVICE,
+                                     "ButtonPressRequired", None)
 
 
 class TuhiDBusServer(GObject.Object):
