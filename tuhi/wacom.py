@@ -16,6 +16,7 @@ import binascii
 import logging
 import threading
 import time
+import uuid
 from gi.repository import GObject
 
 logger = logging.getLogger('tuhi.wacom')
@@ -38,9 +39,6 @@ ORIENTATION_PORTRAIT = 'portrait'
 ORIENTATION_UPSIDEDOWN_PORTRAIT = 'tiartrop'
 ORIENTATION_LANDSCAPE = 'landscape'
 ORIENTATION_UPSIDEDOWN_LANDSCAPE = 'epacsdnal'
-
-# FIXME: this should be generated once and stored for future use (dconf?)
-SMARTPAD_UUID = 'dead00beef00'
 
 
 def signed_char_to_int(v):
@@ -128,7 +126,7 @@ class WacomDevice(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
-    def __init__(self, device):
+    def __init__(self, device, uuid=None):
         GObject.Object.__init__(self)
         self.device = device
         self.nordic_answer = None
@@ -138,6 +136,7 @@ class WacomDevice(GObject.Object):
         self.width = WACOM_SLATE_WIDTH
         self.height = WACOM_SLATE_HEIGHT
         self.name = device.name
+        self.uuid = uuid
 
         self._is_running = False
 
@@ -268,13 +267,13 @@ class WacomDevice(GObject.Object):
         return args
 
     def check_connection(self):
-        args = [int(i) for i in binascii.unhexlify(SMARTPAD_UUID)]
+        args = [int(i) for i in binascii.unhexlify(self.uuid)]
         self.send_nordic_command_sync(command=0xe6,
                                       expected_opcode=0xb3,
                                       arguments=args)
 
     def register_connection(self):
-        args = [int(i) for i in binascii.unhexlify(SMARTPAD_UUID)]
+        args = [int(i) for i in binascii.unhexlify(self.uuid)]
         self.send_nordic_command(command=0xe7,
                                  arguments=args)
 
@@ -625,7 +624,8 @@ class WacomDevice(GObject.Object):
         logger.info("pairing completed")
 
     def pair_device(self):
-        logger.debug("{}: pairing device".format(self.device.address))
+        self.uuid = uuid.uuid4().hex[:12]
+        logger.debug("{}: pairing device, assigned {}".format(self.device.address, self.uuid))
         if self.is_slate():
             self.pair_device_slate()
         else:
