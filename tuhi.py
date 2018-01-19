@@ -119,6 +119,10 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device = device
         self._tuhi_dbus_device.connect('pair-requested', self._on_pair_requested)
 
+    @property
+    def listening(self):
+        return self._tuhi_dbus_device.listening
+
     def connect_device(self):
         self._bluez_device.connect_device()
 
@@ -264,8 +268,12 @@ class Tuhi(GObject.Object):
                 d.dbus_device = self.server.create_device(d)
                 self.devices[bluez_device.address] = d
 
+        d = self.devices[bluez_device.address]
+
         if Tuhi._is_pairing_device(bluez_device):
             logger.debug('{}: call Pair() on device'.format(bluez_device.objpath))
+        elif d.listening:
+            d.connect_device()
 
 
 def main(args):

@@ -12,6 +12,7 @@
 #
 
 import logging
+import errno
 
 from gi.repository import GObject, Gio, GLib
 
@@ -45,6 +46,9 @@ INTROSPECTION_XML = """
     <property type='s' name='Name' access='read'/>
     <property type='s' name='Address' access='read'/>
     <property type='uu' name='Dimensions' access='read'/>
+    <property type='b' name='Listening' access='read'>
+      <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
+    </property>
     <property type='u' name='DrawingsAvailable' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
@@ -53,7 +57,11 @@ INTROSPECTION_XML = """
       <arg name='result' type='i' direction='out'/>
     </method>
 
-    <method name='Listen'>
+    <method name='StartListening'>
+      <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
+    </method>
+
+    <method name='StopListening'>
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
     </method>
 
@@ -94,12 +102,41 @@ class TuhiDBusDevice(GObject.Object):
         self.width, self.height = 0, 0
         self.drawings = []
         self.paired = device.paired
+        self._listening = False
         objpath = device.address.replace(':', '_')
         self.objpath = "{}/{}".format(BASE_PATH, objpath)
 
         self._connection = connection
         self._dbusid = self._register_object(connection)
         device.connect('notify::paired', self._on_device_paired)
+
+    @GObject.Property
+    def listening(self):
+        return self._listening
+
+    @listening.setter
+    def listening(self, value):
+        if self._listening == value:
+            return
+
+        self._listening = value
+
+        props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
+        de = GLib.Variant.new_dict_entry(GLib.Variant.new_string('Listening'),
+                                         GLib.Variant.new_variant(
+                                             GLib.Variant.new_boolean(value)))
+        props.add_value(de)
+        props = props.end()
+        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
+        inval_props = inval_props.end()
+
+        self._connection.emit_signal(None, self.objpath,
+                                     "org.freedesktop.DBus.Properties",
+                                     "PropertiesChanged",
+                                     GLib.Variant.new_tuple(
+                                         GLib.Variant.new_string(INTF_DEVICE),
+                                         props,
+                                         inval_props))
 
     @GObject.Property
     def paired(self):
@@ -132,8 +169,11 @@ class TuhiDBusDevice(GObject.Object):
             self._pair()
             result = GLib.Variant.new_int32(0)
             invocation.return_value(GLib.Variant.new_tuple(result))
-        elif methodname == 'Listen':
-            self._listen()
+        elif methodname == 'StartListening':
+            self._start_listening(connection, sender)
+            invocation.return_value()
+        elif methodname == 'StopListening':
+            self._stop_listening(connection, sender)
             invocation.return_value()
         elif methodname == 'GetJSONData':
             json = GLib.Variant.new_string(self._json_data(args))
@@ -153,6 +193,8 @@ class TuhiDBusDevice(GObject.Object):
             return GLib.Variant.new_tuple(w, h)
         elif propname == 'DrawingsAvailable':
             return GLib.Variant.new_uint32(len(self.drawings))
+        elif propname == 'Listening':
+            return GLib.Variant.new_boolean(self.listening)
 
         return None
 
@@ -165,10 +207,29 @@ class TuhiDBusDevice(GObject.Object):
     def _on_device_paired(self, device, pspec):
         self.paired = device.paired
 
-    def _listen(self):
-        # FIXME: start listen asynchronously
-        # FIXME: update property when listen finishes
-        pass
+    def _start_listening(self, connection, sender):
+        if self.listening:
+            logger.debug("{} - already listening".format(self))
+            status = GLib.Variant.new_int32(-errno.EAGAIN)
+            status = GLib.Variant.new_tuple(status)
+            connection.emit_signal(sender, self.objpath, INTF_DEVICE,
+                                   "ListeningStopped", status)
+            return
+
+        # FIXME: notify the server to start discovery
+        self.listening = True
+
+    def _stop_listening(self, connection, sender):
+        if not self.listening:
+            return
+
+        # FIXME: notify the server to stop discovery
+        self.listening = False
+
+        status = GLib.Variant.new_int32(0)
+        status = GLib.Variant.new_tuple(status)
+        connection.emit_signal(sender, self.objpath, INTF_DEVICE,
+                               "ListeningStopped", status)
 
     def _json_data(self, args):
         index = args[0]
