@@ -86,8 +86,11 @@ class TuhiConfig(GObject.Object):
         config.optionxform = str
         config.read(path)
 
-        config['Device']['Address'] = address
-        config['Device']['UUID'] = uuid
+        config['Device'] = {
+            'Address': address,
+            'UUID': uuid,
+        }
+
         with open(path, 'w') as configfile:
             config.write(configfile)
 
