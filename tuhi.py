@@ -169,7 +169,7 @@ class Tuhi(GObject.Object):
         self.server.connect('search-start-requested', self._on_start_search_requested)
         self.server.connect('search-stop-requested', self._on_stop_search_requested)
         self.bluez = BlueZDeviceManager()
-        self.bluez.connect('device-added', self._on_bluez_device_added)
+        self.bluez.connect('device-added', self._on_bluez_device_updated)
         self.bluez.connect('device-updated', self._on_bluez_device_updated)
         self.bluez.connect('discovery-started', self._on_bluez_discovery_started)
         self.bluez.connect('discovery-stopped', self._on_bluez_discovery_stopped)
@@ -203,25 +203,6 @@ class Tuhi(GObject.Object):
         manufacturer_data = bluez_device.get_manufacturer_data(WACOM_COMPANY_ID)
         return manufacturer_data is not None and len(manufacturer_data) == 4
 
-    def _on_bluez_device_added(self, manager, bluez_device):
-        if bluez_device.vendor_id != WACOM_COMPANY_ID:
-            return
-
-        if Tuhi._is_pairing_device(bluez_device):
-            return
-
-        try:
-            config = self.config.devices[bluez_device.address]
-            uuid = config['uuid']
-        except KeyError:
-            logger.info('{}: device without config, must be paired first'.format(bluez_device.address))
-            return
-
-        logger.debug('{}: uuid {}'.format(bluez_device.address, uuid))
-        tuhi_dbus_device = self.server.create_device(bluez_device)
-        d = TuhiDevice(bluez_device, tuhi_dbus_device, self.config, uuid=uuid)
-        self.devices[bluez_device.address] = d
-
     def _on_bluez_discovery_started(self, manager):
         # Something else may turn discovery mode on, we don't care about
         # it then
@@ -236,11 +217,25 @@ class Tuhi(GObject.Object):
         if bluez_device.vendor_id != WACOM_COMPANY_ID:
             return
 
-        if Tuhi._is_pairing_device(bluez_device):
-            if bluez_device.address not in self.devices:
-                tuhi_dbus_device = self.server.create_device(bluez_device, paired=False)
-                d = TuhiDevice(bluez_device, tuhi_dbus_device, self.config, paired=False)
+        pairing_device = Tuhi._is_pairing_device(bluez_device)
+        uuid = None
+
+        if not pairing_device:
+            try:
+                config = self.config.devices[bluez_device.address]
+                uuid = config['uuid']
+            except KeyError:
+                logger.info('{}: device without config, must be paired first'.format(bluez_device.address))
+                return
+            logger.debug('{}: UUID {}'.format(bluez_device.address, uuid))
+
+        # create the device if unknown from us
+        if bluez_device.address not in self.devices:
+                tuhi_dbus_device = self.server.create_device(bluez_device, paired=not pairing_device)
+                d = TuhiDevice(bluez_device, tuhi_dbus_device, self.config, uuid=uuid, paired=not pairing_device)
                 self.devices[bluez_device.address] = d
+
+        if Tuhi._is_pairing_device(bluez_device):
             logger.debug('{}: call Pair() on device'.format(bluez_device.objpath))
 
 
