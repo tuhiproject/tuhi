@@ -112,9 +112,25 @@ org.freedesktop.tuhi1.Device
   Property: Listening (b)
       Indicates whether the daemon is currently listening for the device.
 
-      This property is set to True when a Listen() request initiates the
-      search for device connections. When the Listen() request completes
-      upon timeout, the property is set to False.
+      This property is set to True when a StartListening() request initiates
+      the search for device connections. When the StartListening() request
+      completes upon timeout, or when StopListening() is called, the property
+      is set to False.
+
+      When the user press the button on the device, the daemon shall connect
+      to the device and the daemon downloads all drawings from the
+      device. The daemon then disconnects from the device.
+
+      If successfull, the drawings are deleted from the device. The data is
+      held by the daemon in non-persistent storage until the daemon is stopped
+      or we run out of memory, whichever happens earlier.
+      Use GetJSONData() to retrieve the data from the daemon.
+
+      When drawings become available from the device, the DrawingsAvailable
+      property updates to the number of available drawings.
+      When the button is pressed multiple times, any new data is appended
+      to the existing list of drawings as long as this property is True.
+
       Read-only
 
   Method: Pair() -> (i)
@@ -124,29 +140,30 @@ org.freedesktop.tuhi1.Device
       Otherwise, the device is paired and this function returns success (0)
       or a negative errno on failure.
 
-  Method: Listen() -> ()
+  Method: StartListening() -> ()
       Listen for data from this device. This method starts listening for
-      events on the device for an unspecified timeout. When the timeout
-      expires, a ListenComplete signal is sent indicating success or error.
+      events on the device. Clients need to call StopListening() to
+      stop the events processing. If the client disconnects, StopListening()
+      is matched by the daemon.
 
-      This function requires the device to be connected and may require some
-      interactivity (e.g. the user may need to press the sync button).
+      This method effectively sets the property Listening to True.
 
-      When the device connects, the daemon downloads all drawings from the
-      device and disconnects from the device. If successfull, the drawings
-      are deleted from the device. The data is held by the daemon in
-      non-persistent storage until the daemon is stopped or we run out of
-      memory, whichever happens earlier.  Use GetJSONData() to retrieve the
-      data from the daemon.
-
-      When drawings become available from the device, the DrawingsAvailable
-      property updates to the number of available drawings.
-
-      When this function is called multiple times, any new data is appended
-      to the existing list of drawings. Calling Listen() before a previous
-      call has completed is silently ignored and does not reset the timeout.
+      A client can not call twice StartListening() on the same device without
+      a matching StopListening() in the middle. This will result in a failure.
 
       Returns: 0 on success or a negative errno on failure
+
+  Method: StopListening() -> ()
+      Stop listening for data on this device. If called after StartListening(),
+      this method triggers the ListenStopped signal.
+      That signal indicates success or an error.
+
+      If this method is called before StartListening() or after the
+      ListenStopped signal, it is ignored and no signal is generated.
+
+      Note that between callling StopListening() and the ListenStopped signal
+      arriving, the property DrawingsAvailable may still be updated and it's
+      the responsibility of the client to fetch the JSON data.
 
   Method: GetJSONData(index: u) -> (s)
       Returns a JSON file with the drawings specified by the index argument.
