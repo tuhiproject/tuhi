@@ -81,15 +81,12 @@ class TuhiDevice(GObject.Object):
         GObject.Object.__init__(self)
         self.config = config
         self._tuhi_dbus_device = tuhi_dbus_device
-        self._wacom_device = WacomDevice(bluez_device, uuid)
-        self._wacom_device.connect('drawing', self._on_drawing_received)
-        self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
-        self._wacom_device.connect('button-press-required', self._on_button_press_required)
-        self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
+        self._wacom_device = None
         self.drawings = []
         # We need either uuid or paired as false
         assert uuid is not None or paired is False
         self.paired = paired
+        self._uuid = uuid
 
         bluez_device.connect('connected', self._on_bluez_device_connected)
         bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
@@ -102,6 +99,13 @@ class TuhiDevice(GObject.Object):
 
     def _on_bluez_device_connected(self, bluez_device):
         logger.debug('{}: connected'.format(bluez_device.address))
+        if self._wacom_device is None:
+            self._wacom_device = WacomDevice(bluez_device, self._uuid)
+            self._wacom_device.connect('drawing', self._on_drawing_received)
+            self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
+            self._wacom_device.connect('button-press-required', self._on_button_press_required)
+            self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
+
         self._wacom_device.start(not self.paired)
         self.pairing_mode = False
 
