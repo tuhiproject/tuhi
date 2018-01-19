@@ -177,7 +177,7 @@ class TuhiDBusDevice(GObject.Object):
         logger.debug('{}: is paired {}'.format(device, device.paired))
         self.paired = device.paired
 
-    @property
+    @GObject.Property
     def listening(self):
         return len(self._listening_clients) > 0
 
@@ -198,7 +198,7 @@ class TuhiDBusDevice(GObject.Object):
         self._listening_clients[client] = s
         logger.debug('Listening started on {} for {}'.format(self.name, client))
 
-        # FIXME: notify the server to start discovery
+        self.notify('listening')
 
     def on_signal_cb(self, connection, sender, object_path, interface_name, node, out_user_data, user_data):
         name, old_owner, new_owner = out_user_data
@@ -217,7 +217,7 @@ class TuhiDBusDevice(GObject.Object):
         del(self._listening_clients[client])
         logger.debug('Listening stopped on {} for {}'.format(self.name, client))
 
-        # FIXME: notify the server to stop discovery
+        self.notify('listening')
 
     def _json_data(self, args):
         index = args[0]

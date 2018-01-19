@@ -118,8 +118,9 @@ class TuhiDevice(GObject.Object):
         assert self._tuhi_dbus_device is None
         self._tuhi_dbus_device = device
         self._tuhi_dbus_device.connect('pair-requested', self._on_pair_requested)
+        self._tuhi_dbus_device.connect('notify::listening', self._on_listening_updated)
 
-    @property
+    @GObject.Property
     def listening(self):
         return self._tuhi_dbus_device.listening
 
@@ -186,6 +187,9 @@ class TuhiDevice(GObject.Object):
         self.config.new_device(bluez_device.address, wacom_device.uuid)
         self.paired = True
 
+    def _on_listening_updated(self, dbus_device, pspec):
+        self.notify('listening')
+
 
 class Tuhi(GObject.Object):
     __gsignals__ = {
@@ -246,6 +250,9 @@ class Tuhi(GObject.Object):
         if self._search_stop_handler is not None:
             self._search_stop_handler(0)
 
+        # restart discovery if some users are already in the listening mode
+        self._on_listening_updated(None, None)
+
     def _on_bluez_device_updated(self, manager, bluez_device):
         if bluez_device.vendor_id != WACOM_COMPANY_ID:
             return
@@ -266,6 +273,7 @@ class Tuhi(GObject.Object):
         if bluez_device.address not in self.devices:
                 d = TuhiDevice(bluez_device, self.config, uuid=uuid, paired=not pairing_device)
                 d.dbus_device = self.server.create_device(d)
+                d.connect('notify::listening', self._on_listening_updated)
                 self.devices[bluez_device.address] = d
 
         d = self.devices[bluez_device.address]
@@ -274,6 +282,18 @@ class Tuhi(GObject.Object):
             logger.debug('{}: call Pair() on device'.format(bluez_device.objpath))
         elif d.listening:
             d.connect_device()
+
+    def _on_listening_updated(self, tuhi_dbus_device, pspec):
+        listen = False
+        for dev in self.devices.values():
+            if dev.listening:
+                listen = True
+                break
+
+        if listen:
+            self.bluez.start_discovery()
+        else:
+            self.bluez.stop_discovery()
 
 
 def main(args):
