@@ -19,8 +19,10 @@ Devices tested and known to be supported:
 Units used by this interface
 ----------------------------
 
-* Physical distances for x/y axes are in µm from the sensor's top-right
-  position.
+* Physical distances for x/y axes are in µm from the sensor's top-left
+  position. (Note that on the Spark and on the Slate at least, the sensor
+  is turned 90 degrees clockwise, so (0,0) is at the 'natural' top-right
+  corner)
 * Stylus pressure is normalized to a range of [0, 0xffff], inclusive.
 * Timestamps are in seconds in unix epoch, time offsets are in ms after the
   most recent timestamp.
