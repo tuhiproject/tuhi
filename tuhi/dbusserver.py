@@ -45,6 +45,7 @@ INTROSPECTION_XML = """
     <property type='s' name='Name' access='read'/>
     <property type='s' name='Address' access='read'/>
     <property type='uu' name='Dimensions' access='read'/>
+    <property type='b' name='Listening' access='read'/>
     <property type='u' name='DrawingsAvailable' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
@@ -53,7 +54,11 @@ INTROSPECTION_XML = """
       <arg name='result' type='i' direction='out'/>
     </method>
 
-    <method name='Listen'>
+    <method name='StartListening'>
+      <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
+    </method>
+
+    <method name='StopListening'>
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
     </method>
 
@@ -94,6 +99,7 @@ class TuhiDBusDevice(GObject.Object):
         self.width, self.height = 0, 0
         self.drawings = []
         self.paired = device.paired
+        self.listening = False
         objpath = device.address.replace(':', '_')
         self.objpath = "{}/{}".format(BASE_PATH, objpath)
 
@@ -132,8 +138,11 @@ class TuhiDBusDevice(GObject.Object):
             self._pair()
             result = GLib.Variant.new_int32(0)
             invocation.return_value(GLib.Variant.new_tuple(result))
-        elif methodname == 'Listen':
-            self._listen()
+        elif methodname == 'StartListening':
+            self._start_listening()
+            invocation.return_value()
+        elif methodname == 'StopListening':
+            self._stop_listening()
             invocation.return_value()
         elif methodname == 'GetJSONData':
             json = GLib.Variant.new_string(self._json_data(args))
@@ -153,6 +162,8 @@ class TuhiDBusDevice(GObject.Object):
             return GLib.Variant.new_tuple(w, h)
         elif propname == 'DrawingsAvailable':
             return GLib.Variant.new_uint32(len(self.drawings))
+        elif propname == 'Listening':
+            return GLib.Variant.new_boolean(self.listening)
 
         return None
 
@@ -166,10 +177,13 @@ class TuhiDBusDevice(GObject.Object):
         logger.debug('{}: is paired {}'.format(device, device.paired))
         self.paired = device.paired
 
-    def _listen(self):
-        # FIXME: start listen asynchronously
-        # FIXME: update property when listen finishes
-        pass
+    def _start_listening(self):
+        # FIXME: notify the server to start discovery
+        self.listening = True
+
+    def _stop_listening(self):
+        # FIXME: notify the server to stop discovery
+        self.listening = False
 
     def _json_data(self, args):
         index = args[0]
