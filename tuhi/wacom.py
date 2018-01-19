@@ -41,8 +41,6 @@ ORIENTATION_UPSIDEDOWN_LANDSCAPE = 'epacsdnal'
 
 # FIXME: this should be generated once and stored for future use (dconf?)
 SMARTPAD_UUID = 'dead00beef00'
-SMARTPAD_UUID = '1d6adc5fac76'
-SMARTPAD_UUID = '4810d75d5d4d'
 
 
 def signed_char_to_int(v):
