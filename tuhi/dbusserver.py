@@ -99,7 +99,7 @@ class TuhiDBusDevice(GObject.Object):
         self.width, self.height = 0, 0
         self.drawings = []
         self.paired = device.paired
-        self.listening = False
+        self._listening_clients = {}
         objpath = device.address.replace(':', '_')
         self.objpath = "{}/{}".format(BASE_PATH, objpath)
 
@@ -139,10 +139,10 @@ class TuhiDBusDevice(GObject.Object):
             result = GLib.Variant.new_int32(0)
             invocation.return_value(GLib.Variant.new_tuple(result))
         elif methodname == 'StartListening':
-            self._start_listening()
+            self._start_listening(connection, sender)
             invocation.return_value()
         elif methodname == 'StopListening':
-            self._stop_listening()
+            self._stop_listening(connection, sender)
             invocation.return_value()
         elif methodname == 'GetJSONData':
             json = GLib.Variant.new_string(self._json_data(args))
@@ -177,13 +177,47 @@ class TuhiDBusDevice(GObject.Object):
         logger.debug('{}: is paired {}'.format(device, device.paired))
         self.paired = device.paired
 
-    def _start_listening(self):
-        # FIXME: notify the server to start discovery
-        self.listening = True
+    @property
+    def listening(self):
+        return len(self._listening_clients) > 0
 
-    def _stop_listening(self):
+    def _start_listening(self, connection, client):
+        # a client can only request one sync at a time
+        if client in self._listening_clients:
+            # FIXME: notify the caller INPROGRESS
+            logger.error('StartListening: In Progress')
+            return
+        s = connection.signal_subscribe(sender='org.freedesktop.DBus',
+                                        interface_name='org.freedesktop.DBus',
+                                        member='NameOwnerChanged',
+                                        object_path='/org/freedesktop/DBus',
+                                        arg0=None,
+                                        flags=Gio.DBusSignalFlags.NONE,
+                                        callback=self.on_signal_cb,
+                                        user_data=client)
+        self._listening_clients[client] = s
+        logger.debug('Listening started on {} for {}'.format(self.name, client))
+
+        # FIXME: notify the server to start discovery
+
+    def on_signal_cb(self, connection, sender, object_path, interface_name, node, out_user_data, user_data):
+        name, old_owner, new_owner = out_user_data
+        if name != user_data:
+            return
+
+        self._stop_listening(connection, user_data)
+
+    def _stop_listening(self, connection, client):
+        if client not in self._listening_clients:
+            # FIXME: notify the caller EFAIL
+            logger.error('StopListening: Failed')
+            return
+        s = self._listening_clients[client]
+        connection.signal_unsubscribe(s)
+        del(self._listening_clients[client])
+        logger.debug('Listening stopped on {} for {}'.format(self.name, client))
+
         # FIXME: notify the server to stop discovery
-        self.listening = False
 
     def _json_data(self, args):
         index = args[0]
