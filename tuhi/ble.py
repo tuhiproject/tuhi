@@ -277,6 +277,7 @@ class BlueZDeviceManager(GObject.Object):
     def __init__(self, **kwargs):
         GObject.Object.__init__(self, **kwargs)
         self.devices = []
+        self._discovery = False
 
     def connect_to_bluez(self):
         """
@@ -314,6 +315,11 @@ class BlueZDeviceManager(GObject.Object):
         This emits the discovery-started signal
         """
         self.emit("discovery-started")
+        if self._discovery:
+            return
+
+        self._discovery = True
+
         for obj in self._om.get_objects():
             i = obj.get_interface(ORG_BLUEZ_ADAPTER1)
             if i is None:
@@ -341,6 +347,11 @@ class BlueZDeviceManager(GObject.Object):
 
         This emits the discovery-stopped signal
         """
+        if not self._discovery:
+            return
+
+        self._discovery = False
+
         for obj in self._om.get_objects():
             i = obj.get_interface(ORG_BLUEZ_ADAPTER1)
             if i is None:
