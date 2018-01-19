@@ -40,15 +40,15 @@ org.freedesktop.tuhi1.Manager
       initialization is independent of the Bluetooth pairing process. A Tuhi
       paired device may or may not be paired over Bluetooth.
 
-  Method: StartPairing() -> ()
-      Start listening to available devices in pairing mode for an
+  Method: StartSearch() -> ()
+      Start searching for available devices in pairing mode for an
       unspecified timeout. When the timeout expires or an error occurs, a
-      PairingStopped signal is sent indicating success or error.
+      SearchStopped signal is sent indicating success or error.
 
-  Method: StopPairing() -> ()
+  Method: StopSearch() -> ()
       Stop listening to available devices in pairing mode. If called after
-      StartPairing() and before a PairingStopped signal has been received,
-      this method triggers the PairingStopped signal. That signal indicates
+      StartSearch() and before a Searchtopped signal has been received,
+      this method triggers the SearchStopped signal. That signal indicates
       success or an error.
 
       If this method is called before StartPairing() or after the
@@ -57,31 +57,21 @@ org.freedesktop.tuhi1.Manager
       Note that between callling StopPairing() and the PairingStopped signal
       arriving, PairableDevice signals may still arrive.
 
-  Method: Pair(s) -> (i)
-      Pairs the given device specified by its bluetooth MAC address, i.e.
-      the value of "address" in the PairableDevice signal argument.
-
-      Pairing a device may take a long time, a client must use asynchronous
-      method invocation to avoid DBus timeouts.
-
-      Invocations of Pair() before StartPairing() has been invoked or after a
-      PairingStopped() signal may result in an error.
-
-      Returns: 0 on success or a negative errno on failure
-
-  Signal: PairableDevice(a{sv})
+  Signal: PairableDevice(o)
       Indicates that a device is available for pairing. This signal may be
-      sent after a StartPairing() call and before PairingStopped(). This
+      sent after a StartSearch() call and before SearchStopped(). This
       signal is sent once per available device.
 
-      The argument is a key-value dictionary, with keys as strings and value
-      as key-dependent entity.
+      When this signal is sent, a org.freedesktop.tuhi1.Device object was
+      created, the object path is the argument to this signal.
 
-      Tuhi guarantees that the following keys are available:
-      * "name" - the device name as string
-      * "address"  - the device's Bluetooth MAC address as string
+      A client must immediately call Pair() on that object if pairing with
+      that object is desired. See the documentation for that interface
+      for details.
 
-      Unknown keys must be ignored by a client.
+      When the search timeout expires, the device is removed by the daemon
+      again. Note that until the device is paired, the device is not listed
+      in the managers Devices property.
 
   Signal: PairingStopped(i)
       Sent when the pairing has stopped. An argument of 0 indicates a
@@ -124,6 +114,13 @@ org.freedesktop.tuhi1.Device
       search for device connections. When the Listen() request completes
       upon timeout, the property is set to False.
       Read-only
+
+  Method: Pair() -> (i)
+      Pair the device. If the device is already paired, calls to this method
+      immediately return success.
+
+      Otherwise, the device is paired and this function returns success (0)
+      or a negative errno on failure.
 
   Method: Listen() -> ()
       Listen for data from this device. This method starts listening for

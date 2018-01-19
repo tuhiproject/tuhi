@@ -11,7 +11,6 @@
 #  GNU General Public License for more details.
 #
 
-import os
 import logging
 
 from gi.repository import GObject, Gio, GLib
@@ -25,25 +24,20 @@ INTROSPECTION_XML = """
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
 
-    <method name='StartPairing'>
+    <method name='StartSearch'>
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
     </method>
 
-    <method name='StopPairing'>
+    <method name='StopSearch'>
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
     </method>
 
-    <method name='Pair'>
-      <arg name='address' type='s' direction='in'/>
-      <arg name='result' type='i' direction='out'/>
-    </method>
-
-    <signal name='PairingStopped'>
+    <signal name='SearchStopped'>
        <arg name='status' type='i' />
     </signal>
 
     <signal name='PairableDevice'>
-       <arg name='info' type='a{sv}' />
+       <arg name='info' type='o' />
     </signal>
   </interface>
 
@@ -53,6 +47,10 @@ INTROSPECTION_XML = """
     <property type='u' name='DrawingsAvailable' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
+
+    <method name='Pair'>
+      <arg name='result' type='i' direction='out'/>
+    </method>
 
     <method name='Listen'>
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
@@ -80,33 +78,49 @@ class TuhiDBusDevice(GObject.Object):
     Class representing a DBus object for a Tuhi device. This class only
     handles the DBus bits, communication with the device is done elsewhere.
     """
-    def __init__(self, device, connection):
+    __gsignals__ = {
+        "pair-requested":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
+    }
+
+    def __init__(self, device, connection, paired=True):
         GObject.Object.__init__(self)
 
         self.name = device.name
         self.btaddr = device.address
         self.width, self.height = 0, 0
         self.drawings = []
+        self.paired = paired
         objpath = device.address.replace(':', '_')
         self.objpath = "{}/{}".format(BASE_PATH, objpath)
 
-        self._register_object(connection)
+        self._connection = connection
+        self._dbusid = self._register_object(connection)
+
+    def remove(self):
+        self._connection.unregister_object(self._dbusid)
+        self._dbusid = None
 
     def _register_object(self, connection):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
         intf = introspection.lookup_interface(INTF_DEVICE)
-        Gio.DBusConnection.register_object(connection,
-                                           self.objpath,
-                                           intf,
-                                           self._method_cb,
-                                           self._property_read_cb,
-                                           self._property_write_cb)
+        return connection.register_object(self.objpath,
+                                          intf,
+                                          self._method_cb,
+                                          self._property_read_cb,
+                                          self._property_write_cb)
 
     def _method_cb(self, connection, sender, objpath, interface, methodname, args, invocation):
         if interface != INTF_DEVICE:
             return None
 
-        if methodname == 'Listen':
+        if methodname == 'Pair':
+            # FIXME: we should cache the method invocation here, wait for a
+            # successful result from Tuhi and then return the value
+            self._pair()
+            result = GLib.Variant.new_int32(0)
+            invocation.return_value(GLib.Variant.new_tuple(result))
+        elif methodname == 'Listen':
             self._listen()
             invocation.return_value()
         elif methodname == 'GetJSONData':
@@ -133,6 +147,9 @@ class TuhiDBusDevice(GObject.Object):
     def _property_write_cb(self):
         pass
 
+    def _pair(self):
+        self.emit('pair-requested')
+
     def _listen(self):
         # FIXME: start listen asynchronously
         # FIXME: update property when listen finishes
@@ -155,18 +172,13 @@ class TuhiDBusServer(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, ()),
 
         # Signal arguments:
-        #    pairing_stop_handler(status)
-        #        to be called when the pairing process has terminated, with
+        #    search_stop_handler(status)
+        #        to be called when the search process has terminated, with
         #        an integer status code (0 == success, negative errno)
-        "pairing-start-requested":
+        "search-start-requested":
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        "pairing-stop-requested":
+        "search-stop-requested":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
-        # Signal arguments:
-        #    address
-        #       string of the Bluetooth device address
-        "pair-device-requested":
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self):
@@ -179,7 +191,7 @@ class TuhiDBusServer(GObject.Object):
                                       self._bus_aquired,
                                       self._bus_name_aquired,
                                       self._bus_name_lost)
-        self._is_pairing = False
+        self._is_searching = False
 
     def _bus_aquired(self, connection, name):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
@@ -203,104 +215,66 @@ class TuhiDBusServer(GObject.Object):
         if interface != INTF_MANAGER:
             return None
 
-        if methodname == 'StartPairing':
-            self._start_pairing()
+        if methodname == 'StartSearch':
+            self._start_search()
             invocation.return_value()
-        elif methodname == 'StopPairing':
-            self._stop_pairing()
+        elif methodname == 'StopSearch':
+            self._stop_search()
             invocation.return_value()
-        elif methodname == 'Pair':
-            result = self._pair(args[0])
-            result = GLib.Variant.new_int32(result)
-            invocation.return_value(GLib.Variant.new_tuple(result))
 
     def _property_read_cb(self, connection, sender, objpath, interface, propname):
         if interface != INTF_MANAGER:
             return None
 
         if propname == 'Devices':
-            return GLib.Variant.new_objv([d.objpath for d in self._devices])
+            return GLib.Variant.new_objv([d.objpath for d in self._devices if d.paired])
 
         return None
 
     def _property_write_cb(self):
         pass
 
-    def _start_pairing(self):
-        if self._is_pairing:
+    def _start_search(self):
+        if self._is_searching:
             return
 
-        self._is_pairing = True
-        self.emit("pairing-start-requested", self._on_pairing_stop)
+        self._is_searching = True
+        self.emit("search-start-requested", self._on_search_stop)
 
-    def _stop_pairing(self):
-        if not self._is_pairing:
+    def _stop_search(self):
+        if not self._is_searching:
             return
 
-        self._is_pairing = False
-        self.emit("pairing-stop-requested")
+        self._is_searching = False
+        self.emit("search-stop-requested")
 
-    def _pair(self, address):
-        if not self._is_pairing:
-            return os.errno.ECONNREFUSED
-
-        if address not in self._pairable_devices:
-            return os.errno.ENODEV
-
-        self.emit('pair-device-requested', self._pairable_devices[address])
-
-        # FIXME: we should cache the method invocation here, wait for a
-        # successful result from Tuhi and then return the value
-        return 0
-
-    def _on_pairing_stop(self, status):
+    def _on_search_stop(self, status):
         """
-        Called by whoever handles the pairing-start-requested signal
+        Called by whoever handles the search-start-requested signal
         """
-        logger.debug("Pairing has stopped")
-        self._is_pairing = False
+        logger.debug("Search has stopped")
+        self._is_searching = False
         status = GLib.Variant.new_int32(status)
         status = GLib.Variant.new_tuple(status)
         self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
-                                     "PairingStopped", status)
-        self._pairable_devices = {}
+                                     "SearchStopped", status)
 
-    def notify_pairable_device(self, device):
-        """
-        Notify the client that a pairable device is available.
-        """
-        if not self._is_pairing:
-            return
+        for dev in self._devices:
+            if dev.paired:
+                continue
 
-        logger.debug("Pairable device: {}".format(device))
-
-        address = device.address
-        if address in self._pairable_devices:
-            return
-
-        self._pairable_devices[address] = device
-
-        b = GLib.VariantBuilder(GLib.VariantType.new('a{sv}'))
-
-        key = GLib.Variant.new_string('name')
-        value = GLib.Variant.new_variant(GLib.Variant.new_string(device.name))
-        de = GLib.Variant.new_dict_entry(key, value)
-        b.add_value(de)
-
-        key = GLib.Variant.new_string('address')
-        value = GLib.Variant.new_variant(GLib.Variant.new_string(device.address))
-        de = GLib.Variant.new_dict_entry(key, value)
-        b.add_value(de)
-
-        array = b.end()
-        self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
-                                     "PairableDevice",
-                                     GLib.Variant.new_tuple(array))
+            dev.remove()
+        self._devices = [d for d in self._devices if d.paired]
 
     def cleanup(self):
         Gio.bus_unown_name(self._dbus)
 
-    def create_device(self, device):
-        dev = TuhiDBusDevice(device, self._connection)
+    def create_device(self, device, paired=True):
+        dev = TuhiDBusDevice(device, self._connection, paired)
         self._devices.append(dev)
+        if not paired:
+            arg = GLib.Variant.new_object_path(dev.objpath)
+            self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
+                                         "PairableDevice",
+                                         GLib.Variant.new_tuple(arg))
         return dev
