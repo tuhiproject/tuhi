@@ -136,7 +136,7 @@ class WacomDevice(GObject.Object):
         self.width = WACOM_SLATE_WIDTH
         self.height = WACOM_SLATE_HEIGHT
         self.name = device.name
-        self.uuid = uuid
+        self._uuid = uuid
 
         self._is_running = False
 
@@ -146,6 +146,11 @@ class WacomDevice(GObject.Object):
                                   self._on_pen_data_received)
         device.connect_gatt_value(NORDIC_UART_CHRC_RX_UUID,
                                   self._on_nordic_data_received)
+
+    @GObject.Property
+    def uuid(self):
+        assert self._uuid is not None
+        return self._uuid
 
     def is_slate(self):
         return self.name == "Bamboo Slate"
@@ -595,7 +600,6 @@ class WacomDevice(GObject.Object):
         fw_high = self.get_firmware_version(0)
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
-        logger.info("pairing completed")
 
     def pair_device_spark(self):
         try:
@@ -621,15 +625,16 @@ class WacomDevice(GObject.Object):
         fw_high = self.get_firmware_version(0)
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
-        logger.info("pairing completed")
 
     def pair_device(self):
-        self.uuid = uuid.uuid4().hex[:12]
+        self._uuid = uuid.uuid4().hex[:12]
         logger.debug("{}: pairing device, assigned {}".format(self.device.address, self.uuid))
         if self.is_slate():
             self.pair_device_slate()
         else:
             self.pair_device_spark()
+        logger.info('pairing completed')
+        self.notify('uuid')
 
     def run(self):
         if self._is_running:

@@ -77,13 +77,15 @@ class TuhiDevice(GObject.Object):
     over Tuhi's DBus interface
     """
 
-    def __init__(self, bluez_device, tuhi_dbus_device, uuid=None, paired=True):
+    def __init__(self, bluez_device, tuhi_dbus_device, config, uuid=None, paired=True):
         GObject.Object.__init__(self)
+        self.config = config
         self._tuhi_dbus_device = tuhi_dbus_device
         self._wacom_device = WacomDevice(bluez_device, uuid)
         self._wacom_device.connect('drawing', self._on_drawing_received)
         self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
         self._wacom_device.connect('button-press-required', self._on_button_press_required)
+        self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
         self.drawings = []
         # We need either uuid or paired as false
         assert uuid is not None or paired is False
@@ -146,6 +148,9 @@ class TuhiDevice(GObject.Object):
 
     def _on_button_press_required(self, device):
         self._tuhi_dbus_device.notify_button_press_required()
+
+    def _on_uuid_updated(self, wacom_device, pspec, bluez_device):
+        self.config.new_device(bluez_device.address, wacom_device.uuid)
 
 
 class Tuhi(GObject.Object):
@@ -213,7 +218,7 @@ class Tuhi(GObject.Object):
 
         logger.debug('{}: uuid {}'.format(bluez_device.address, uuid))
         tuhi_dbus_device = self.server.create_device(bluez_device)
-        d = TuhiDevice(bluez_device, tuhi_dbus_device, uuid=uuid)
+        d = TuhiDevice(bluez_device, tuhi_dbus_device, self.config, uuid=uuid)
         self.devices[bluez_device.address] = d
 
     def _on_bluez_discovery_started(self, manager):
@@ -232,7 +237,7 @@ class Tuhi(GObject.Object):
 
         if Tuhi._is_pairing_device(bluez_device):
             tuhi_dbus_device = self.server.create_device(bluez_device, paired=False)
-            d = TuhiDevice(bluez_device, tuhi_dbus_device, paired=False)
+            d = TuhiDevice(bluez_device, tuhi_dbus_device, self.config, paired=False)
             self.devices[bluez_device.address] = d
             logger.debug('{}: call Pair() on device'.format(bluez_device.objpath))
 

@@ -24,6 +24,10 @@ logger = logging.getLogger('tuhi.config')
 ROOT_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi')
 
 
+def is_btaddr(addr):
+    return re.match('^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$', addr) is not None
+
+
 class TuhiConfig(GObject.Object):
     def __init__(self):
         GObject.Object.__init__(self)
@@ -48,7 +52,7 @@ class TuhiConfig(GObject.Object):
                 if entry.is_file():
                     continue
 
-                if not re.match('^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$', entry.name):
+                if not is_btaddr(entry.name):
                     continue
 
                 path = os.path.join(ROOT_PATH, entry.name, 'settings.ini')
@@ -62,3 +66,31 @@ class TuhiConfig(GObject.Object):
                 assert config['Device']['Address'] == entry.name
                 self._devices[entry.name] = config['Device']
 
+    def new_device(self, address, uuid):
+        assert is_btaddr(address)
+        assert len(uuid) == 12
+
+        logger.debug("{}: adding new config, uuid {}".format(address, uuid))
+        path = os.path.join(ROOT_PATH, address)
+        try:
+            os.mkdir(path)
+        except FileExistsError:
+            pass
+
+        # The ConfigParser default is to write out options as lowercase, but
+        # the ini standard is Capitalized. But it's convenient to have
+        # write-out nice but read-in flexible. So have two different config
+        # parsers for writing and then for handling the reads later
+        path = os.path.join(path, 'settings.ini')
+        config = configparser.ConfigParser()
+        config.optionxform = str
+        config.read(path)
+
+        config['Device']['Address'] = address
+        config['Device']['UUID'] = uuid
+        with open(path, 'w') as configfile:
+            config.write(configfile)
+
+        config = configparser.ConfigParser()
+        config.read(path)
+        self._devices[address] = config['Device']
