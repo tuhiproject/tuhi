@@ -575,7 +575,7 @@ class WacomDevice(GObject.Object):
         except WacomEEAGAINException:
             logger.warning("no data, please make sure the LED is blue and the button is pressed to switch it back to green")
 
-    def register_device_slate(self):
+    def pair_device_slate(self):
         self.register_connection()
         logger.info("Press the button now to confirm")
         data = self.wait_nordic_data([0xe4, 0xb3], 10)
@@ -595,7 +595,7 @@ class WacomDevice(GObject.Object):
         logger.info(f'firmware is {fw_high}-{fw_low}')
         logger.info("pairing completed")
 
-    def register_device_spark(self):
+    def pair_device_spark(self):
         try:
             self.check_connection()
         except WacomWrongModeException:
@@ -620,11 +620,12 @@ class WacomDevice(GObject.Object):
         logger.info(f'firmware is {fw_high}-{fw_low}')
         logger.info("pairing completed")
 
-    def register_device(self):
+    def pair_device(self):
+        logger.debug("{}: pairing device".format(self.device.address))
         if self.is_slate():
-            self.register_device_slate()
+            self.pair_device_slate()
         else:
-            self.register_device_spark()
+            self.pair_device_spark()
 
     def run(self):
         if self._is_running:
@@ -635,7 +636,7 @@ class WacomDevice(GObject.Object):
         self._is_running = True
         try:
             if self._pairing_mode:
-                self.register_device()
+                self.pair_device()
             else:
                 self.retrieve_data()
         finally:
