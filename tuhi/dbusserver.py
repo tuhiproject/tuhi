@@ -232,8 +232,8 @@ class TuhiDBusDevice(GObject.Object):
         self._listening_client = (sender, s)
         logger.debug('Listening started on {} for {}'.format(self.name, sender))
 
-        # FIXME: notify the server to start discovery
-        self.listening = True
+        self._listening = True
+        self.notify('listening')
 
     def _on_name_owner_changed_signal_cb(self, connection, sender, object_path,
                                          interface_name, node,
@@ -252,13 +252,14 @@ class TuhiDBusDevice(GObject.Object):
         self._listening_client = None
         logger.debug('Listening stopped on {} for {}'.format(self.name, sender))
 
-        # FIXME: notify the server to stop discovery
+        self.notify('listening')
 
         status = GLib.Variant.new_int32(0)
         status = GLib.Variant.new_tuple(status)
         connection.emit_signal(sender, self.objpath, INTF_DEVICE,
                                "ListeningStopped", status)
         self.listening = False
+        self.notify('listening')
 
     def _json_data(self, args):
         index = args[0]
