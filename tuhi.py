@@ -234,6 +234,7 @@ class Tuhi(GObject.Object):
             tuhi_dbus_device = self.server.create_device(bluez_device, paired=False)
             d = TuhiDevice(bluez_device, tuhi_dbus_device, paired=False)
             self.devices[bluez_device.address] = d
+            logger.debug('{}: call Pair() on device'.format(bluez_device.objpath))
 
 
 def main(args):
