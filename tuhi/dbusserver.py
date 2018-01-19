@@ -159,7 +159,12 @@ class TuhiDBusDevice(GObject.Object):
 
     def _json_data(self, args):
         index = args[0]
-        return self.drawings[index].json()
+        try:
+            drawing = self.drawings[index]
+        except IndexError:
+            return ''
+        else:
+            return drawing.json()
 
     def add_drawing(self, drawing):
         self.drawings.append(drawing)
