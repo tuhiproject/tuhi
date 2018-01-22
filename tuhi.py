@@ -77,10 +77,9 @@ class TuhiDevice(GObject.Object):
     over Tuhi's DBus interface
     """
 
-    def __init__(self, bluez_device, tuhi_dbus_device, config, uuid=None, paired=True):
+    def __init__(self, bluez_device, config, uuid=None, paired=True):
         GObject.Object.__init__(self)
         self.config = config
-        self._tuhi_dbus_device = tuhi_dbus_device
         self._wacom_device = None
         self.drawings = []
         # We need either uuid or paired as false
@@ -92,6 +91,24 @@ class TuhiDevice(GObject.Object):
         bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
         self._bluez_device = bluez_device
 
+        self._tuhi_dbus_device = None
+
+    @property
+    def name(self):
+        return self._bluez_device.name
+
+    @property
+    def address(self):
+        return self._bluez_device.address
+
+    @property
+    def dbus_device(self):
+        return self._tuhi_dbus_device
+
+    @dbus_device.setter
+    def dbus_device(self, device):
+        assert self._tuhi_dbus_device is None
+        self._tuhi_dbus_device = device
         self._tuhi_dbus_device.connect('pair-requested', self._on_pair_requested)
 
     def connect_device(self):
@@ -235,8 +252,8 @@ class Tuhi(GObject.Object):
 
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
-                tuhi_dbus_device = self.server.create_device(bluez_device, paired=not pairing_device)
-                d = TuhiDevice(bluez_device, tuhi_dbus_device, self.config, uuid=uuid, paired=not pairing_device)
+                d = TuhiDevice(bluez_device, self.config, uuid=uuid, paired=not pairing_device)
+                d.dbus_device = self.server.create_device(d, paired=not pairing_device)
                 self.devices[bluez_device.address] = d
 
         if Tuhi._is_pairing_device(bluez_device):
