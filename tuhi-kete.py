@@ -247,6 +247,7 @@ def print_device(d):
 
 
 def cmd_list(manager, args):
+    logger.debug('Listing available devices:')
     for d in manager.devices:
         print_device(d)
 
@@ -290,6 +291,9 @@ def main(args):
 
     try:
         with TuhiKeteManager() as mgr:
+            if not hasattr(args, 'func'):
+                args.func = cmd_list
+
             args.func(mgr, args)
 
     except DBusError as e:
