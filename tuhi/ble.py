@@ -265,7 +265,7 @@ class BlueZDeviceManager(GObject.Object):
     """
     __gsignals__ = {
         "device-added":
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_BOOLEAN)),
         "device-updated":
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         "discovery-started":
@@ -300,7 +300,7 @@ class BlueZDeviceManager(GObject.Object):
         # object path length and process them in order, this way we're
         # guaranteed that the objects we need already exist.
         for obj in self._om.get_objects():
-            self._process_object(obj)
+            self._process_object(obj, event=False)
 
     def _discovery_timeout_expired(self):
         self.stop_discovery()
@@ -382,7 +382,7 @@ class BlueZDeviceManager(GObject.Object):
         """Callback for ObjectManager's object-added"""
         objpath = obj.get_object_path()
         logger.debug('Object added: {}'.format(objpath))
-        needs_resolve = self._process_object(obj)
+        needs_resolve = self._process_object(obj, event=True)
 
         # we had at least one characteristic added, need to resolve the
         # devices.
@@ -396,13 +396,13 @@ class BlueZDeviceManager(GObject.Object):
         objpath = obj.get_object_path()
         logger.debug('Object removed: {}'.format(objpath))
 
-    def _process_object(self, obj):
+    def _process_object(self, obj, event=True):
         """Process a single DBusProxyObject"""
 
         if obj.get_interface(ORG_BLUEZ_ADAPTER1) is not None:
             self._process_adapter(obj)
         elif obj.get_interface(ORG_BLUEZ_DEVICE1) is not None:
-            self._process_device(obj)
+            self._process_device(obj, event)
         elif obj.get_interface(ORG_BLUEZ_GATTCHARACTERISTIC1) is not None:
             return True
 
@@ -412,11 +412,11 @@ class BlueZDeviceManager(GObject.Object):
         objpath = obj.get_object_path()
         logger.debug('Adapter: {}'.format(objpath))
 
-    def _process_device(self, obj):
+    def _process_device(self, obj, event=True):
         dev = BlueZDevice(self._om, obj)
         self.devices.append(dev)
         dev.connect("updated", self._on_device_updated)
-        self.emit("device-added", dev)
+        self.emit("device-added", dev, event)
 
     def _process_characteristic(self, obj):
         objpath = obj.get_object_path()

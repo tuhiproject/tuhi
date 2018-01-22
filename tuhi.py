@@ -253,18 +253,28 @@ class Tuhi(GObject.Object):
         # restart discovery if some users are already in the listening mode
         self._on_listening_updated(None, None)
 
-    def _on_bluez_device_updated(self, manager, bluez_device):
-        if bluez_device.vendor_id != WACOM_COMPANY_ID:
-            return
-
-        pairing_device = Tuhi._is_pairing_device(bluez_device)
+    def _on_bluez_device_updated(self, manager, bluez_device, event=True):
         uuid = None
 
+        # check if the device is already known by us
+        try:
+            config = self.config.devices[bluez_device.address]
+            uuid = config['uuid']
+        except KeyError:
+            pass
+
+        if uuid is None and bluez_device.vendor_id != WACOM_COMPANY_ID:
+            return
+
+        # if event is set, the device has been 'hotplugged' in the bluez stack
+        # so ManufacturerData is reliable. Else, consider the device not in
+        # the pairing mode
+        pairing_device = False
+        if event:
+            pairing_device = Tuhi._is_pairing_device(bluez_device)
+
         if not pairing_device:
-            try:
-                config = self.config.devices[bluez_device.address]
-                uuid = config['uuid']
-            except KeyError:
+            if uuid is None:
                 logger.info('{}: device without config, must be paired first'.format(bluez_device.address))
                 return
             logger.debug('{}: UUID {}'.format(bluez_device.address, uuid))
