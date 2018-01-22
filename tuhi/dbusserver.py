@@ -253,6 +253,9 @@ class TuhiDBusServer(GObject.Object):
 
         self._is_searching = True
         self.emit("search-start-requested", self._on_search_stop)
+        for d in self._devices:
+            if not d.paired:
+                self._emit_pairable_signal(d)
 
     def _stop_search(self):
         if not self._is_searching:
@@ -286,8 +289,11 @@ class TuhiDBusServer(GObject.Object):
         dev = TuhiDBusDevice(device, self._connection, paired)
         self._devices.append(dev)
         if not paired:
-            arg = GLib.Variant.new_object_path(dev.objpath)
-            self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
-                                         "PairableDevice",
-                                         GLib.Variant.new_tuple(arg))
+            self._emit_pairable_signal(dev)
         return dev
+
+    def _emit_pairable_signal(self, device):
+        arg = GLib.Variant.new_object_path(device.objpath)
+        self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
+                                     "PairableDevice",
+                                     GLib.Variant.new_tuple(arg))
