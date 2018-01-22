@@ -86,14 +86,14 @@ class TuhiDBusDevice(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
-    def __init__(self, device, connection, paired=True):
+    def __init__(self, device, connection):
         GObject.Object.__init__(self)
 
         self.name = device.name
         self.btaddr = device.address
         self.width, self.height = 0, 0
         self.drawings = []
-        self.paired = paired
+        self.paired = device.paired
         objpath = device.address.replace(':', '_')
         self.objpath = "{}/{}".format(BASE_PATH, objpath)
 
@@ -285,10 +285,10 @@ class TuhiDBusServer(GObject.Object):
     def cleanup(self):
         Gio.bus_unown_name(self._dbus)
 
-    def create_device(self, device, paired=True):
-        dev = TuhiDBusDevice(device, self._connection, paired)
+    def create_device(self, device):
+        dev = TuhiDBusDevice(device, self._connection)
         self._devices.append(dev)
-        if not paired:
+        if not device.paired:
             self._emit_pairable_signal(dev)
         return dev
 

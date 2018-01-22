@@ -253,7 +253,7 @@ class Tuhi(GObject.Object):
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
                 d = TuhiDevice(bluez_device, self.config, uuid=uuid, paired=not pairing_device)
-                d.dbus_device = self.server.create_device(d, paired=not pairing_device)
+                d.dbus_device = self.server.create_device(d)
                 self.devices[bluez_device.address] = d
 
         if Tuhi._is_pairing_device(bluez_device):
