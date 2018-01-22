@@ -43,6 +43,7 @@ INTROSPECTION_XML = """
 
   <interface name='org.freedesktop.tuhi1.Device'>
     <property type='s' name='Name' access='read'/>
+    <property type='s' name='Address' access='read'/>
     <property type='uu' name='Dimensions' access='read'/>
     <property type='u' name='DrawingsAvailable' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
