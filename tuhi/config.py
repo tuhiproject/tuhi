@@ -70,7 +70,7 @@ class TuhiConfig(GObject.Object):
         assert is_btaddr(address)
         assert len(uuid) == 12
 
-        logger.debug("{}: adding new config, uuid {}".format(address, uuid))
+        logger.debug("{}: adding new config, UUID {}".format(address, uuid))
         path = os.path.join(ROOT_PATH, address)
         try:
             os.mkdir(path)
