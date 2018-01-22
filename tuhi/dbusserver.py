@@ -99,6 +99,15 @@ class TuhiDBusDevice(GObject.Object):
 
         self._connection = connection
         self._dbusid = self._register_object(connection)
+        device.connect('notify::paired', self._on_device_paired)
+
+    @GObject.Property
+    def paired(self):
+        return self._paired
+
+    @paired.setter
+    def paired(self, paired):
+        self._paired = paired
 
     def remove(self):
         self._connection.unregister_object(self._dbusid)
@@ -152,6 +161,10 @@ class TuhiDBusDevice(GObject.Object):
 
     def _pair(self):
         self.emit('pair-requested')
+
+    def _on_device_paired(self, device, pspec):
+        logger.debug('{}: is paired {}'.format(device, device.paired))
+        self.paired = device.paired
 
     def _listen(self):
         # FIXME: start listen asynchronously
@@ -287,10 +300,33 @@ class TuhiDBusServer(GObject.Object):
 
     def create_device(self, device):
         dev = TuhiDBusDevice(device, self._connection)
+        dev.connect('notify::paired', self._on_device_paired)
         self._devices.append(dev)
         if not device.paired:
             self._emit_pairable_signal(dev)
         return dev
+
+    def _on_device_paired(self, device, param):
+        logger.debug('dbus server {}: is paired {}'.format(device, device.paired))
+        props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
+
+        objpaths = GLib.Variant.new_array(GLib.VariantType('o'),
+                                          [GLib.Variant.new_object_path(d.objpath)
+                                              for d in self._devices if d.paired])
+        de = GLib.Variant.new_dict_entry(GLib.Variant.new_string('Devices'),
+                                         GLib.Variant.new_variant(objpaths))
+        props.add_value(de)
+        props = props.end()
+        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
+        inval_props = inval_props.end()
+
+        self._connection.emit_signal(None, BASE_PATH,
+                                     "org.freedesktop.DBus.Properties",
+                                     "PropertiesChanged",
+                                     GLib.Variant.new_tuple(
+                                         GLib.Variant.new_string(INTF_MANAGER),
+                                         props,
+                                         inval_props))
 
     def _emit_pairable_signal(self, device):
         arg = GLib.Variant.new_object_path(device.objpath)
