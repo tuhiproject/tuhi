@@ -139,6 +139,7 @@ class TuhiKeteManager(_DBusObject):
                              ROOT_PATH)
 
         self._devices = {}
+        self._pairable_devices = {}
         self._searching = False
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
@@ -153,10 +154,26 @@ class TuhiKeteManager(_DBusObject):
         return self._searching
 
     def start_search(self):
+        self._pairable_devices = {}
         self.proxy.StartSearch()
 
     def stop_search(self):
         self.proxy.StopSearch()
+        self._pairable_devices = {}
+
+    def _on_properties_changed(self, proxy, changed_props, invalidated_props):
+        if changed_props is None:
+            return
+
+        changed_props = changed_props.unpack()
+
+        if 'Devices' in changed_props:
+            objpaths = changed_props['Devices']
+            for objpath in objpaths:
+                d = self._pairable_devices[objpath]
+                self._devices[d.address] = d
+                del self._pairable_devices[objpath]
+            self.notify('devices')
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'SearchStopped':
@@ -165,6 +182,7 @@ class TuhiKeteManager(_DBusObject):
         elif signal == 'PairableDevice':
             objpath = parameters[0]
             device = TuhiKeteDevice(self, objpath)
+            self._pairable_devices[objpath] = device
             logger.debug('Found pairable device: {}'.format(device))
             self.emit('pairable-device', device)
 
