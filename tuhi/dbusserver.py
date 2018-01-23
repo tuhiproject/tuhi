@@ -273,6 +273,23 @@ class TuhiDBusDevice(GObject.Object):
     def add_drawing(self, drawing):
         self.drawings.append(drawing)
 
+        props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
+        de = GLib.Variant.new_dict_entry(GLib.Variant.new_string('DrawingsAvailable'),
+                                         GLib.Variant.new_variant(
+                                             GLib.Variant.new_uint32(len(self.drawings))))
+        props.add_value(de)
+        props = props.end()
+        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
+        inval_props = inval_props.end()
+
+        self._connection.emit_signal(None, self.objpath,
+                                     "org.freedesktop.DBus.Properties",
+                                     "PropertiesChanged",
+                                     GLib.Variant.new_tuple(
+                                         GLib.Variant.new_string(INTF_DEVICE),
+                                         props,
+                                         inval_props))
+
     def notify_button_press_required(self):
         logger.debug("Sending ButtonPressRequired signal")
         self._connection.emit_signal(None, self.objpath, INTF_DEVICE,
