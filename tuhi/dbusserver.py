@@ -206,6 +206,8 @@ class TuhiDBusDevice(GObject.Object):
         self.emit('pair-requested')
 
     def _on_device_paired(self, device, pspec):
+        if self.paired == device.paired:
+            return
         self.paired = device.paired
 
     def _start_listening(self, connection, sender):
