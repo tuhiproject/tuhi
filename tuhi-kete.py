@@ -163,6 +163,13 @@ class TuhiKeteManager(_DBusObject):
                              ORG_FREEDESKTOP_TUHI1_MANAGER,
                              ROOT_PATH)
 
+        Gio.bus_watch_name(Gio.BusType.SESSION,
+                           TUHI_DBUS_NAME,
+                           Gio.BusNameWatcherFlags.NONE,
+                           None,
+                           self._on_name_vanished)
+
+        self.mainloop = GObject.MainLoop()
         self._devices = {}
         self._pairable_devices = {}
         self._searching = False
@@ -185,6 +192,16 @@ class TuhiKeteManager(_DBusObject):
     def stop_search(self):
         self.proxy.StopSearch()
         self._pairable_devices = {}
+
+    def run(self):
+        try:
+            self.mainloop.run()
+        except KeyboardInterrupt:
+            print('\r', end='')  # to remove the ^C
+            self.mainloop.quit()
+
+    def quit(self):
+        self.mainloop.quit()
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
         if changed_props is None:
@@ -211,6 +228,10 @@ class TuhiKeteManager(_DBusObject):
             logger.debug('Found pairable device: {}'.format(device))
             self.emit('pairable-device', device)
 
+    def _on_name_vanished(self, connection, name):
+        logger.error('Tuhi daemon went away')
+        self.mainloop.quit()
+
     def __getitem__(self, btaddr):
         return self._devices[btaddr]
 
@@ -225,7 +246,6 @@ class Searcher(GObject.Object):
     def __init__(self, manager, address=None):
         GObject.GObject.__init__(self)
         self.manager = manager
-        self.mainloop = GObject.MainLoop()
         self.address = address
         self.is_pairing = False
 
@@ -234,10 +254,7 @@ class Searcher(GObject.Object):
         self.manager.connect('pairable-device', self._on_pairable_device)
         self.manager.start_search()
         logger.debug('Started searching')
-        try:
-            self.mainloop.run()
-        except KeyboardInterrupt:
-            self.manager.stop_search()
+        self.manager.run()
 
         if self.manager.searching:
             logger.debug('Stopping search')
@@ -246,7 +263,7 @@ class Searcher(GObject.Object):
     def _on_notify_search(self, manager, pspec):
         logger.info('Search timeout')
         if not self.is_pairing:
-            self.mainloop.quit()
+            self.manager.quit()
 
     def _on_pairable_device(self, manager, device):
         print('Pairable device: {}'.format(device))
@@ -272,6 +289,7 @@ class Listener(GObject.Object):
         GObject.GObject.__init__(self)
         self.mainloop = GObject.MainLoop()
 
+        self.manager = manager
         self.device = None
         for d in manager.devices:
             if d.address == address:
@@ -297,16 +315,13 @@ class Listener(GObject.Object):
         self.device.connect('notify::drawings-available', self._on_drawings_available)
         self.device.start_listening()
 
-        try:
-            self.mainloop.run()
-        except KeyboardInterrupt:
-            print('\r', end='')  # to remove the ^C
-            logger.debug("{}: stopping listening".format(self.device))
-            self.device.stop_listening()
+        self.manager.run()
+        logger.debug("{}: stopping listening".format(self.device))
+        self.device.stop_listening()
 
     def _on_device_listening(self, device, pspec):
         logger.info('{}: Listening stopped, exiting'.format(device))
-        self.mainloop.quit()
+        self.manager.quit()
 
     def _on_drawings_available(self, device, pspec):
         logger.info('{}: drawings available: {}'.format(device, device.drawings_available))
