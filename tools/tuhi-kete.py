@@ -24,9 +24,13 @@ import threading
 import time
 import svgwrite
 
-logging.basicConfig(format='%(levelname)s: %(message)s',
-                    level=logging.INFO)
+
+log_format = '%(levelname)s: %(message)s'
+logger_handler = logging.StreamHandler()
+logger_handler.setFormatter(logging.Formatter(log_format))
 logger = logging.getLogger('tuhi-kete')
+logger.addHandler(logger_handler)
+logger.setLevel(logging.INFO)
 
 TUHI_DBUS_NAME = 'org.freedesktop.tuhi1'
 ORG_FREEDESKTOP_TUHI1_MANAGER = 'org.freedesktop.tuhi1.Manager'
@@ -490,6 +494,24 @@ class Printer(Worker):
             print(d)
 
 
+class TuhiKeteShellLogHandler(logging.StreamHandler):
+    def __init__(self):
+        super(TuhiKeteShellLogHandler, self).__init__(sys.stdout)
+        self.setFormatter(logging.Formatter(log_format))
+
+    def set_normal_mode(self):
+        self.acquire()
+        self.setFormatter(logging.Formatter(log_format))
+        self.terminator = '\n'
+        self.release()
+
+    def set_prompt_mode(self, prompt):
+        self.acquire()
+        self.setFormatter(logging.Formatter('\r{}'.format(log_format)))
+        self.terminator = '\n{}'.format(prompt)
+        self.release()
+
+
 class TuhiKeteShell(cmd.Cmd):
     intro = 'Tuhi shell control'
     prompt = 'tuhi> '
@@ -498,6 +520,9 @@ class TuhiKeteShell(cmd.Cmd):
         super(TuhiKeteShell, self).__init__(completekey, stdin, stdout)
         self._manager = manager
         self._workers = []
+        self._log_handler = TuhiKeteShellLogHandler()
+        logger.removeHandler(logger_handler)
+        logger.addHandler(self._log_handler)
 
     def emptyline(self):
         # make sure we do not re-enter the last typed command
@@ -513,6 +538,17 @@ class TuhiKeteShell(cmd.Cmd):
         for worker in self._workers:
             worker.stop()
         return True
+
+    def precmd(self, line):
+        # Restore the logger facility to something sane:
+        self._log_handler.set_normal_mode()
+        return line
+
+    def postcmd(self, stop, line):
+        # overwrite the logger facility to remove the current prompt and append
+        # a new one
+        self._log_handler.set_prompt_mode(self.prompt)
+        return stop
 
     def run(self, init=None):
         try:
