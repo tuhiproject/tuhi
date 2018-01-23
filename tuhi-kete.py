@@ -190,8 +190,13 @@ class TuhiKeteManager(_DBusObject):
     def searching(self):
         return self._searching
 
+    @searching.setter
+    def searching(self, value):
+        self._searching = value
+
     def start_search(self):
         self._pairable_devices = {}
+        self.searching = True
         self.proxy.StartSearch()
 
     def stop_search(self):
@@ -266,9 +271,10 @@ class Searcher(GObject.Object):
             self.manager.stop_search()
 
     def _on_notify_search(self, manager, pspec):
-        logger.info('Search timeout')
-        if not self.is_pairing:
-            self.manager.quit()
+        if not manager.searching:
+            logger.info('Search timeout')
+            if not self.is_pairing:
+                self.manager.quit()
 
     def _on_pairable_device(self, manager, device):
         print('Pairable device: {}'.format(device))
