@@ -102,6 +102,10 @@ class TuhiKeteDevice(_DBusObject):
     def name(self):
         return self.property('Name')
 
+    @GObject.Property
+    def listening(self):
+        return self.property('Listening')
+
     def pair(self):
         logger.debug('{}: Pairing'.format(self))
         # FIXME: Pair() doesn't return anything useful yet, so we wait until
@@ -110,9 +114,17 @@ class TuhiKeteDevice(_DBusObject):
         self.is_pairing = True
         self.proxy.Pair()
 
+    def start_listening(self):
+        self.proxy.StartListening()
+
+    def stop_listening(self):
+        self.proxy.StopListening()
+
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'ButtonPressRequired':
             print("{}: Press button on device now".format(self))
+        elif signal == 'ListeningStopped':
+            self.notify('listening')
 
     def __repr__(self):
         return '{} - {}'.format(self.address, self.name)
@@ -242,6 +254,44 @@ class Searcher(GObject.Object):
             device.pair()
 
 
+class Listener(GObject.Object):
+    def __init__(self, manager, address):
+        GObject.GObject.__init__(self)
+        self.mainloop = GObject.MainLoop()
+
+        self.device = None
+        for d in manager.devices:
+            if d.address == address:
+                self.device = d
+                break
+        else:
+            logger.error("{}: device not found".format(address))
+            return
+
+    def run(self):
+        if self.device is None:
+            return
+
+        if self.device.listening:
+            logger.info("{}: device already listening".format(self.device))
+            return
+
+        logger.debug("{}: starting listening".format(self.device))
+        self.device.connect('notify::listening', self._on_device_listening)
+        self.device.start_listening()
+
+        try:
+            self.mainloop.run()
+        except KeyboardInterrupt:
+            print('\r', end='')  # to remove the ^C
+            logger.debug("{}: stopping listening".format(self.device))
+            self.device.stop_listening()
+
+    def _on_device_listening(self, device, pspec):
+        logger.info('{}: Listening stopped, exiting'.format(device))
+        self.mainloop.quit()
+
+
 def print_device(d):
     print('{}: {}'.format(d.address, d.name))
 
@@ -254,6 +304,10 @@ def cmd_list(manager, args):
 
 def cmd_pair(manager, args):
     Searcher(manager, args.address).run()
+
+
+def cmd_listen(manager, args):
+    Listener(manager, args.address).run()
 
 
 def parse_list(parser):
@@ -269,6 +323,14 @@ def parse_pair(parser):
     sub.set_defaults(func=cmd_pair)
 
 
+def parse_listen(parser):
+    sub = parser.add_parser('listen', help='listen to events from a device')
+    sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
+                     default=None,
+                     help='the address of the device to listen to')
+    sub.set_defaults(func=cmd_listen)
+
+
 def parse(args):
     desc = 'Commandline client to the Tuhi DBus daemon'
     parser = argparse.ArgumentParser(description=desc)
@@ -280,6 +342,7 @@ def parse(args):
     subparser = parser.add_subparsers(help='Available commands')
     parse_list(subparser)
     parse_pair(subparser)
+    parse_listen(subparser)
 
     return parser.parse_args(args[1:])
 
