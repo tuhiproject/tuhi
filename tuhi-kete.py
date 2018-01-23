@@ -155,6 +155,7 @@ class TuhiKeteDevice(_DBusObject):
             if d.address == self.address:
                 self.is_pairing = False
                 print('{}: Pairing successful'.format(self))
+                self.manager.quit()
 
 
 class TuhiKeteManager(_DBusObject):
