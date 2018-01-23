@@ -14,8 +14,10 @@
 from gi.repository import GObject, Gio, GLib
 import sys
 import argparse
+import json
 import logging
 import select
+import time
 
 logging.basicConfig(format='%(levelname)s: %(message)s',
                     level=logging.INFO)
@@ -123,6 +125,9 @@ class TuhiKeteDevice(_DBusObject):
 
     def stop_listening(self):
         self.proxy.StopListening()
+
+    def json(self, index):
+        return self.proxy.GetJSONData('(u)', index)
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'ButtonPressRequired':
@@ -327,6 +332,48 @@ class Listener(GObject.Object):
         logger.info('{}: drawings available: {}'.format(device, device.drawings_available))
 
 
+class Fetcher(GObject.Object):
+    def __init__(self, manager, address, index):
+        GObject.GObject.__init__(self)
+        self.mainloop = GObject.MainLoop()
+        self.manager = manager
+        self.device = None
+        self.indices = None
+
+        for d in manager.devices:
+            if d.address == address:
+                self.device = d
+                break
+        else:
+            logger.error("{}: device not found".format(address))
+            return
+
+        ndrawings = self.device.drawings_available
+        if index != 'all':
+            try:
+                self.indices = [int(index)]
+                if index >= ndrawings:
+                    raise ValueError()
+            except ValueError:
+                logger.error("Invalid index {}".format(index))
+                return
+        else:
+            self.indices = list(range(ndrawings))
+
+    def run(self):
+        if self.device is None or self.indices is None:
+            return
+
+        for idx in self.indices:
+            jsondata = self.device.json(idx)
+            data = json.loads(jsondata)
+            timestamp = time.gmtime(int(data['timestamp']))
+            logger.info("{}: drawing made on {}, {} strokes".format(
+                data['devicename'],
+                time.strftime('%Y-%m-%d %H:%M', timestamp),
+                len(data['strokes'])))
+
+
 def print_device(d):
     print('{}: {}'.format(d.address, d.name))
 
@@ -343,6 +390,10 @@ def cmd_pair(manager, args):
 
 def cmd_listen(manager, args):
     Listener(manager, args.address).run()
+
+
+def cmd_fetch(manager, args):
+    Fetcher(manager, args.address, args.index).run()
 
 
 def parse_list(parser):
@@ -366,6 +417,17 @@ def parse_listen(parser):
     sub.set_defaults(func=cmd_listen)
 
 
+def parse_fetch(parser):
+    sub = parser.add_parser('fetch', help='download a drawing from a device')
+    sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
+                     default=None,
+                     help='the address of the device to fetch from')
+    sub.add_argument('index', metavar='[<index>|all]', type=str,
+                     default=None,
+                     help='the index of the drawing to fetch or a literal "all"')
+    sub.set_defaults(func=cmd_fetch)
+
+
 def parse(args):
     desc = 'Commandline client to the Tuhi DBus daemon'
     parser = argparse.ArgumentParser(description=desc)
@@ -378,6 +440,7 @@ def parse(args):
     parse_list(subparser)
     parse_pair(subparser)
     parse_listen(subparser)
+    parse_fetch(subparser)
 
     return parser.parse_args(args[1:])
 
