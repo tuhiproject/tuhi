@@ -310,7 +310,6 @@ class Searcher(GObject.Object):
 class Listener(GObject.Object):
     def __init__(self, manager, address):
         GObject.GObject.__init__(self)
-        self.mainloop = GObject.MainLoop()
 
         self.manager = manager
         self.device = None
@@ -363,7 +362,6 @@ class Listener(GObject.Object):
 class Fetcher(GObject.Object):
     def __init__(self, manager, address, index):
         GObject.GObject.__init__(self)
-        self.mainloop = GObject.MainLoop()
         self.manager = manager
         self.device = None
         self.indices = None
