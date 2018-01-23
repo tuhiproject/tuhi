@@ -223,9 +223,14 @@ class TuhiKeteManager(_DBusObject):
         if 'Devices' in changed_props:
             objpaths = changed_props['Devices']
             for objpath in objpaths:
-                d = self._pairable_devices[objpath]
-                self._devices[d.address] = d
-                del self._pairable_devices[objpath]
+                try:
+                    d = self._pairable_devices[objpath]
+                    self._devices[d.address] = d
+                    del self._pairable_devices[objpath]
+                except KeyError:
+                    # if we called Pair() on an existing device it's not in
+                    # pairable devices
+                    pass
             self.notify('devices')
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
@@ -265,6 +270,10 @@ class Searcher(GObject.Object):
         self.manager.connect('pairable-device', self._on_pairable_device)
         self.manager.start_search()
         logger.debug('Started searching')
+
+        for d in self.manager.devices:
+            self._on_pairable_device(self.manager, d)
+
         self.manager.run()
 
         if self.manager.searching:
