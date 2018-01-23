@@ -368,7 +368,7 @@ class WacomDevice(GObject.Object):
                                              expected_opcode=0xcf)
         # logger.debug(f'cc returned {data} ')
         count = int.from_bytes(data[0:4], byteorder='little')
-        str_timestamp = ''.join([hex(d)[2:] for d in data[4:]])
+        str_timestamp = ''.join(['{:02x}'.format(d) for d in data[4:]])
         timestamp = time.strptime(str_timestamp, "%y%m%d%H%M%S")
         return count, timestamp
 
@@ -383,7 +383,7 @@ class WacomDevice(GObject.Object):
             data = self.wait_nordic_data(0xcd, 5)
             # logger.debug(f'cc returned {data} ')
 
-        str_timestamp = ''.join([hex(d)[2:] for d in data])
+        str_timestamp = ''.join(['{:02x}'.format(d) for d in data])
         timestamp = time.strptime(str_timestamp, "%y%m%d%H%M%S")
         return count, timestamp
 
