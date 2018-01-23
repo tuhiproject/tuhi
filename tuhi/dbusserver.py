@@ -163,7 +163,6 @@ class TuhiDBusDevice(GObject.Object):
         self.emit('pair-requested')
 
     def _on_device_paired(self, device, pspec):
-        logger.debug('{}: is paired {}'.format(device, device.paired))
         self.paired = device.paired
 
     def _listen(self):
@@ -187,6 +186,9 @@ class TuhiDBusDevice(GObject.Object):
         logger.debug("Sending ButtonPressRequired signal")
         self._connection.emit_signal(None, self.objpath, INTF_DEVICE,
                                      "ButtonPressRequired", None)
+
+    def __repr__(self):
+        return "{} - {}".format(self.objpath, self.name)
 
 
 class TuhiDBusServer(GObject.Object):
@@ -307,7 +309,6 @@ class TuhiDBusServer(GObject.Object):
         return dev
 
     def _on_device_paired(self, device, param):
-        logger.debug('dbus server {}: is paired {}'.format(device, device.paired))
         props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
 
         objpaths = GLib.Variant.new_array(GLib.VariantType('o'),
