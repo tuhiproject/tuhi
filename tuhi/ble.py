@@ -209,7 +209,13 @@ class BlueZDevice(GObject.Object):
         i.Connect(result_handler=self._on_connect_result)
 
     def _on_connect_result(self, obj, result, user_data):
-        if isinstance(result, Exception):
+        if (isinstance(result, GLib.Error) and
+                result.domain == 'g-io-error-quark' and
+                result.code == Gio.IOErrorEnum.DBUS_ERROR and
+                Gio.dbus_error_get_remote_error(result) == 'org.bluez.Error.Failed' and
+                'Operation already in progress' in result.message):
+                    logger.debug('{}: Already connecting'.format(self.address))
+        elif isinstance(result, Exception):
             logger.error('Connection failed: {}'.format(result))
 
     def disconnect_device(self):
