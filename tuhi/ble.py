@@ -120,7 +120,10 @@ class BlueZDevice(GObject.Object):
 
     @property
     def name(self):
-        return self.interface.get_cached_property('Name').unpack()
+        try:
+            return self.interface.get_cached_property('Name').unpack()
+        except AttributeError:
+            return 'UNKNOWN'
 
     @property
     def address(self):
