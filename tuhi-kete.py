@@ -106,6 +106,10 @@ class TuhiKeteDevice(_DBusObject):
     def listening(self):
         return self.property('Listening')
 
+    @GObject.Property
+    def drawings_available(self):
+        return self.property('DrawingsAvailable')
+
     def pair(self):
         logger.debug('{}: Pairing'.format(self))
         # FIXME: Pair() doesn't return anything useful yet, so we wait until
@@ -125,6 +129,15 @@ class TuhiKeteDevice(_DBusObject):
             print("{}: Press button on device now".format(self))
         elif signal == 'ListeningStopped':
             self.notify('listening')
+
+    def _on_properties_changed(self, proxy, changed_props, invalidated_props):
+        if changed_props is None:
+            return
+
+        changed_props = changed_props.unpack()
+
+        if 'DrawingsAvailable' in changed_props:
+            self.notify('drawings-available')
 
     def __repr__(self):
         return '{} - {}'.format(self.address, self.name)
@@ -272,12 +285,16 @@ class Listener(GObject.Object):
         if self.device is None:
             return
 
+        if self.device.drawings_available > 0:
+            logger.info('{}: drawings available: {}'.format(self.device, self.device.drawings_available))
+
         if self.device.listening:
             logger.info("{}: device already listening".format(self.device))
             return
 
         logger.debug("{}: starting listening".format(self.device))
         self.device.connect('notify::listening', self._on_device_listening)
+        self.device.connect('notify::drawings-available', self._on_drawings_available)
         self.device.start_listening()
 
         try:
@@ -290,6 +307,9 @@ class Listener(GObject.Object):
     def _on_device_listening(self, device, pspec):
         logger.info('{}: Listening stopped, exiting'.format(device))
         self.mainloop.quit()
+
+    def _on_drawings_available(self, device, pspec):
+        logger.info('{}: drawings available: {}'.format(device, device.drawings_available))
 
 
 def print_device(d):
