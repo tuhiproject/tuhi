@@ -1,0 +1,106 @@
+{
+    "id": "org.freedesktop.tuhi",
+    "command": "/app/bin/tuhi",
+    "runtime": "org.freedesktop.Platform",
+    "sdk": "org.freedesktop.Sdk",
+    "runtime-version": "1.6",
+    "cleanup": [ "/cache",
+                 "/include",
+                 "/lib/pkgconfig",
+                 "/man",
+                 "/share/aclocal",
+                 "/share/devhelp",
+                 "/share/gir-1.0",
+                 "/share/gtk-doc",
+                 "/share/man",
+                 "/share/pkgconfig",
+                 "/share/vala",
+                 "/lib/systemd",
+                 "*.la", "*.a" ],
+    "build-options" : {
+        "cflags": "-O2 -g",
+        "cxxflags": "-O2 -g"
+    },
+    "finish-args": [
+        "--system-talk-name=org.bluez",
+        "--own-name=org.freedesktop.tuhi1"
+    ],
+    "modules": [
+        {
+            "name": "cpython",
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz",
+                    "sha256": "159b932bf56aeaa76fd66e7420522d8c8853d486b8567c459b84fe2ed13bcaba"
+                }
+            ]
+        },
+        {
+            "name": "pycairo",
+            "build-options" : {
+                "env": {
+                    "PYTHON": "/app/bin/python3"
+                }
+            },
+            "buildsystem": "simple",
+            "build-commands": [
+                "python3 ./setup.py build",
+                "python3 ./setup.py install"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/pygobject/pycairo/releases/download/v1.14.1/pycairo-1.14.1.tar.gz",
+                    "sha256": "0d13a0a6eeaf0c357db04392943eb9b25767445608d31dde1307f003f68c5754"
+                }
+            ]
+        },
+        {
+            "name": "pygobject",
+            "config-opts": ["--enable-compile-warnings=minimum"],
+            "build-options" : {
+                "env": {
+                    "PYTHON": "/app/bin/python3"
+                }
+            },
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/pygobject.git"
+                }
+            ]
+        },
+        {
+            "name": "pyxdg",
+            "buildsystem": "simple",
+            "build-options" : {
+                "env": {
+                    "PYTHON": "/app/bin/python3"
+                }
+            },
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "git://anongit.freedesktop.org/xdg/pyxdg"
+                }
+            ],
+            "build-commands": [
+                "python3 setup.py install --verbose"
+            ]
+        },
+        {
+            "name": "tuhi",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "git",
+                    "path": "."
+                }
+            ],
+            "build-commands": [
+                "python3 setup.py install --verbose"
+            ]
+        }
+    ]
+}
