@@ -431,7 +431,6 @@ class TuhiDBusServer(_TuhiDBus):
 
         connection.signal_unsubscribe(self._searching_client[1])
         self.is_searching = False
-        self._searching_client = None
         self.emit("search-stop-requested")
 
     def _on_search_stop(self, status):
