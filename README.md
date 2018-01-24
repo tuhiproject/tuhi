@@ -16,6 +16,16 @@ Devices tested and known to be supported:
 * Bamboo Spark
 * Bamboo Slate
 
+Installation
+------------
+
+```
+ $> git clone http://github.com/tuhiproject/tuhi
+ $> cd tuhi
+ $> python3 setup.py install
+ $> tuhi
+```
+
 Units used by this interface
 ----------------------------
 
