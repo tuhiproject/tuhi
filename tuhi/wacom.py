@@ -137,7 +137,7 @@ class WacomDevice(GObject.Object):
         self.height = WACOM_SLATE_HEIGHT
         self.name = device.name
         self._uuid = uuid
-
+        self.fw_logger = logging.getLogger('tuhi.fw')
         self._is_running = False
 
         device.connect_gatt_value(WACOM_CHRC_LIVE_PEN_DATA_UUID,
@@ -198,17 +198,17 @@ class WacomDevice(GObject.Object):
                 data = data[6:]
 
     def _on_pen_data_received(self, name, data):
-        logger.debug(f"received pen data: {data}")
+        self.fw_logger.debug(f"RX Pen    <-- {list2hex(data)}")
         self.pen_data_buffer.extend(data)
 
     def _on_nordic_data_received(self, name, value):
-        logger.debug(f"received nordic data: {value}")
+        self.fw_logger.debug(f"RX Nordic <-- {list2hex(value)}")
         self.nordic_answer = value
 
     def send_nordic_command(self, command, arguments):
         chrc = self.device.characteristics[NORDIC_UART_CHRC_TX_UUID]
         data = [command, len(arguments), *arguments]
-        logger.debug(f'sending  {command:02x} / {len(arguments):02x} / {list2hex(arguments)}')
+        self.fw_logger.debug(f'TX Nordic --> {command:02x} / {len(arguments):02x} / {list2hex(arguments)}')
         chrc.write_value(data)
 
     def check_nordic_incoming(self):
