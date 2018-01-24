@@ -88,7 +88,15 @@ INTF_MANAGER = 'org.freedesktop.tuhi1.Manager'
 INTF_DEVICE = 'org.freedesktop.tuhi1.Device'
 
 
-class TuhiDBusDevice(GObject.Object):
+class _TuhiDBus(GObject.Object):
+    def __init__(self, connection, objpath, interface):
+        GObject.Object.__init__(self)
+        self.connection = connection
+        self.objpath = objpath
+        self.interface = interface
+
+
+class TuhiDBusDevice(_TuhiDBus):
     """
     Class representing a DBus object for a Tuhi device. This class only
     handles the DBus bits, communication with the device is done elsewhere.
@@ -99,7 +107,9 @@ class TuhiDBusDevice(GObject.Object):
     }
 
     def __init__(self, device, connection):
-        GObject.Object.__init__(self)
+        objpath = device.address.replace(':', '_')
+        objpath = "{}/{}".format(BASE_PATH, objpath)
+        _TuhiDBus.__init__(self, connection, objpath, INTF_DEVICE)
 
         self.name = device.name
         self.btaddr = device.address
@@ -108,10 +118,6 @@ class TuhiDBusDevice(GObject.Object):
         self.paired = device.paired
         self._listening = False
         self._listening_client = None
-        objpath = device.address.replace(':', '_')
-        self.objpath = "{}/{}".format(BASE_PATH, objpath)
-
-        self._connection = connection
         self._dbusid = self._register_object(connection)
         device.connect('notify::paired', self._on_device_paired)
 
@@ -135,13 +141,13 @@ class TuhiDBusDevice(GObject.Object):
         inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
         inval_props = inval_props.end()
 
-        self._connection.emit_signal(None, self.objpath,
-                                     "org.freedesktop.DBus.Properties",
-                                     "PropertiesChanged",
-                                     GLib.Variant.new_tuple(
-                                         GLib.Variant.new_string(INTF_DEVICE),
-                                         props,
-                                         inval_props))
+        self.connection.emit_signal(None, self.objpath,
+                                    "org.freedesktop.DBus.Properties",
+                                    "PropertiesChanged",
+                                    GLib.Variant.new_tuple(
+                                        GLib.Variant.new_string(self.interface),
+                                        props,
+                                        inval_props))
 
     @GObject.Property
     def paired(self):
@@ -152,12 +158,12 @@ class TuhiDBusDevice(GObject.Object):
         self._paired = paired
 
     def remove(self):
-        self._connection.unregister_object(self._dbusid)
+        self.connection.unregister_object(self._dbusid)
         self._dbusid = None
 
     def _register_object(self, connection):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
-        intf = introspection.lookup_interface(INTF_DEVICE)
+        intf = introspection.lookup_interface(self.interface)
         return connection.register_object(self.objpath,
                                           intf,
                                           self._method_cb,
@@ -165,7 +171,7 @@ class TuhiDBusDevice(GObject.Object):
                                           self._property_write_cb)
 
     def _method_cb(self, connection, sender, objpath, interface, methodname, args, invocation):
-        if interface != INTF_DEVICE:
+        if interface != self.interface:
             return None
 
         if methodname == 'Pair':
@@ -223,7 +229,7 @@ class TuhiDBusDevice(GObject.Object):
             if sender != self._listening_client[0]:
                 status = GLib.Variant.new_int32(-errno.EAGAIN)
                 status = GLib.Variant.new_tuple(status)
-                connection.emit_signal(sender, self.objpath, INTF_DEVICE,
+                connection.emit_signal(sender, self.objpath, self.interface,
                                        "ListeningStopped", status)
             return
 
@@ -262,7 +268,7 @@ class TuhiDBusDevice(GObject.Object):
 
         status = GLib.Variant.new_int32(0)
         status = GLib.Variant.new_tuple(status)
-        connection.emit_signal(sender, self.objpath, INTF_DEVICE,
+        connection.emit_signal(sender, self.objpath, self.interface,
                                "ListeningStopped", status)
         self.listening = False
         self.notify('listening')
@@ -288,24 +294,24 @@ class TuhiDBusDevice(GObject.Object):
         inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
         inval_props = inval_props.end()
 
-        self._connection.emit_signal(None, self.objpath,
-                                     "org.freedesktop.DBus.Properties",
-                                     "PropertiesChanged",
-                                     GLib.Variant.new_tuple(
-                                         GLib.Variant.new_string(INTF_DEVICE),
-                                         props,
-                                         inval_props))
+        self.connection.emit_signal(None, self.objpath,
+                                    "org.freedesktop.DBus.Properties",
+                                    "PropertiesChanged",
+                                    GLib.Variant.new_tuple(
+                                        GLib.Variant.new_string(self.interface),
+                                        props,
+                                        inval_props))
 
     def notify_button_press_required(self):
         logger.debug("Sending ButtonPressRequired signal")
-        self._connection.emit_signal(None, self.objpath, INTF_DEVICE,
-                                     "ButtonPressRequired", None)
+        self.connection.emit_signal(None, self.objpath, self.interface,
+                                    "ButtonPressRequired", None)
 
     def __repr__(self):
         return "{} - {}".format(self.objpath, self.name)
 
 
-class TuhiDBusServer(GObject.Object):
+class TuhiDBusServer(_TuhiDBus):
     """
     Class for the DBus server.
     """
@@ -324,7 +330,7 @@ class TuhiDBusServer(GObject.Object):
     }
 
     def __init__(self):
-        GObject.Object.__init__(self)
+        _TuhiDBus.__init__(self, None, BASE_PATH, INTF_MANAGER)
         self._devices = []
         self._pairable_devices = {}
         self._dbus = Gio.bus_own_name(Gio.BusType.SESSION,
@@ -356,25 +362,24 @@ class TuhiDBusServer(GObject.Object):
         inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
         inval_props = inval_props.end()
 
-        self._connection.emit_signal(None, self.objpath,
-                                     "org.freedesktop.DBus.Properties",
-                                     "PropertiesChanged",
-                                     GLib.Variant.new_tuple(
-                                         GLib.Variant.new_string(INTF_MANAGER),
-                                         props,
-                                         inval_props))
+        self.connection.emit_signal(None, self.objpath,
+                                    "org.freedesktop.DBus.Properties",
+                                    "PropertiesChanged",
+                                    GLib.Variant.new_tuple(
+                                        GLib.Variant.new_string(self.interface),
+                                        props,
+                                        inval_props))
 
     def _bus_aquired(self, connection, name):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
-        intf = introspection.lookup_interface(INTF_MANAGER)
-        self.objpath = BASE_PATH
+        intf = introspection.lookup_interface(self.interface)
+        self.connection = connection
         Gio.DBusConnection.register_object(connection,
                                            self.objpath,
                                            intf,
                                            self._method_cb,
                                            self._property_read_cb,
                                            self._property_write_cb)
-        self._connection = connection
 
     def _bus_name_aquired(self, connection, name):
         logger.debug('Bus name aquired')
@@ -384,7 +389,7 @@ class TuhiDBusServer(GObject.Object):
         pass
 
     def _method_cb(self, connection, sender, objpath, interface, methodname, args, invocation):
-        if interface != INTF_MANAGER:
+        if interface != self.interface:
             return None
 
         if methodname == 'StartSearch':
@@ -395,7 +400,7 @@ class TuhiDBusServer(GObject.Object):
             invocation.return_value()
 
     def _property_read_cb(self, connection, sender, objpath, interface, propname):
-        if interface != INTF_MANAGER:
+        if interface != self.interface:
             return None
 
         if propname == 'Devices':
@@ -417,7 +422,7 @@ class TuhiDBusServer(GObject.Object):
             if sender != self._searching_client[0]:
                 status = GLib.Variant.new_int32(-errno.EAGAIN)
                 status = GLib.Variant.new_tuple(status)
-                connection.emit_signal(sender, self.objpath, INTF_MANAGER,
+                connection.emit_signal(sender, self.objpath, self.interface,
                                        "SearchStopped", status)
             return
 
@@ -464,9 +469,9 @@ class TuhiDBusServer(GObject.Object):
         self.is_searching = False
         status = GLib.Variant.new_int32(status)
         status = GLib.Variant.new_tuple(status)
-        self._connection.emit_signal(self._searching_client[0],
-                                     self.object_path, INTF_MANAGER,
-                                     "SearchStopped", status)
+        self.connection.emit_signal(self._searching_client[0],
+                                    self.object_path, self.interface,
+                                    "SearchStopped", status)
         self._searching_client = None
 
         for dev in self._devices:
@@ -480,7 +485,7 @@ class TuhiDBusServer(GObject.Object):
         Gio.bus_unown_name(self._dbus)
 
     def create_device(self, device):
-        dev = TuhiDBusDevice(device, self._connection)
+        dev = TuhiDBusDevice(device, self.connection)
         dev.connect('notify::paired', self._on_device_paired)
         self._devices.append(dev)
         if not device.paired:
@@ -500,17 +505,17 @@ class TuhiDBusServer(GObject.Object):
         inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
         inval_props = inval_props.end()
 
-        self._connection.emit_signal(None, self.objpath,
-                                     "org.freedesktop.DBus.Properties",
-                                     "PropertiesChanged",
-                                     GLib.Variant.new_tuple(
-                                         GLib.Variant.new_string(INTF_MANAGER),
-                                         props,
-                                         inval_props))
+        self.connection.emit_signal(None, self.objpath,
+                                    "org.freedesktop.DBus.Properties",
+                                    "PropertiesChanged",
+                                    GLib.Variant.new_tuple(
+                                        GLib.Variant.new_string(self.interface),
+                                        props,
+                                        inval_props))
 
     def _emit_pairable_signal(self, device):
         arg = GLib.Variant.new_object_path(device.objpath)
-        self._connection.emit_signal(self._searching_client[0],
-                                     self.objpath, INTF_MANAGER,
-                                     "PairableDevice",
-                                     GLib.Variant.new_tuple(arg))
+        self.connection.emit_signal(self._searching_client[0],
+                                    self.objpath, self.interface,
+                                    "PairableDevice",
+                                    GLib.Variant.new_tuple(arg))
