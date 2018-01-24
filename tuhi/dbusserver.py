@@ -367,14 +367,14 @@ class TuhiDBusServer(GObject.Object):
     def _bus_aquired(self, connection, name):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
         intf = introspection.lookup_interface(INTF_MANAGER)
+        self.objpath = BASE_PATH
         Gio.DBusConnection.register_object(connection,
-                                           BASE_PATH,
+                                           self.objpath,
                                            intf,
                                            self._method_cb,
                                            self._property_read_cb,
                                            self._property_write_cb)
         self._connection = connection
-        self.objpath = BASE_PATH
 
     def _bus_name_aquired(self, connection, name):
         logger.debug('Bus name aquired')
@@ -465,7 +465,7 @@ class TuhiDBusServer(GObject.Object):
         status = GLib.Variant.new_int32(status)
         status = GLib.Variant.new_tuple(status)
         self._connection.emit_signal(self._searching_client[0],
-                                     BASE_PATH, INTF_MANAGER,
+                                     self.object_path, INTF_MANAGER,
                                      "SearchStopped", status)
         self._searching_client = None
 
@@ -500,7 +500,7 @@ class TuhiDBusServer(GObject.Object):
         inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
         inval_props = inval_props.end()
 
-        self._connection.emit_signal(None, BASE_PATH,
+        self._connection.emit_signal(None, self.objpath,
                                      "org.freedesktop.DBus.Properties",
                                      "PropertiesChanged",
                                      GLib.Variant.new_tuple(
@@ -511,6 +511,6 @@ class TuhiDBusServer(GObject.Object):
     def _emit_pairable_signal(self, device):
         arg = GLib.Variant.new_object_path(device.objpath)
         self._connection.emit_signal(self._searching_client[0],
-                                     BASE_PATH, INTF_MANAGER,
+                                     self.objpath, INTF_MANAGER,
                                      "PairableDevice",
                                      GLib.Variant.new_tuple(arg))
