@@ -58,7 +58,7 @@ class _DBusObject(GObject.Object):
                 raise e
 
         if self.proxy.get_name_owner() is None:
-            raise DBusError('{} is not owned'.format(name))
+            raise DBusError('No-one is handling {}, is the daemon running?'.format(name))
 
         self.proxy.connect('g-properties-changed', self._on_properties_changed)
         self.proxy.connect('g-signal', self._on_signal_received)
