@@ -13,6 +13,9 @@
 
 from gi.repository import GObject
 import json
+import logging
+
+logger = logging.getLogger('tuhi.drawing')
 
 
 class Point(GObject.Object):
@@ -73,6 +76,8 @@ class Drawing(GObject.Object):
     Abstracts a drawing. The drawing is composed Strokes, each of which has
     Points.
     """
+    JSON_FILE_FORMAT_VERSION = 1
+
     def __init__(self, name, dimensions, timestamp):
         GObject.Object.__init__(self)
         self.name = name
@@ -97,13 +102,41 @@ class Drawing(GObject.Object):
         return l
 
     def to_json(self):
-        JSON_FILE_FORMAT_VERSION = 1
-
         json_data = {
-            'version': JSON_FILE_FORMAT_VERSION,
+            'version': self.JSON_FILE_FORMAT_VERSION,
             'devicename': self.name,
             'dimensions': list(self.dimensions),
             'timestamp': self.timestamp,
             'strokes': [s.to_dict() for s in self.strokes]
         }
         return json.dumps(json_data)
+
+    @classmethod
+    def from_json(cls, path):
+        d = None
+        with open(path, 'r') as fp:
+            json_data = json.load(fp)
+
+            try:
+                if json_data['version'] != cls.JSON_FILE_FORMAT_VERSION:
+                    logger.error(f'{path}: Invalid file format version')
+                    return d
+
+                name = json_data['devicename']
+                dimensions = tuple(json_data['dimensions'])
+                timestamp = json_data['timestamp']
+                d = Drawing(name, dimensions, timestamp)
+
+                for s in json_data['strokes']:
+                    stroke = d.new_stroke()
+                    for p in s['points']:
+                        position = p.get('position', None)
+                        pressure = p.get('pressure', None)
+                        stroke.new_abs(position, pressure)
+            except KeyError:
+                logger.error(f'{path}: failed to parse json file')
+
+        return d
+
+    def __repr__(self):
+        return f'Drawing from {self.name} at {self.timestamp}, {len(self.strokes)} strokes'

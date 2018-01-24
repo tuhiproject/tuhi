@@ -18,6 +18,7 @@ import os
 import configparser
 import re
 import logging
+from .drawing import Drawing
 
 logger = logging.getLogger('tuhi.config')
 
@@ -97,3 +98,38 @@ class TuhiConfig(GObject.Object):
         config = configparser.ConfigParser()
         config.read(path)
         self._devices[address] = config['Device']
+
+    def store_drawing(self, address, drawing):
+        assert is_btaddr(address)
+        assert drawing is not None
+
+        if address not in self.devices:
+            logger.error("{}: cannot store drawings for unknown device".format(address))
+            return
+
+        logger.debug("{}: adding new drawing, timestamp {}".format(address, drawing.timestamp))
+        path = os.path.join(ROOT_PATH, address, "{}.json".format(drawing.timestamp))
+
+        with open(path, "w") as f:
+            f.write(drawing.to_json())
+
+    def load_drawings(self, address):
+        assert is_btaddr(address)
+
+        drawings = []
+        if address not in self.devices:
+            return drawings
+
+        configdir = os.path.join(ROOT_PATH, address)
+        with os.scandir(configdir) as it:
+            for entry in it:
+                if not entry.is_file():
+                    continue
+
+                if not entry.name.endswith('.json'):
+                    continue
+
+                d = Drawing.from_json(entry)
+                drawings.append(d)
+
+        return drawings

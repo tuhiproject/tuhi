@@ -159,6 +159,8 @@ org.freedesktop.tuhi1.Device
       or we run out of memory, whichever happens earlier.
       Use GetJSONData() to retrieve the data from the daemon.
 
+      DO NOT RELY ON THE DAEMON FOR PERMANENT STORAGE
+
       When drawings become available from the device, the DrawingsAvailable
       property updates to the number of available drawings.
       When the button is pressed multiple times, any new data is appended

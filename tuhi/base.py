@@ -45,7 +45,6 @@ class TuhiDevice(GObject.Object):
         GObject.Object.__init__(self)
         self.config = config
         self._wacom_device = None
-        self.drawings = []
         # We need either uuid or paired as false
         assert uuid is not None or paired is False
         self.paired = paired
@@ -84,6 +83,12 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device.connect('pair-requested', self._on_pair_requested)
         self._tuhi_dbus_device.connect('notify::listening', self._on_listening_updated)
 
+        drawings = self.config.load_drawings(self.address)
+        if drawings:
+            logger.debug(f'{self.address}: loaded {len(drawings)} drawings from disk')
+        for d in drawings:
+            self._tuhi_dbus_device.add_drawing(d)
+
     @GObject.Property
     def listening(self):
         return self._tuhi_dbus_device.listening
@@ -115,6 +120,7 @@ class TuhiDevice(GObject.Object):
     def _on_drawing_received(self, device, drawing):
         logger.debug('Drawing received')
         self._tuhi_dbus_device.add_drawing(drawing)
+        self.config.store_drawing(self.address, drawing)
 
     def _on_fetching_finished(self, device, exception, bluez_device):
         bluez_device.disconnect_device()
