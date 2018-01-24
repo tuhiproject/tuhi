@@ -117,6 +117,11 @@ class _TuhiDBus(GObject.Object):
                                         properties,
                                         inval_props))
 
+    def signal(self, name, arg=None, dest=None):
+        if arg is not None:
+            arg = GLib.Variant.new_tuple(arg)
+        self.connection.emit_signal(dest, self.objpath, self.interface, name, arg)
+
 
 class TuhiDBusDevice(_TuhiDBus):
     """
@@ -234,9 +239,7 @@ class TuhiDBusDevice(_TuhiDBus):
             # other clients
             if sender != self._listening_client[0]:
                 status = GLib.Variant.new_int32(-errno.EAGAIN)
-                status = GLib.Variant.new_tuple(status)
-                connection.emit_signal(sender, self.objpath, self.interface,
-                                       "ListeningStopped", status)
+                self.signal('ListeningStopped', status, dest=sender)
             return
 
         s = connection.signal_subscribe(sender='org.freedesktop.DBus',
@@ -273,9 +276,7 @@ class TuhiDBusDevice(_TuhiDBus):
         self.notify('listening')
 
         status = GLib.Variant.new_int32(0)
-        status = GLib.Variant.new_tuple(status)
-        connection.emit_signal(sender, self.objpath, self.interface,
-                               "ListeningStopped", status)
+        self.signal('ListeningStopped', status, dest=sender)
         self.listening = False
         self.notify('listening')
 
@@ -295,8 +296,7 @@ class TuhiDBusDevice(_TuhiDBus):
 
     def notify_button_press_required(self):
         logger.debug("Sending ButtonPressRequired signal")
-        self.connection.emit_signal(None, self.objpath, self.interface,
-                                    "ButtonPressRequired", None)
+        self.signal('ButtonPressRequired')
 
     def __repr__(self):
         return "{} - {}".format(self.objpath, self.name)
@@ -396,9 +396,7 @@ class TuhiDBusServer(_TuhiDBus):
             # other clients
             if sender != self._searching_client[0]:
                 status = GLib.Variant.new_int32(-errno.EAGAIN)
-                status = GLib.Variant.new_tuple(status)
-                connection.emit_signal(sender, self.objpath, self.interface,
-                                       "SearchStopped", status)
+                self.signal('SearchStopped', status)
             return
 
         self.is_searching = True
@@ -443,10 +441,7 @@ class TuhiDBusServer(_TuhiDBus):
         logger.debug("Search has stopped")
         self.is_searching = False
         status = GLib.Variant.new_int32(status)
-        status = GLib.Variant.new_tuple(status)
-        self.connection.emit_signal(self._searching_client[0],
-                                    self.object_path, self.interface,
-                                    "SearchStopped", status)
+        self.signal("SearchStopped", status, dest=self._searching_client[0])
         self._searching_client = None
 
         for dev in self._devices:
@@ -475,7 +470,4 @@ class TuhiDBusServer(_TuhiDBus):
 
     def _emit_pairable_signal(self, device):
         arg = GLib.Variant.new_object_path(device.objpath)
-        self.connection.emit_signal(self._searching_client[0],
-                                    self.objpath, self.interface,
-                                    "PairableDevice",
-                                    GLib.Variant.new_tuple(arg))
+        self.signal('PairableDevice', arg, dest=self._searching_client[0])
