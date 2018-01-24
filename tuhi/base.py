@@ -203,6 +203,7 @@ class Tuhi(GObject.Object):
         GObject.Object.__init__(self)
         self.server = TuhiDBusServer()
         self.server.connect('bus-name-acquired', self._on_tuhi_bus_name_acquired)
+        self.server.connect('bus-name-lost', self._on_tuhi_bus_name_lost)
         self.server.connect('search-start-requested', self._on_start_search_requested)
         self.server.connect('search-stop-requested', self._on_stop_search_requested)
         self.bluez = BlueZDeviceManager()
@@ -216,9 +217,13 @@ class Tuhi(GObject.Object):
         self.devices = {}
 
         self._search_stop_handler = None
+        self.mainloop = GObject.MainLoop()
 
     def _on_tuhi_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()
+
+    def _on_tuhi_bus_name_lost(self, dbus_server):
+        self.mainloop.quit()
 
     def _on_start_search_requested(self, dbus_server, stop_handler):
         self._search_stop_handler = stop_handler
@@ -306,6 +311,9 @@ class Tuhi(GObject.Object):
         else:
             self.bluez.stop_discovery()
 
+    def run(self):
+        self.mainloop.run()
+
 
 def main(args=sys.argv):
     desc = "Daemon to extract the pen stroke data from Wacom SmartPad devices"
@@ -319,9 +327,8 @@ def main(args=sys.argv):
     if ns.verbose:
         logger.setLevel(logging.DEBUG)
 
-    Tuhi()
     try:
-        GObject.MainLoop().run()
+        Tuhi().run()
     except KeyboardInterrupt:
         pass
     finally:

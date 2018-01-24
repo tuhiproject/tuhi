@@ -309,6 +309,8 @@ class TuhiDBusServer(_TuhiDBus):
     __gsignals__ = {
         "bus-name-acquired":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "bus-name-lost":
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
 
         # Signal arguments:
         #    search_stop_handler(status)
@@ -361,7 +363,8 @@ class TuhiDBusServer(_TuhiDBus):
         self.emit('bus-name-acquired')
 
     def _bus_name_lost(self, connection, name):
-        pass
+        logger.error('Bus not available, is there another Tuhi process running?')
+        self.emit('bus-name-lost')
 
     def _method_cb(self, connection, sender, objpath, interface, methodname, args, invocation):
         if interface != self.interface:
