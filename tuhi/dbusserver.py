@@ -147,6 +147,7 @@ class TuhiDBusDevice(_TuhiDBus):
         self._listening_client = None
         self._dbusid = self._register_object(connection)
         device.connect('notify::paired', self._on_device_paired)
+        device.connect('device-error', self._on_device_error)
 
     @GObject.Property
     def listening(self):
@@ -231,6 +232,12 @@ class TuhiDBusDevice(_TuhiDBus):
             return
         self.paired = device.paired
 
+    def _on_device_error(self, device, exception):
+        logger.info('An error occured while synching the device')
+        if self.listening:
+            self._stop_listening(self.connection, self._listening_client[0],
+                                 -exception.errno)
+
     def _start_listening(self, connection, sender):
         if self.listening:
             logger.debug("{} - already listening".format(self))
@@ -265,7 +272,7 @@ class TuhiDBusDevice(_TuhiDBus):
 
         self._stop_listening(connection, user_data)
 
-    def _stop_listening(self, connection, sender):
+    def _stop_listening(self, connection, sender, errno=0):
         if not self.listening or sender != self._listening_client[0]:
             return
 
@@ -275,7 +282,7 @@ class TuhiDBusDevice(_TuhiDBus):
 
         self.notify('listening')
 
-        status = GLib.Variant.new_int32(0)
+        status = GLib.Variant.new_int32(errno)
         self.signal('ListeningStopped', status, dest=sender)
         self.listening = False
         self.notify('listening')

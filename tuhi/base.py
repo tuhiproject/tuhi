@@ -76,6 +76,12 @@ class TuhiDevice(GObject.Object):
     real device) with the frontend DBusServer object that exports the device
     over Tuhi's DBus interface
     """
+    __gsignals__ = {
+        # Signal sent when an error occurs on the device itself.
+        # Argument is a Wacom*Exception
+        'device-error':
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+    }
 
     def __init__(self, bluez_device, config, uuid=None, paired=True):
         GObject.Object.__init__(self)
@@ -177,8 +183,11 @@ class TuhiDevice(GObject.Object):
 
         self._tuhi_dbus_device.add_drawing(d)
 
-    def _on_fetching_finished(self, device, bluez_device):
+    def _on_fetching_finished(self, device, exception, bluez_device):
         bluez_device.disconnect_device()
+        if exception is not None:
+            logger.info(exception)
+            self.emit('device-error', exception)
 
     def _on_button_press_required(self, device):
         self._tuhi_dbus_device.notify_button_press_required()

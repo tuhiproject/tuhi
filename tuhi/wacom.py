@@ -17,6 +17,7 @@ import logging
 import threading
 import time
 import uuid
+import errno
 from gi.repository import GObject
 
 logger = logging.getLogger('tuhi.wacom')
@@ -86,27 +87,27 @@ class Drawing(list):
 
 
 class WacomException(Exception):
-    pass
+    errno = errno.ENOSYS
 
 
 class WacomEEAGAINException(WacomException):
-    pass
+    errno = errno.EAGAIN
 
 
 class WacomWrongModeException(WacomException):
-    pass
+    errno = errno.EBADE
 
 
 class WacomNotPairedException(WacomException):
-    pass
+    errno = errno.EACCES
 
 
 class WacomTimeoutException(WacomException):
-    pass
+    errno = errno.ETIME
 
 
 class WacomCorruptDataException(WacomException):
-    pass
+    errno = errno.EPROTO
 
 
 class WacomDevice(GObject.Object):
@@ -121,7 +122,7 @@ class WacomDevice(GObject.Object):
         "drawing":
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         "done":
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
         "button-press-required":
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
@@ -643,15 +644,19 @@ class WacomDevice(GObject.Object):
 
         logger.debug('{}: starting'.format(self.device.address))
         self._is_running = True
+        exception = None
         try:
             if self._pairing_mode:
                 self.pair_device()
             else:
                 self.retrieve_data()
+        except WacomException as e:
+            logger.error(f'**** Exception: {e} ****')
+            exception = e
         finally:
             self._pairing_mode = False
             self._is_running = False
-            self.emit("done")
+            self.emit("done", exception)
 
     def start(self, pairing_mode):
         self._pairing_mode = pairing_mode

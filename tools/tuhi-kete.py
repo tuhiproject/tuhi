@@ -14,6 +14,7 @@
 from gi.repository import GObject, Gio, GLib
 import sys
 import argparse
+import os
 import json
 import logging
 import select
@@ -133,6 +134,9 @@ class TuhiKeteDevice(_DBusObject):
         if signal == 'ButtonPressRequired':
             print("{}: Press button on device now".format(self))
         elif signal == 'ListeningStopped':
+            err = parameters[0]
+            if err < 0:
+                print("{}: an error occured: {}".format(self, os.strerror(err)))
             self.notify('listening')
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):

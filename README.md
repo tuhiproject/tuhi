@@ -227,6 +227,22 @@ org.freedesktop.tuhi1.Device
       on behalf of another client. In this case, this client should wait for
       the Listening property to change and StartListening() once the
       property is set to False.
+
+      If the error is -EBADE, the device is not in pairing/listening mode
+      and pairing/listening was requested. In this case, the client should
+      indicate to the user that the device needs to be paired first or
+      switched to listening mode.
+
+      If the error is -EACCES, the device is not paired with the daemon or
+      incorrectly paired. This may happen when the device was paired with
+      another host since the last connection.
+
+      The following other errnos may be sent by the daemon:
+      -EPROTO: the daemon has encountered a protocol error with the device.
+      -ETIME: timeout while communicating with the device.
+
+      These errnos indicate a bug in the daemon, and the client should
+      display a message to that effect.
 ```
 
 JSON File Format
