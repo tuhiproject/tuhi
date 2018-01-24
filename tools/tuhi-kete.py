@@ -335,7 +335,13 @@ class Listener(GObject.Object):
 
         self.manager.run()
         logger.debug("{}: stopping listening".format(self.device))
-        self.device.stop_listening()
+        try:
+            self.device.stop_listening()
+        except GLib.Error as e:
+            if (e.domain != 'g-dbus-error-quark' or
+                    e.code != Gio.IOErrorEnum.EXISTS or
+                    Gio.dbus_error_get_remote_error(e) != 'org.freedesktop.DBus.Error.ServiceUnknown'):
+                raise e
 
     def _on_device_listening(self, device, pspec):
         logger.info('{}: Listening stopped, exiting'.format(device))
