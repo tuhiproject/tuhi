@@ -178,7 +178,6 @@ class TuhiKeteManager(_DBusObject):
         self.mainloop = GObject.MainLoop()
         self._devices = {}
         self._pairable_devices = {}
-        self._searching = False
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
             self._devices[device.address] = device
@@ -189,15 +188,10 @@ class TuhiKeteManager(_DBusObject):
 
     @GObject.Property
     def searching(self):
-        return self._searching
-
-    @searching.setter
-    def searching(self, value):
-        self._searching = value
+        return self.proxy.get_cached_property('Searching')
 
     def start_search(self):
         self._pairable_devices = {}
-        self.searching = True
         self.proxy.StartSearch()
 
     def stop_search(self):
@@ -235,7 +229,6 @@ class TuhiKeteManager(_DBusObject):
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'SearchStopped':
-            self._searching = False
             self.notify('searching')
         elif signal == 'PairableDevice':
             objpath = parameters[0]
@@ -266,6 +259,10 @@ class Searcher(GObject.Object):
         self.is_pairing = False
 
     def run(self):
+        if self.manager.searching:
+            logger.error('Another client is already searching')
+            return
+
         self.manager.connect('notify::searching', self._on_notify_search)
         self.manager.connect('pairable-device', self._on_pairable_device)
         self.manager.start_search()
@@ -282,7 +279,7 @@ class Searcher(GObject.Object):
 
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
-            logger.info('Search timeout')
+            logger.info('Search cancelled')
             if not self.is_pairing:
                 self.manager.quit()
 
