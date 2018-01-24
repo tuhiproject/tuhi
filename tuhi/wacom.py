@@ -19,6 +19,7 @@ import time
 import uuid
 import errno
 from gi.repository import GObject
+from .drawing import Drawing
 
 logger = logging.getLogger('tuhi.wacom')
 
@@ -63,27 +64,6 @@ class NordicData(list):
         super().__init__(bs[2:])
         self.opcode = bs[0]
         self.length = bs[1]
-
-
-class Stroke(object):
-    RELATIVE = 1
-    ABSOLUTE = 2
-
-    def __init__(self):
-        self.points = []
-
-    def add_pos(self, x, y, p=None):
-        self.points.append((Stroke.ABSOLUTE, x, y, p))
-
-    def add_rel(self, x, y, p=None):
-        self.points.append((Stroke.RELATIVE, x, y, p))
-
-
-class Drawing(list):
-    def __init__(self, size, timestamp):
-        super().__init__()
-        self.timestamp = timestamp
-        self.size = size
 
 
 class WacomException(Exception):
@@ -491,15 +471,14 @@ class WacomDevice(GObject.Object):
             bitmask, opcode, raw_args, args, offset = self.next_pen_data(data, offset)
             if opcode == 0x3800:
                 logger.info(f'beginning of sequence')
-                drawing = Drawing((self.width, self.height), timestamp)
+                drawing = Drawing(self.name, (self.width, self.height), timestamp)
                 drawings.append(drawing)
                 continue
             elif opcode == 0xeeff:
                 # some sort of headers
                 time_offset = int.from_bytes(raw_args[4:], byteorder='little')
                 logger.info(f'time offset since boot: {time_offset * 0.005} secs')
-                stroke = Stroke()
-                drawing.append(stroke)
+                stroke = drawing.new_stroke()
                 continue
             if bytes(args) == b'\xff\xff\xff\xff\xff\xff\xff\xff':
                 logger.info(f'end of sequence')
@@ -510,8 +489,7 @@ class WacomDevice(GObject.Object):
                 continue
 
             if stroke is None:
-                stroke = Stroke()
-                drawing.append(stroke)
+                stroke = drawing.new_stroke()
 
             x, dx, xrel = self.get_coordinate(bitmask, 0, args, x, dx)
             y, dy, yrel = self.get_coordinate(bitmask, 1, args, y, dy)
@@ -526,9 +504,9 @@ class WacomDevice(GObject.Object):
             if bitmask & 0b00111100 == 0:
                 continue
             if xrel or yrel or prel:
-                stroke.add_rel(dx, dy, dp)
+                stroke.new_rel((dx, dy), dp)
             else:
-                stroke.add_pos(x, y, p)
+                stroke.new_abs((x, y), p)
 
         return drawings
 
