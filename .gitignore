@@ -1,3 +1,5 @@
+.flatpak*
+flatpak*
 tuhi.egg-info
 __pycache__
 *.swp
