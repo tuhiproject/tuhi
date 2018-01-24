@@ -95,6 +95,28 @@ class _TuhiDBus(GObject.Object):
         self.objpath = objpath
         self.interface = interface
 
+    def properties_changed(self, props, dest=None):
+        """
+        Send a PropertiesChanged signal to the given destination (if any).
+        The props argument is a { name: value } dictionary of the
+        property values, the values are GVariant.bool, etc.
+        """
+        builder = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
+        for name, value in props.items():
+            de = GLib.Variant.new_dict_entry(GLib.Variant.new_string(name),
+                                             GLib.Variant.new_variant(value))
+            builder.add_value(de)
+        properties = builder.end()
+        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
+        inval_props = inval_props.end()
+        self.connection.emit_signal(dest, self.objpath,
+                                    "org.freedesktop.DBus.Properties",
+                                    "PropertiesChanged",
+                                    GLib.Variant.new_tuple(
+                                        GLib.Variant.new_string(self.interface),
+                                        properties,
+                                        inval_props))
+
 
 class TuhiDBusDevice(_TuhiDBus):
     """
@@ -131,23 +153,7 @@ class TuhiDBusDevice(_TuhiDBus):
             return
 
         self._listening = value
-
-        props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
-        de = GLib.Variant.new_dict_entry(GLib.Variant.new_string('Listening'),
-                                         GLib.Variant.new_variant(
-                                             GLib.Variant.new_boolean(value)))
-        props.add_value(de)
-        props = props.end()
-        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
-        inval_props = inval_props.end()
-
-        self.connection.emit_signal(None, self.objpath,
-                                    "org.freedesktop.DBus.Properties",
-                                    "PropertiesChanged",
-                                    GLib.Variant.new_tuple(
-                                        GLib.Variant.new_string(self.interface),
-                                        props,
-                                        inval_props))
+        self.properties_changed({'Listening': GLib.Variant.new_boolean(value)})
 
     @GObject.Property
     def paired(self):
@@ -284,23 +290,8 @@ class TuhiDBusDevice(_TuhiDBus):
 
     def add_drawing(self, drawing):
         self.drawings.append(drawing)
-
-        props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
-        de = GLib.Variant.new_dict_entry(GLib.Variant.new_string('DrawingsAvailable'),
-                                         GLib.Variant.new_variant(
-                                             GLib.Variant.new_uint32(len(self.drawings))))
-        props.add_value(de)
-        props = props.end()
-        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
-        inval_props = inval_props.end()
-
-        self.connection.emit_signal(None, self.objpath,
-                                    "org.freedesktop.DBus.Properties",
-                                    "PropertiesChanged",
-                                    GLib.Variant.new_tuple(
-                                        GLib.Variant.new_string(self.interface),
-                                        props,
-                                        inval_props))
+        self.properties_changed({'DrawingsAvailable':
+                                 GLib.Variant.new_uint32(len(self.drawings))})
 
     def notify_button_press_required(self):
         logger.debug("Sending ButtonPressRequired signal")
@@ -352,23 +343,7 @@ class TuhiDBusServer(_TuhiDBus):
             return
 
         self._is_searching = value
-
-        props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
-        de = GLib.Variant.new_dict_entry(GLib.Variant.new_string('Searching'),
-                                         GLib.Variant.new_variant(
-                                             GLib.Variant.new_boolean(value)))
-        props.add_value(de)
-        props = props.end()
-        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
-        inval_props = inval_props.end()
-
-        self.connection.emit_signal(None, self.objpath,
-                                    "org.freedesktop.DBus.Properties",
-                                    "PropertiesChanged",
-                                    GLib.Variant.new_tuple(
-                                        GLib.Variant.new_string(self.interface),
-                                        props,
-                                        inval_props))
+        self.properties_changed({'Searching': GLib.Variant.new_boolean(value)})
 
     def _bus_aquired(self, connection, name):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
@@ -493,25 +468,10 @@ class TuhiDBusServer(_TuhiDBus):
         return dev
 
     def _on_device_paired(self, device, param):
-        props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
-
         objpaths = GLib.Variant.new_array(GLib.VariantType('o'),
                                           [GLib.Variant.new_object_path(d.objpath)
                                               for d in self._devices if d.paired])
-        de = GLib.Variant.new_dict_entry(GLib.Variant.new_string('Devices'),
-                                         GLib.Variant.new_variant(objpaths))
-        props.add_value(de)
-        props = props.end()
-        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
-        inval_props = inval_props.end()
-
-        self.connection.emit_signal(None, self.objpath,
-                                    "org.freedesktop.DBus.Properties",
-                                    "PropertiesChanged",
-                                    GLib.Variant.new_tuple(
-                                        GLib.Variant.new_string(self.interface),
-                                        props,
-                                        inval_props))
+        self.properties_changed({'Devices': objpaths})
 
     def _emit_pairable_signal(self, device):
         arg = GLib.Variant.new_object_path(device.objpath)
