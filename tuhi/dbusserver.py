@@ -25,6 +25,10 @@ INTROSPECTION_XML = """
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
 
+    <property type='ao' name='Searching' access='read'>
+      <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
+    </property>
+
     <method name='StartSearch'>
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
     </method>
@@ -332,6 +336,34 @@ class TuhiDBusServer(GObject.Object):
         self._is_searching = False
         self._searching_client = None
 
+    @GObject.Property
+    def is_searching(self):
+        return self._is_searching
+
+    @is_searching.setter
+    def is_searching(self, value):
+        if self._is_searching == value:
+            return
+
+        self._is_searching = value
+
+        props = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
+        de = GLib.Variant.new_dict_entry(GLib.Variant.new_string('Searching'),
+                                         GLib.Variant.new_variant(
+                                             GLib.Variant.new_boolean(value)))
+        props.add_value(de)
+        props = props.end()
+        inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
+        inval_props = inval_props.end()
+
+        self._connection.emit_signal(None, self.objpath,
+                                     "org.freedesktop.DBus.Properties",
+                                     "PropertiesChanged",
+                                     GLib.Variant.new_tuple(
+                                         GLib.Variant.new_string(INTF_MANAGER),
+                                         props,
+                                         inval_props))
+
     def _bus_aquired(self, connection, name):
         introspection = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
         intf = introspection.lookup_interface(INTF_MANAGER)
@@ -342,6 +374,7 @@ class TuhiDBusServer(GObject.Object):
                                            self._property_read_cb,
                                            self._property_write_cb)
         self._connection = connection
+        self.objpath = BASE_PATH
 
     def _bus_name_aquired(self, connection, name):
         logger.debug('Bus name aquired')
@@ -367,6 +400,8 @@ class TuhiDBusServer(GObject.Object):
 
         if propname == 'Devices':
             return GLib.Variant.new_objv([d.objpath for d in self._devices if d.paired])
+        elif propname == 'Searching':
+            return GLib.Variant.new_boolean(self.is_searching)
 
         return None
 
@@ -374,11 +409,19 @@ class TuhiDBusServer(GObject.Object):
         pass
 
     def _start_search(self, connection, sender):
-        # FIXME: need to handle multiple clients here
-        if self._is_searching:
+        if self.is_searching:
+            logger.debug("Already searching")
+
+            # silently ignore it for the current client but send EAGAIN to
+            # other clients
+            if sender != self._searching_client[0]:
+                status = GLib.Variant.new_int32(-errno.EAGAIN)
+                status = GLib.Variant.new_tuple(status)
+                connection.emit_signal(sender, self.objpath, INTF_MANAGER,
+                                       "SearchStopped", status)
             return
 
-        self._is_searching = True
+        self.is_searching = True
 
         s = connection.signal_subscribe(sender='org.freedesktop.DBus',
                                         interface_name='org.freedesktop.DBus',
@@ -405,12 +448,12 @@ class TuhiDBusServer(GObject.Object):
         self._stop_search(connection, user_data)
 
     def _stop_search(self, connection, sender):
-        # FIXME: need to handle multiple clients here
-        if not self._is_searching or sender != self._searching_client[0]:
+        if not self.is_searching or sender != self._searching_client[0]:
             return
 
         connection.signal_unsubscribe(self._searching_client[1])
-        self._is_searching = False
+        self.is_searching = False
+        self._searching_client = None
         self.emit("search-stop-requested")
 
     def _on_search_stop(self, status):
@@ -418,10 +461,11 @@ class TuhiDBusServer(GObject.Object):
         Called by whoever handles the search-start-requested signal
         """
         logger.debug("Search has stopped")
-        self._is_searching = False
+        self.is_searching = False
         status = GLib.Variant.new_int32(status)
         status = GLib.Variant.new_tuple(status)
-        self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
+        self._connection.emit_signal(self._searching_client[0],
+                                     BASE_PATH, INTF_MANAGER,
                                      "SearchStopped", status)
         self._searching_client = None
 
@@ -466,6 +510,7 @@ class TuhiDBusServer(GObject.Object):
 
     def _emit_pairable_signal(self, device):
         arg = GLib.Variant.new_object_path(device.objpath)
-        self._connection.emit_signal(None, BASE_PATH, INTF_MANAGER,
+        self._connection.emit_signal(self._searching_client[0],
+                                     BASE_PATH, INTF_MANAGER,
                                      "PairableDevice",
                                      GLib.Variant.new_tuple(arg))

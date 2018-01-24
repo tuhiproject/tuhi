@@ -52,10 +52,27 @@ org.freedesktop.tuhi1.Manager
       initialization is independent of the Bluetooth pairing process. A Tuhi
       paired device may or may not be paired over Bluetooth.
 
+  Property: Searching (b)
+      Indicates whether the daemon is currently searching for pairable devices.
+
+      This property is set to True when a StartSearching() request initiates
+      the search for device connections. When the StartSearching() request
+      completes upon timeout, or when StopSearching() is called, the property
+      is set to False.
+
+      When a pariable device is found, the PairableDevice signal is sent to
+      the caller that initiated the search process.
+
+      Read-only
+
   Method: StartSearch() -> ()
       Start searching for available devices in pairing mode for an
       unspecified timeout. When the timeout expires or an error occurs, a
       SearchStopped signal is sent indicating success or error.
+
+      If a client that successfully initated a listening process calls
+      StartSearching() again, that call is ignored and no signal is
+      generated for that call.
 
   Method: StopSearch() -> ()
       Stop listening to available devices in pairing mode. If called after
@@ -72,7 +89,8 @@ org.freedesktop.tuhi1.Manager
   Signal: PairableDevice(o)
       Indicates that a device is available for pairing. This signal may be
       sent after a StartSearch() call and before SearchStopped(). This
-      signal is sent once per available device.
+      signal is sent once per available device and only to the client that
+      initiated the search process with StartSearch.
 
       When this signal is sent, a org.freedesktop.tuhi1.Device object was
       created, the object path is the argument to this signal.
@@ -89,6 +107,11 @@ org.freedesktop.tuhi1.Manager
       Sent when the search has stopped. An argument of 0 indicates a
       successful termination of the search process, either when a device
       has been paired or the timeout expired.
+
+      If the errno is -EAGAIN, the daemon is already searching for devices
+      on behalf of another client. In this case, this client should wait for
+      the Searching property to change and StartSearching() once the
+      property is set to False.
 
       Once this signal has been sent, all devices announced through
       PairableDevice signals should be considered invalidated. Attempting to
