@@ -59,14 +59,14 @@ org.freedesktop.tuhi1.Manager
 
   Method: StopSearch() -> ()
       Stop listening to available devices in pairing mode. If called after
-      StartSearch() and before a Searchtopped signal has been received,
+      StartSearch() and before a SearchStopped signal has been received,
       this method triggers the SearchStopped signal. That signal indicates
       success or an error.
 
-      If this method is called before StartPairing() or after the
-      PairingStopped signal, it is ignored and no signal is generated.
+      If this method is called before StartSearch() or after the
+      SearchStopped signal, it is ignored and no signal is generated.
 
-      Note that between callling StopPairing() and the PairingStopped signal
+      Note that between calling StopSearch() and the SearchStopped signal
       arriving, PairableDevice signals may still arrive.
 
   Signal: PairableDevice(o)
@@ -81,18 +81,18 @@ org.freedesktop.tuhi1.Manager
       that object is desired. See the documentation for that interface
       for details.
 
-      When the search timeout expires, the device is removed by the daemon
-      again. Note that until the device is paired, the device is not listed
-      in the managers Devices property.
+      When the search timeout expires, the device may be removed by the
+      daemon again. Note that until the device is paired, the device is not
+      listed in the managers Devices property.
 
-  Signal: PairingStopped(i)
-      Sent when the pairing has stopped. An argument of 0 indicates a
-      successful termination of the pairing process, either when a device
+  Signal: SearchStopped(i)
+      Sent when the search has stopped. An argument of 0 indicates a
+      successful termination of the search process, either when a device
       has been paired or the timeout expired.
 
       Once this signal has been sent, all devices announced through
       PairableDevice signals should be considered invalidated. Attempting to
-      Pair() one of the devices after the PairingStopped() signal may result
+      Pair() one of the devices after the SearchStopped() signal may result
       in an error.
 
       In case of error, the argument is a negative errno.
