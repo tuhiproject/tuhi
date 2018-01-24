@@ -325,8 +325,8 @@ class Listener(GObject.Object):
         if self.device is None:
             return
 
-        if self.device.drawings_available > 0:
-            logger.info('{}: drawings available: {}'.format(self.device, self.device.drawings_available))
+        if self.device.drawings_available:
+            self._log_drawings_available(self.device)
 
         if self.device.listening:
             logger.info("{}: device already listening".format(self.device))
@@ -352,7 +352,11 @@ class Listener(GObject.Object):
         self.manager.quit()
 
     def _on_drawings_available(self, device, pspec):
-        logger.info('{}: drawings available: {}'.format(device, device.drawings_available))
+        self._log_drawings_available(device)
+
+    def _log_drawings_available(self, device):
+        s = ", ".join(["{}".format(t) for t in device.drawings_available])
+        logger.info('{}: drawings available: {}'.format(device, s))
 
 
 class Fetcher(GObject.Object):
@@ -371,17 +375,17 @@ class Fetcher(GObject.Object):
             logger.error("{}: device not found".format(address))
             return
 
-        ndrawings = self.device.drawings_available
         if index != 'all':
             try:
-                self.indices = [int(index)]
-                if index >= ndrawings:
+                index = int(index)
+                if index not in self.device.drawings_available:
                     raise ValueError()
+                self.indices = [index]
             except ValueError:
                 logger.error("Invalid index {}".format(index))
                 return
         else:
-            self.indices = list(range(ndrawings))
+            self.indices = self.device.drawings_available
 
     def run(self):
         if self.device is None or self.indices is None:

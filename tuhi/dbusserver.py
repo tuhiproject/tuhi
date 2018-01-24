@@ -53,7 +53,7 @@ INTROSPECTION_XML = """
     <property type='b' name='Listening' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
-    <property type='u' name='DrawingsAvailable' access='read'>
+    <property type='at' name='DrawingsAvailable' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
 
@@ -141,7 +141,7 @@ class TuhiDBusDevice(_TuhiDBus):
         self.name = device.name
         self.btaddr = device.address
         self.width, self.height = 0, 0
-        self.drawings = []
+        self.drawings = {}
         self.paired = device.paired
         self._listening = False
         self._listening_client = None
@@ -215,7 +215,10 @@ class TuhiDBusDevice(_TuhiDBus):
             h = GLib.Variant.new_uint32(self.height)
             return GLib.Variant.new_tuple(w, h)
         elif propname == 'DrawingsAvailable':
-            return GLib.Variant.new_uint32(len(self.drawings))
+            ts = GLib.Variant.new_array(GLib.VariantType('t'),
+                                        [GLib.Variant.new_uint64(t)
+                                            for t in self.drawings.keys()])
+            return ts
         elif propname == 'Listening':
             return GLib.Variant.new_boolean(self.listening)
 
@@ -291,15 +294,17 @@ class TuhiDBusDevice(_TuhiDBus):
         index = args[0]
         try:
             drawing = self.drawings[index]
-        except IndexError:
+        except KeyError:
             return ''
         else:
             return drawing.to_json()
 
     def add_drawing(self, drawing):
-        self.drawings.append(drawing)
-        self.properties_changed({'DrawingsAvailable':
-                                 GLib.Variant.new_uint32(len(self.drawings))})
+        self.drawings[drawing.timestamp] = drawing
+        ts = GLib.Variant.new_array(GLib.VariantType('t'),
+                                    [GLib.Variant.new_uint64(t)
+                                        for t in self.drawings.keys()])
+        self.properties_changed({'DrawingsAvailable': ts})
 
     def notify_button_press_required(self):
         logger.debug("Sending ButtonPressRequired signal")

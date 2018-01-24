@@ -137,9 +137,9 @@ org.freedesktop.tuhi1.Device
       The physical dimensions (width, height) in µm
       Read-only
 
-  Property: DrawingsAvailable (u)
-      An integer indicating the number of drawings available. Drawings are
-      zero-indexed, see GetJSONData().
+  Property: DrawingsAvailable (at)
+      An array of timestamps of the available drawings. The timestamp of
+      each drawing can be used as index to GetJSONData().
       Read-only
 
   Property: Listening (b)
@@ -202,7 +202,7 @@ org.freedesktop.tuhi1.Device
       signal arriving, the property DrawingsAvailable may still be updated
       and it's the responsibility of the client to fetch the JSON data.
 
-  Method: GetJSONData(index: u) -> (s)
+  Method: GetJSONData(index: t) -> (s)
       Returns a JSON file with the drawings specified by the index argument.
       Drawings are zero-indexed and the requested index must be less than
       the DrawingsAvailable property value. See section JSON FILE FORMAT for
