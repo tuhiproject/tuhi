@@ -222,7 +222,7 @@ class Tuhi(GObject.Object):
 
     def _on_start_search_requested(self, dbus_server, stop_handler):
         self._search_stop_handler = stop_handler
-        self.bluez.start_discovery(timeout=30)
+        self.bluez.start_discovery()
 
     def _on_stop_search_requested(self, dbus_server):
         # If you request to stop, you get a successful stop and we ignore
