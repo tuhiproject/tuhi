@@ -19,6 +19,7 @@ import json
 import logging
 import select
 import time
+import svgwrite
 
 logging.basicConfig(format='%(levelname)s: %(message)s',
                     level=logging.INFO)
@@ -394,11 +395,31 @@ class Fetcher(GObject.Object):
         for idx in self.indices:
             jsondata = self.device.json(idx)
             data = json.loads(jsondata)
-            timestamp = time.gmtime(int(data['timestamp']))
-            logger.info("{}: drawing made on {}, {} strokes".format(
-                data['devicename'],
-                time.strftime('%Y-%m-%d %H:%M', timestamp),
-                len(data['strokes'])))
+            t = time.gmtime(data['timestamp'])
+            t = time.strftime('%Y-%m-%d-%H-%M', t)
+            path = f'{data["devicename"]}-{t}.svg'
+            self.json_to_svg(data, path)
+            logger.info(f'{data["devicename"]}: saved file "{path}"')
+
+    def json_to_svg(self, js, filename):
+        dimensions = js['dimensions']
+        if dimensions == [0, 0]:
+            dimensions = 100, 100
+        svg = svgwrite.Drawing(filename=filename, size=dimensions)
+        g = svgwrite.container.Group(id='layer0')
+        for s in js['strokes']:
+            svgpoints = []
+            mode = 'M'
+            for p in s['points']:
+                x, y = p['position']
+                svgpoints.append((mode, x, y))
+                mode = 'L'
+            path = svgwrite.path.Path(d=svgpoints,
+                                      style="fill:none;stroke:black;stroke-width:5")
+            g.add(path)
+
+        svg.add(g)
+        svg.save()
 
 
 def print_device(d):
@@ -445,7 +466,7 @@ def parse_listen(parser):
 
 
 def parse_fetch(parser):
-    sub = parser.add_parser('fetch', help='download a drawing from a device')
+    sub = parser.add_parser('fetch', help='download a drawing from a device and save as svg in $PWD')
     sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
                      default=None,
                      help='the address of the device to fetch from')
