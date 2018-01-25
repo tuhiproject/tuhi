@@ -265,11 +265,47 @@ class TuhiKeteManager(_DBusObject):
         pass
 
 
-class Searcher(GObject.Object):
-    def __init__(self, manager, address=None):
+class Worker(GObject.Object):
+    """Implements a command to be executed.
+    Subclasses need to overwrite run() that will be executed
+    to setup the command (before the mainloop).
+    Subclass can also implement the stop() method which
+    will be executed to terminate the command, once the
+    mainloop has finished.
+
+    The variable need_mainloop needs to be set from the
+    subclass if the command requires the mainloop to be
+    run from an undetermined amount of time."""
+
+    need_mainloop = False
+
+    def __init__(self, manager, args=None):
         GObject.GObject.__init__(self)
         self.manager = manager
-        self.address = address
+        self._run = self.run
+        self._stop = self.stop
+
+    def run(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def start(self):
+        self._run()
+
+        if self.need_mainloop:
+            self.manager.run()
+
+        self._stop()
+
+
+class Searcher(Worker):
+    need_mainloop = True
+
+    def __init__(self, manager, args):
+        super(Searcher, self).__init__(manager)
+        self.address = args.address
         self.is_pairing = False
 
     def run(self):
@@ -277,27 +313,26 @@ class Searcher(GObject.Object):
             logger.error('Another client is already searching')
             return
 
-        s1 = self.manager.connect('notify::searching', self._on_notify_search)
-        s2 = self.manager.connect('pairable-device', self._on_pairable_device)
+        self.s1 = self.manager.connect('notify::searching', self._on_notify_search)
+        self.s2 = self.manager.connect('pairable-device', self._on_pairable_device)
         self.manager.start_search()
         logger.debug('Started searching')
 
         for d in self.manager.devices:
             self._on_pairable_device(self.manager, d)
 
-        self.manager.run()
-
+    def stop(self):
         if self.manager.searching:
             logger.debug('Stopping search')
             self.manager.stop_search()
-            self.manager.disconnect(s1)
-            self.manager.disconnect(s2)
+            self.manager.disconnect(self.s1)
+            self.manager.disconnect(self.s2)
 
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
             logger.info('Search cancelled')
             if not self.is_pairing:
-                self.manager.quit()
+                self.stop()
 
     def _on_pairable_device(self, manager, device):
         print('Pairable device: {}'.format(device))
@@ -318,18 +353,20 @@ class Searcher(GObject.Object):
             device.pair()
 
 
-class Listener(GObject.Object):
-    def __init__(self, manager, address):
-        GObject.GObject.__init__(self)
+class Listener(Worker):
+    need_mainloop = True
 
-        self.manager = manager
+    def __init__(self, manager, args):
+        super(Listener, self).__init__(manager)
+
         self.device = None
         for d in manager.devices:
-            if d.address == address:
+            if d.address == args.address:
                 self.device = d
                 break
         else:
-            logger.error("{}: device not found".format(address))
+            logger.error("{}: device not found".format(args.address))
+            # FIXME: this should be an exception
             return
 
     def run(self):
@@ -344,16 +381,16 @@ class Listener(GObject.Object):
             return
 
         logger.debug("{}: starting listening".format(self.device))
-        s1 = self.device.connect('notify::listening', self._on_device_listening)
-        s2 = self.device.connect('notify::drawings-available', self._on_drawings_available)
+        self.s1 = self.device.connect('notify::listening', self._on_device_listening)
+        self.s2 = self.device.connect('notify::drawings-available', self._on_drawings_available)
         self.device.start_listening()
 
-        self.manager.run()
+    def stop(self):
         logger.debug("{}: stopping listening".format(self.device))
         try:
             self.device.stop_listening()
-            self.device.disconnect(s1)
-            self.device.disconnect(s2)
+            self.device.disconnect(self.s1)
+            self.device.disconnect(self.s2)
         except GLib.Error as e:
             if (e.domain != 'g-dbus-error-quark' or
                     e.code != Gio.IOErrorEnum.EXISTS or
@@ -364,8 +401,7 @@ class Listener(GObject.Object):
         if self.device.listening:
             return
 
-        logger.info('{}: Listening stopped, exiting'.format(device))
-        self.manager.quit()
+        logger.info('{}: Listening stopped'.format(device))
 
     def _on_drawings_available(self, device, pspec):
         self._log_drawings_available(device)
@@ -375,12 +411,13 @@ class Listener(GObject.Object):
         logger.info('{}: drawings available: {}'.format(device, s))
 
 
-class Fetcher(GObject.Object):
-    def __init__(self, manager, address, index):
-        GObject.GObject.__init__(self)
-        self.manager = manager
+class Fetcher(Worker):
+    def __init__(self, manager, args):
+        super(Fetcher, self).__init__(manager)
         self.device = None
         self.indices = None
+        address = args.address
+        index = args.index
 
         for d in manager.devices:
             if d.address == address:
@@ -436,31 +473,16 @@ class Fetcher(GObject.Object):
         svg.save()
 
 
-def print_device(d):
-    print('{}: {}'.format(d.address, d.name))
-
-
-def cmd_list(manager, args):
-    logger.debug('Listing available devices:')
-    for d in manager.devices:
-        print_device(d)
-
-
-def cmd_pair(manager, args):
-    Searcher(manager, args.address).run()
-
-
-def cmd_listen(manager, args):
-    Listener(manager, args.address).run()
-
-
-def cmd_fetch(manager, args):
-    Fetcher(manager, args.address, args.index).run()
+class Printer(Worker):
+    def run(self):
+        logger.debug('Listing available devices:')
+        for d in self.manager.devices:
+            print(d)
 
 
 def parse_list(parser):
     sub = parser.add_parser('list', help='list known devices')
-    sub.set_defaults(func=cmd_list)
+    sub.set_defaults(worker=Printer)
 
 
 def parse_pair(parser):
@@ -469,7 +491,7 @@ def parse_pair(parser):
                      type=TuhiKeteDevice.is_device_address,
                      nargs='?', default=None,
                      help='the address of the device to pair')
-    sub.set_defaults(func=cmd_pair)
+    sub.set_defaults(worker=Searcher)
 
 
 def parse_listen(parser):
@@ -478,7 +500,7 @@ def parse_listen(parser):
                      type=TuhiKeteDevice.is_device_address,
                      default=None,
                      help='the address of the device to listen to')
-    sub.set_defaults(func=cmd_listen)
+    sub.set_defaults(worker=Listener)
 
 
 def parse_fetch(parser):
@@ -490,7 +512,7 @@ def parse_fetch(parser):
     sub.add_argument('index', metavar='[<index>|all]', type=str,
                      default=None,
                      help='the index of the drawing to fetch or a literal "all"')
-    sub.set_defaults(func=cmd_fetch)
+    sub.set_defaults(worker=Fetcher)
 
 
 def parse(args):
@@ -515,12 +537,13 @@ def main(args):
     if args.verbose:
         logger.setLevel(logging.DEBUG)
 
+    if not hasattr(args, 'worker'):
+        args.worker = Printer
+
     try:
         with TuhiKeteManager() as mgr:
-            if not hasattr(args, 'func'):
-                args.func = cmd_list
-
-            args.func(mgr, args)
+            worker = args.worker(mgr, args)
+            worker.start()
 
     except DBusError as e:
         logger.error(e.message)
