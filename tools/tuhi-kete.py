@@ -148,6 +148,8 @@ class TuhiKeteDevice(_DBusObject):
 
         if 'DrawingsAvailable' in changed_props:
             self.notify('drawings-available')
+        elif 'Listening' in changed_props:
+            self.notify('listening')
 
     def __repr__(self):
         return '{} - {}'.format(self.address, self.name)
@@ -348,6 +350,9 @@ class Listener(GObject.Object):
                 raise e
 
     def _on_device_listening(self, device, pspec):
+        if self.device.listening:
+            return
+
         logger.info('{}: Listening stopped, exiting'.format(device))
         self.manager.quit()
 
