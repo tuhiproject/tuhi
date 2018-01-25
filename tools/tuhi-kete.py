@@ -270,8 +270,8 @@ class Searcher(GObject.Object):
             logger.error('Another client is already searching')
             return
 
-        self.manager.connect('notify::searching', self._on_notify_search)
-        self.manager.connect('pairable-device', self._on_pairable_device)
+        s1 = self.manager.connect('notify::searching', self._on_notify_search)
+        s2 = self.manager.connect('pairable-device', self._on_pairable_device)
         self.manager.start_search()
         logger.debug('Started searching')
 
@@ -283,6 +283,8 @@ class Searcher(GObject.Object):
         if self.manager.searching:
             logger.debug('Stopping search')
             self.manager.stop_search()
+            self.manager.disconnect(s1)
+            self.manager.disconnect(s2)
 
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
@@ -335,14 +337,16 @@ class Listener(GObject.Object):
             return
 
         logger.debug("{}: starting listening".format(self.device))
-        self.device.connect('notify::listening', self._on_device_listening)
-        self.device.connect('notify::drawings-available', self._on_drawings_available)
+        s1 = self.device.connect('notify::listening', self._on_device_listening)
+        s2 = self.device.connect('notify::drawings-available', self._on_drawings_available)
         self.device.start_listening()
 
         self.manager.run()
         logger.debug("{}: stopping listening".format(self.device))
         try:
             self.device.stop_listening()
+            self.device.disconnect(s1)
+            self.device.disconnect(s2)
         except GLib.Error as e:
             if (e.domain != 'g-dbus-error-quark' or
                     e.code != Gio.IOErrorEnum.EXISTS or
