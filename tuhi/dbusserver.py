@@ -263,7 +263,7 @@ class TuhiDBusDevice(_TuhiDBus):
         self._listening_client = (sender, s)
         logger.debug('Listening started on {} for {}'.format(self.name, sender))
 
-        self._listening = True
+        self.listening = True
         self.notify('listening')
 
     def _on_name_owner_changed_signal_cb(self, connection, sender, object_path,
