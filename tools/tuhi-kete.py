@@ -140,11 +140,11 @@ class TuhiKeteDevice(_DBusObject):
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'ButtonPressRequired':
-            print("{}: Press button on device now".format(self))
+            logger.info(f'{self}: Press button on device now')
         elif signal == 'ListeningStopped':
             err = parameters[0]
             if err < 0:
-                print("{}: an error occured: {}".format(self, os.strerror(err)))
+                logger.error(f'{self}: an error occured: {os.strerror(err)}')
             self.notify('listening')
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
@@ -168,7 +168,7 @@ class TuhiKeteDevice(_DBusObject):
         for d in manager.devices:
             if d.address == self.address:
                 self.is_pairing = False
-                print('{}: Pairing successful'.format(self))
+                logger.info(f'{self}: Pairing successful')
                 self.manager.quit()
 
 
