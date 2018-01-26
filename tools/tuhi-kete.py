@@ -325,8 +325,8 @@ class Searcher(Worker):
         if self.manager.searching:
             logger.debug('Stopping search')
             self.manager.stop_search()
-            self.manager.disconnect(self.s1)
-            self.manager.disconnect(self.s2)
+        self.manager.disconnect(self.s1)
+        self.manager.disconnect(self.s2)
 
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
