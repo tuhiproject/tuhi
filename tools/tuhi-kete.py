@@ -317,6 +317,7 @@ class Worker(GObject.Object):
 
 class Searcher(Worker):
     need_mainloop = True
+    interactive = True
 
     def __init__(self, manager, args):
         super(Searcher, self).__init__(manager)
@@ -346,12 +347,10 @@ class Searcher(Worker):
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
             logger.info('Search cancelled')
-            if not self.is_pairing:
+            if not self.is_pairing and self.interactive:
                 self.stop()
 
-    def _on_pairable_device(self, manager, device):
-        print('Pairable device: {}'.format(device))
-
+    def _on_pairable_device_interactive(self, manager, device):
         if self.address is None:
             print('Connect to device? [y/N] ', end='')
             sys.stdout.flush()
@@ -366,6 +365,12 @@ class Searcher(Worker):
         if device.address == self.address:
             self.is_pairing = True
             device.pair()
+
+    def _on_pairable_device(self, manager, device):
+        logger.info('Pairable device: {}'.format(device))
+
+        if self.interactive:
+            self._on_pairable_device_interactive(manager, device)
 
 
 class Listener(Worker):
@@ -682,6 +687,69 @@ class TuhiKeteShell(cmd.Cmd):
         wargs.address = address
         wargs.index = index
         self.start_worker(Fetcher, wargs)
+
+    def help_search(self):
+        self.do_search('-h')
+
+    def do_search(self, args):
+        '''Start/Stop listening for devices in pairable mode'''
+        parser = argparse.ArgumentParser(prog='search',
+                                         description='Start/Stop listening for devices in pairable mode.',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('mode', choices=['on', 'off'], nargs='?',
+                            const='on', default='on')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        if parsed_args.mode == 'off':
+            self._manager.stop_search()
+            return
+
+        Searcher.interactive = False
+        wargs = Args()
+        wargs.address = None
+        self.start_worker(Searcher, wargs)
+
+    def help_pair(self):
+        self.do_pair('-h')
+
+    def do_pair(self, args):
+        '''Pair a specific device in pairable mode'''
+        if not self._manager.searching and '-h' not in args.split():
+            print("please call search first")
+            return
+
+        parser = argparse.ArgumentParser(prog='pair',
+                                         description='Pair a specific device in pairable mode.',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None,
+                            help='the address of the device to pair')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        address = parsed_args.address
+
+        device = None
+
+        for d in self._manager.devices:
+            if d.address == address:
+                device = d
+                break
+        else:
+            logger.error("{}: device not found".format(address))
+            return
+
+        device.pair()
 
 
 class TuhiKeteShellWorker(Worker):
