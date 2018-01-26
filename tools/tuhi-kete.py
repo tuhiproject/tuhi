@@ -745,6 +745,35 @@ class TuhiKeteShell(cmd.Cmd):
 
         device.pair()
 
+    def help_info(self):
+        self.do_info('-h')
+
+    def do_info(self, args):
+        '''Show some informations about a given device or all of them'''
+
+        parser = argparse.ArgumentParser(prog='info',
+                                         description='Show some informations about a given device or all of them',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None, nargs='?',
+                            help='the address of the device to listen to')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        for device in self._manager.devices:
+            if parsed_args.address is None or parsed_args.address == device.address:
+                print(device)
+                print('\tAvailable drawings:')
+                for d in device.drawings_available:
+                    t = time.localtime(d)
+                    t = time.strftime('%Y-%m-%d at %H:%M', t)
+                    print(f'\t\t* {d}: drawn on the {t}')
+
 
 class TuhiKeteShellWorker(Worker):
     def __init__(self, manager, args):
