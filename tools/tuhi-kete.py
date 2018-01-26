@@ -531,13 +531,19 @@ class TuhiKeteShell(cmd.Cmd):
         self._log_handler = TuhiKeteShellLogHandler()
         logger.removeHandler(logger_handler)
         logger.addHandler(self._log_handler)
+        # patching get_names to hide some functions we do not want in the help
+        self.get_names = self._filtered_get_names
+
+    def _filtered_get_names(self):
+        names = super(TuhiKeteShell, self).get_names()
+        names.remove('do_EOF')
+        return names
 
     def emptyline(self):
         # make sure we do not re-enter the last typed command
         pass
 
     def do_EOF(self, arg):
-        '''leave the shell'''
         print('\n\r', end='')  # to remove the appended weird char
         return self.do_exit(arg)
 
