@@ -580,25 +580,28 @@ class TuhiKeteShell(cmd.Cmd):
         '''list known devices'''
         self.start_worker(Printer)
 
-    _listen_usage = 'Usage: listen 12:34:56:AB:CD:EF [on|off]'
+    def help_listen(self):
+        self.do_listen('-h')
+
     def do_listen(self, args):
-        '''Listen to a specific device:
-        Usage: listen 12:34:56:AB:CD:EF [on|off]'''
-
-        if args is '':
-            print(self._listen_usage)
-            return
-
-        args = args.split(' ')
-        address = args[0]
+        '''Listen to a specific device'''
+        parser = argparse.ArgumentParser(prog='listen',
+                                         description='Listen to a specific device',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None,
+                            help='the address of the device to listen to')
+        parser.add_argument('mode', choices=['on', 'off'], nargs='?',
+                            const='on', default='on')
         try:
-            mode = args[1]
-        except IndexError:
-            mode = 'on'
-
-        if mode != 'on' and mode != 'off':
-            print(self._listen_usage)
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
             return
+
+        address = parsed_args.address
+        mode = parsed_args.mode
 
         for d in self._manager.devices:
             if d.address == address:
