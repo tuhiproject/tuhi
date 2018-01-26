@@ -628,6 +628,61 @@ class TuhiKeteShell(cmd.Cmd):
         wargs.address = address
         self.start_worker(Listener, wargs)
 
+    def help_fetch(self):
+        self.do_fetch('-h')
+
+    def do_fetch(self, args):
+        '''Fetches one or all drawing(s) from a specific device.'''
+
+        def is_index_or_all(string):
+            try:
+                n = int(string)
+            except ValueError:
+                if string == 'all':
+                    return string
+                raise argparse.ArgumentTypeError(f'"{string}" is neither a timestamp nor "all"')
+            else:
+                return n
+
+        parser = argparse.ArgumentParser(prog='fetch',
+                                         description='Fetches a drawing or all drawings from a specific device.',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None,
+                            help='the address of the device to fetch drawing from')
+        parser.add_argument('index', metavar='{<index>|all}',
+                            type=is_index_or_all,
+                            const='all', nargs='?', default='all',
+                            help='the index of the drawing to fetch or a literal "all"')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        address = parsed_args.address
+        index = parsed_args.index
+
+        address = args[0]
+        try:
+            index = args[1]
+        except IndexError:
+            index = 'all'
+
+        if index != 'all':
+            try:
+                int(index)
+            except ValueError:
+                print(self._fetch_usage)
+                return
+
+        wargs = Args()
+        wargs.address = address
+        wargs.index = index
+        self.start_worker(Fetcher, wargs)
+
 
 class TuhiKeteShellWorker(Worker):
     def __init__(self, manager, args):
