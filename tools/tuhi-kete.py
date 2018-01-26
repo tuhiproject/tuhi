@@ -17,6 +17,7 @@ import argparse
 import os
 import json
 import logging
+import re
 import select
 import time
 import svgwrite
@@ -97,6 +98,12 @@ class TuhiKeteDevice(_DBusObject):
                              objpath)
         self.manager = manager
         self.is_pairing = False
+
+    @classmethod
+    def is_device_address(cls, string):
+        if re.match(r"[0-9a-f]{2}(:[0-9a-f]{2}){5}$", string.lower()):
+            return string
+        raise argparse.ArgumentTypeError(f'"{string}" is not a valid device address')
 
     @GObject.Property
     def address(self):
@@ -458,7 +465,8 @@ def parse_list(parser):
 
 def parse_pair(parser):
     sub = parser.add_parser('pair', help='pair a new device')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
+    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                     type=TuhiKeteDevice.is_device_address,
                      nargs='?', default=None,
                      help='the address of the device to pair')
     sub.set_defaults(func=cmd_pair)
@@ -466,7 +474,8 @@ def parse_pair(parser):
 
 def parse_listen(parser):
     sub = parser.add_parser('listen', help='listen to events from a device')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
+    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                     type=TuhiKeteDevice.is_device_address,
                      default=None,
                      help='the address of the device to listen to')
     sub.set_defaults(func=cmd_listen)
@@ -474,7 +483,8 @@ def parse_listen(parser):
 
 def parse_fetch(parser):
     sub = parser.add_parser('fetch', help='download a drawing from a device and save as svg in $PWD')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
+    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                     type=TuhiKeteDevice.is_device_address,
                      default=None,
                      help='the address of the device to fetch from')
     sub.add_argument('index', metavar='[<index>|all]', type=str,
