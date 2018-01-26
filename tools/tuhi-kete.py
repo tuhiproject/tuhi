@@ -19,6 +19,7 @@ import os
 import json
 import logging
 import re
+import readline
 import select
 import threading
 import time
@@ -498,17 +499,24 @@ class TuhiKeteShellLogHandler(logging.StreamHandler):
     def __init__(self):
         super(TuhiKeteShellLogHandler, self).__init__(sys.stdout)
         self.setFormatter(logging.Formatter(log_format))
+        self._prompt = ''
+
+    def emit(self, record):
+        self.terminator = f'\n{self._prompt}{readline.get_line_buffer()}'
+        super(TuhiKeteShellLogHandler, self).emit(record)
 
     def set_normal_mode(self):
         self.acquire()
         self.setFormatter(logging.Formatter(log_format))
         self.terminator = '\n'
+        self._prompt = ''
         self.release()
 
     def set_prompt_mode(self, prompt):
         self.acquire()
-        self.setFormatter(logging.Formatter('\r{}'.format(log_format)))
-        self.terminator = '\n{}'.format(prompt)
+        # '\x1b[2K\r' clears the current line and start again from the beginning
+        self.setFormatter(logging.Formatter(f'\x1b[2K\r{log_format}'))
+        self._prompt = prompt
         self.release()
 
 
