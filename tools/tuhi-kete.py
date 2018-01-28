@@ -14,16 +14,24 @@
 from gi.repository import GObject, Gio, GLib
 import sys
 import argparse
+import cmd
 import os
 import json
 import logging
+import re
+import readline
 import select
+import threading
 import time
 import svgwrite
 
-logging.basicConfig(format='%(levelname)s: %(message)s',
-                    level=logging.INFO)
+
+log_format = '%(levelname)s: %(message)s'
+logger_handler = logging.StreamHandler()
+logger_handler.setFormatter(logging.Formatter(log_format))
 logger = logging.getLogger('tuhi-kete')
+logger.addHandler(logger_handler)
+logger.setLevel(logging.INFO)
 
 TUHI_DBUS_NAME = 'org.freedesktop.tuhi1'
 ORG_FREEDESKTOP_TUHI1_MANAGER = 'org.freedesktop.tuhi1.Manager'
@@ -98,6 +106,12 @@ class TuhiKeteDevice(_DBusObject):
         self.manager = manager
         self.is_pairing = False
 
+    @classmethod
+    def is_device_address(cls, string):
+        if re.match(r"[0-9a-f]{2}(:[0-9a-f]{2}){5}$", string.lower()):
+            return string
+        raise argparse.ArgumentTypeError(f'"{string}" is not a valid device address')
+
     @GObject.Property
     def address(self):
         return self.property('Address')
@@ -133,11 +147,11 @@ class TuhiKeteDevice(_DBusObject):
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'ButtonPressRequired':
-            print("{}: Press button on device now".format(self))
+            logger.info(f'{self}: Press button on device now')
         elif signal == 'ListeningStopped':
             err = parameters[0]
             if err < 0:
-                print("{}: an error occured: {}".format(self, os.strerror(err)))
+                logger.error(f'{self}: an error occured: {os.strerror(err)}')
             self.notify('listening')
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
@@ -161,7 +175,7 @@ class TuhiKeteDevice(_DBusObject):
         for d in manager.devices:
             if d.address == self.address:
                 self.is_pairing = False
-                print('{}: Pairing successful'.format(self))
+                logger.info(f'{self}: Pairing successful')
                 self.manager.quit()
 
 
@@ -182,7 +196,7 @@ class TuhiKeteManager(_DBusObject):
                            None,
                            self._on_name_vanished)
 
-        self.mainloop = GObject.MainLoop()
+        self.mainloop = None
         self._devices = {}
         self._pairable_devices = {}
         for objpath in self.property('Devices'):
@@ -206,6 +220,9 @@ class TuhiKeteManager(_DBusObject):
         self._pairable_devices = {}
 
     def run(self):
+        if self.mainloop is None:
+            self.mainloop = GObject.MainLoop()
+
         try:
             self.mainloop.run()
         except KeyboardInterrupt:
@@ -213,7 +230,8 @@ class TuhiKeteManager(_DBusObject):
             self.mainloop.quit()
 
     def quit(self):
-        self.mainloop.quit()
+        if self.mainloop is not None:
+            self.mainloop.quit()
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
         if changed_props is None:
@@ -258,11 +276,52 @@ class TuhiKeteManager(_DBusObject):
         pass
 
 
-class Searcher(GObject.Object):
-    def __init__(self, manager, address=None):
+class Args(object):
+    pass
+
+
+class Worker(GObject.Object):
+    """Implements a command to be executed.
+    Subclasses need to overwrite run() that will be executed
+    to setup the command (before the mainloop).
+    Subclass can also implement the stop() method which
+    will be executed to terminate the command, once the
+    mainloop has finished.
+
+    The variable need_mainloop needs to be set from the
+    subclass if the command requires the mainloop to be
+    run from an undetermined amount of time."""
+
+    need_mainloop = False
+
+    def __init__(self, manager, args=None):
         GObject.GObject.__init__(self)
         self.manager = manager
-        self.address = address
+        self._run = self.run
+        self._stop = self.stop
+
+    def run(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def start(self):
+        self._run()
+
+        if self.need_mainloop:
+            self.manager.run()
+
+        self._stop()
+
+
+class Searcher(Worker):
+    need_mainloop = True
+    interactive = True
+
+    def __init__(self, manager, args):
+        super(Searcher, self).__init__(manager)
+        self.address = args.address
         self.is_pairing = False
 
     def run(self):
@@ -270,31 +329,28 @@ class Searcher(GObject.Object):
             logger.error('Another client is already searching')
             return
 
-        s1 = self.manager.connect('notify::searching', self._on_notify_search)
-        s2 = self.manager.connect('pairable-device', self._on_pairable_device)
+        self.s1 = self.manager.connect('notify::searching', self._on_notify_search)
+        self.s2 = self.manager.connect('pairable-device', self._on_pairable_device)
         self.manager.start_search()
         logger.debug('Started searching')
 
         for d in self.manager.devices:
             self._on_pairable_device(self.manager, d)
 
-        self.manager.run()
-
+    def stop(self):
         if self.manager.searching:
             logger.debug('Stopping search')
             self.manager.stop_search()
-            self.manager.disconnect(s1)
-            self.manager.disconnect(s2)
+        self.manager.disconnect(self.s1)
+        self.manager.disconnect(self.s2)
 
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
             logger.info('Search cancelled')
-            if not self.is_pairing:
-                self.manager.quit()
+            if not self.is_pairing and self.interactive:
+                self.stop()
 
-    def _on_pairable_device(self, manager, device):
-        print('Pairable device: {}'.format(device))
-
+    def _on_pairable_device_interactive(self, manager, device):
         if self.address is None:
             print('Connect to device? [y/N] ', end='')
             sys.stdout.flush()
@@ -310,19 +366,27 @@ class Searcher(GObject.Object):
             self.is_pairing = True
             device.pair()
 
+    def _on_pairable_device(self, manager, device):
+        logger.info('Pairable device: {}'.format(device))
 
-class Listener(GObject.Object):
-    def __init__(self, manager, address):
-        GObject.GObject.__init__(self)
+        if self.interactive:
+            self._on_pairable_device_interactive(manager, device)
 
-        self.manager = manager
+
+class Listener(Worker):
+    need_mainloop = True
+
+    def __init__(self, manager, args):
+        super(Listener, self).__init__(manager)
+
         self.device = None
         for d in manager.devices:
-            if d.address == address:
+            if d.address == args.address:
                 self.device = d
                 break
         else:
-            logger.error("{}: device not found".format(address))
+            logger.error("{}: device not found".format(args.address))
+            # FIXME: this should be an exception
             return
 
     def run(self):
@@ -337,16 +401,16 @@ class Listener(GObject.Object):
             return
 
         logger.debug("{}: starting listening".format(self.device))
-        s1 = self.device.connect('notify::listening', self._on_device_listening)
-        s2 = self.device.connect('notify::drawings-available', self._on_drawings_available)
+        self.s1 = self.device.connect('notify::listening', self._on_device_listening)
+        self.s2 = self.device.connect('notify::drawings-available', self._on_drawings_available)
         self.device.start_listening()
 
-        self.manager.run()
+    def stop(self):
         logger.debug("{}: stopping listening".format(self.device))
         try:
             self.device.stop_listening()
-            self.device.disconnect(s1)
-            self.device.disconnect(s2)
+            self.device.disconnect(self.s1)
+            self.device.disconnect(self.s2)
         except GLib.Error as e:
             if (e.domain != 'g-dbus-error-quark' or
                     e.code != Gio.IOErrorEnum.EXISTS or
@@ -357,8 +421,7 @@ class Listener(GObject.Object):
         if self.device.listening:
             return
 
-        logger.info('{}: Listening stopped, exiting'.format(device))
-        self.manager.quit()
+        logger.info('{}: Listening stopped'.format(device))
 
     def _on_drawings_available(self, device, pspec):
         self._log_drawings_available(device)
@@ -368,12 +431,13 @@ class Listener(GObject.Object):
         logger.info('{}: drawings available: {}'.format(device, s))
 
 
-class Fetcher(GObject.Object):
-    def __init__(self, manager, address, index):
-        GObject.GObject.__init__(self)
-        self.manager = manager
+class Fetcher(Worker):
+    def __init__(self, manager, args):
+        super(Fetcher, self).__init__(manager)
         self.device = None
         self.indices = None
+        address = args.address
+        index = args.index
 
         for d in manager.devices:
             if d.address == address:
@@ -429,58 +493,358 @@ class Fetcher(GObject.Object):
         svg.save()
 
 
-def print_device(d):
-    print('{}: {}'.format(d.address, d.name))
+class Printer(Worker):
+    def run(self):
+        logger.debug('Listing available devices:')
+        for d in self.manager.devices:
+            print(d)
 
 
-def cmd_list(manager, args):
-    logger.debug('Listing available devices:')
-    for d in manager.devices:
-        print_device(d)
+class TuhiKeteShellLogHandler(logging.StreamHandler):
+    def __init__(self):
+        super(TuhiKeteShellLogHandler, self).__init__(sys.stdout)
+        self.setFormatter(logging.Formatter(log_format))
+        self._prompt = ''
+
+    def emit(self, record):
+        self.terminator = f'\n{self._prompt}{readline.get_line_buffer()}'
+        super(TuhiKeteShellLogHandler, self).emit(record)
+
+    def set_normal_mode(self):
+        self.acquire()
+        self.setFormatter(logging.Formatter(log_format))
+        self.terminator = '\n'
+        self._prompt = ''
+        self.release()
+
+    def set_prompt_mode(self, prompt):
+        self.acquire()
+        # '\x1b[2K\r' clears the current line and start again from the beginning
+        self.setFormatter(logging.Formatter(f'\x1b[2K\r{log_format}'))
+        self._prompt = prompt
+        self.release()
 
 
-def cmd_pair(manager, args):
-    Searcher(manager, args.address).run()
+class TuhiKeteShell(cmd.Cmd):
+    intro = 'Tuhi shell control'
+    prompt = 'tuhi> '
+
+    def __init__(self, manager, completekey='tab', stdin=None, stdout=None):
+        super(TuhiKeteShell, self).__init__(completekey, stdin, stdout)
+        self._manager = manager
+        self._workers = []
+        self._log_handler = TuhiKeteShellLogHandler()
+        logger.removeHandler(logger_handler)
+        logger.addHandler(self._log_handler)
+        # patching get_names to hide some functions we do not want in the help
+        self.get_names = self._filtered_get_names
+
+    def _filtered_get_names(self):
+        names = super(TuhiKeteShell, self).get_names()
+        names.remove('do_EOF')
+        return names
+
+    def emptyline(self):
+        # make sure we do not re-enter the last typed command
+        pass
+
+    def do_EOF(self, arg):
+        print('\n\r', end='')  # to remove the appended weird char
+        return self.do_exit(arg)
+
+    def do_exit(self, args):
+        '''leave the shell'''
+        for worker in self._workers:
+            worker.stop()
+        return True
+
+    def precmd(self, line):
+        # Restore the logger facility to something sane:
+        self._log_handler.set_normal_mode()
+        return line
+
+    def postcmd(self, stop, line):
+        # overwrite the logger facility to remove the current prompt and append
+        # a new one
+        self._log_handler.set_prompt_mode(self.prompt)
+        return stop
+
+    def run(self, init=None):
+        try:
+            self.cmdloop(init)
+        except KeyboardInterrupt as e:
+            print("^C")
+            self.run('')
+
+    def start_worker(self, worker_class, args=None):
+        worker = worker_class(self._manager, args)
+        worker.run()
+        self._workers.append(worker)
+
+    def do_list(self, arg):
+        '''list known devices'''
+        self.start_worker(Printer)
+
+    def help_listen(self):
+        self.do_listen('-h')
+
+    def do_listen(self, args):
+        '''Listen to a specific device'''
+        parser = argparse.ArgumentParser(prog='listen',
+                                         description='Listen to a specific device',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None,
+                            help='the address of the device to listen to')
+        parser.add_argument('mode', choices=['on', 'off'], nargs='?',
+                            const='on', default='on')
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        address = parsed_args.address
+        mode = parsed_args.mode
+
+        for d in self._manager.devices:
+            if d.address == address:
+                if mode == 'on' and d.listening:
+                    print(f'Already listening on {address}')
+                    return
+                elif mode == 'off' and not d.listening:
+                    print(f'Not listening on {address}')
+                    return
+                break
+        else:
+            print(f'Device {address} not found')
+            return
+
+        if mode == 'off':
+            for worker in [w for w in self._workers if isinstance(w, Listener)]:
+                if worker.device.address == address:
+                    worker.stop()
+                    self._workers.remove(worker)
+                    break
+            return
+
+        wargs = Args()
+        wargs.address = address
+        self.start_worker(Listener, wargs)
+
+    def help_fetch(self):
+        self.do_fetch('-h')
+
+    def do_fetch(self, args):
+        '''Fetches one or all drawing(s) from a specific device.'''
+
+        def is_index_or_all(string):
+            try:
+                n = int(string)
+            except ValueError:
+                if string == 'all':
+                    return string
+                raise argparse.ArgumentTypeError(f'"{string}" is neither a timestamp nor "all"')
+            else:
+                return n
+
+        parser = argparse.ArgumentParser(prog='fetch',
+                                         description='Fetches a drawing or all drawings from a specific device.',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None,
+                            help='the address of the device to fetch drawing from')
+        parser.add_argument('index', metavar='{<index>|all}',
+                            type=is_index_or_all,
+                            const='all', nargs='?', default='all',
+                            help='the index of the drawing to fetch or a literal "all"')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        address = parsed_args.address
+        index = parsed_args.index
+
+        address = args[0]
+        try:
+            index = args[1]
+        except IndexError:
+            index = 'all'
+
+        if index != 'all':
+            try:
+                int(index)
+            except ValueError:
+                print(self._fetch_usage)
+                return
+
+        wargs = Args()
+        wargs.address = address
+        wargs.index = index
+        self.start_worker(Fetcher, wargs)
+
+    def help_search(self):
+        self.do_search('-h')
+
+    def do_search(self, args):
+        '''Start/Stop listening for devices in pairable mode'''
+        parser = argparse.ArgumentParser(prog='search',
+                                         description='Start/Stop listening for devices in pairable mode.',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('mode', choices=['on', 'off'], nargs='?',
+                            const='on', default='on')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        if parsed_args.mode == 'off':
+            self._manager.stop_search()
+            return
+
+        Searcher.interactive = False
+        wargs = Args()
+        wargs.address = None
+        self.start_worker(Searcher, wargs)
+
+    def help_pair(self):
+        self.do_pair('-h')
+
+    def do_pair(self, args):
+        '''Pair a specific device in pairable mode'''
+        if not self._manager.searching and '-h' not in args.split():
+            print("please call search first")
+            return
+
+        parser = argparse.ArgumentParser(prog='pair',
+                                         description='Pair a specific device in pairable mode.',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None,
+                            help='the address of the device to pair')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        address = parsed_args.address
+
+        device = None
+
+        for d in self._manager.devices:
+            if d.address == address:
+                device = d
+                break
+        else:
+            logger.error("{}: device not found".format(address))
+            return
+
+        device.pair()
+
+    def help_info(self):
+        self.do_info('-h')
+
+    def do_info(self, args):
+        '''Show some informations about a given device or all of them'''
+
+        parser = argparse.ArgumentParser(prog='info',
+                                         description='Show some informations about a given device or all of them',
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None, nargs='?',
+                            help='the address of the device to listen to')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        for device in self._manager.devices:
+            if parsed_args.address is None or parsed_args.address == device.address:
+                print(device)
+                print('\tAvailable drawings:')
+                for d in device.drawings_available:
+                    t = time.gmtime(d)
+                    t = time.strftime('%Y-%m-%d at %H:%M', t)
+                    print(f'\t\t* {d}: drawn on the {t}')
 
 
-def cmd_listen(manager, args):
-    Listener(manager, args.address).run()
+class TuhiKeteShellWorker(Worker):
+    def __init__(self, manager, args):
+        super(TuhiKeteShellWorker, self).__init__(manager)
 
+    def start_mainloop(self):
+        # we can not call GLib.MainLoop() here or it will install a unix signal
+        # handler for SIGINT, and we will not be able to catch
+        # KeyboardInterrupt in cmdloop()
+        mainloop = GLib.MainLoop.new(None, False)
 
-def cmd_fetch(manager, args):
-    Fetcher(manager, args.address, args.index).run()
+        mainloop.run()
+
+    def start(self):
+        self._glib_thread = threading.Thread(target=self.start_mainloop)
+        self._glib_thread.daemon = True
+        self._glib_thread.start()
+
+        self.run()
+
+        self.stop()
+
+    def run(self):
+        self._shell = TuhiKeteShell(self.manager)
+        self._shell.run()
 
 
 def parse_list(parser):
     sub = parser.add_parser('list', help='list known devices')
-    sub.set_defaults(func=cmd_list)
+    sub.set_defaults(worker=Printer)
 
 
 def parse_pair(parser):
     sub = parser.add_parser('pair', help='pair a new device')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
+    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                     type=TuhiKeteDevice.is_device_address,
                      nargs='?', default=None,
                      help='the address of the device to pair')
-    sub.set_defaults(func=cmd_pair)
+    sub.set_defaults(worker=Searcher)
 
 
 def parse_listen(parser):
     sub = parser.add_parser('listen', help='listen to events from a device')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
+    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                     type=TuhiKeteDevice.is_device_address,
                      default=None,
                      help='the address of the device to listen to')
-    sub.set_defaults(func=cmd_listen)
+    sub.set_defaults(worker=Listener)
 
 
 def parse_fetch(parser):
     sub = parser.add_parser('fetch', help='download a drawing from a device and save as svg in $PWD')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF', type=str,
+    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                     type=TuhiKeteDevice.is_device_address,
                      default=None,
                      help='the address of the device to fetch from')
     sub.add_argument('index', metavar='[<index>|all]', type=str,
                      default=None,
                      help='the index of the drawing to fetch or a literal "all"')
-    sub.set_defaults(func=cmd_fetch)
+    sub.set_defaults(worker=Fetcher)
+
+
+def parse_shell(parser):
+    sub = parser.add_parser('shell', help='run a bash-like shell')
+    sub.set_defaults(worker=TuhiKeteShellWorker)
 
 
 def parse(args):
@@ -496,6 +860,7 @@ def parse(args):
     parse_pair(subparser)
     parse_listen(subparser)
     parse_fetch(subparser)
+    parse_shell(subparser)
 
     return parser.parse_args(args[1:])
 
@@ -505,12 +870,13 @@ def main(args):
     if args.verbose:
         logger.setLevel(logging.DEBUG)
 
+    if not hasattr(args, 'worker'):
+        args.worker = TuhiKeteShellWorker
+
     try:
         with TuhiKeteManager() as mgr:
-            if not hasattr(args, 'func'):
-                args.func = cmd_list
-
-            args.func(mgr, args)
+            worker = args.worker(mgr, args)
+            worker.start()
 
     except DBusError as e:
         logger.error(e.message)
