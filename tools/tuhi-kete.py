@@ -264,7 +264,10 @@ class TuhiKeteManager(_DBusObject):
 
     def _on_name_vanished(self, connection, name):
         logger.error('Tuhi daemon went away')
-        self.mainloop.quit()
+        try:
+            self.mainloop.quit()
+        except AttributeError:
+            pass
 
     def __getitem__(self, btaddr):
         return self._devices[btaddr]
@@ -341,8 +344,12 @@ class Searcher(Worker):
         if self.manager.searching:
             logger.debug('Stopping search')
             self.manager.stop_search()
-        self.manager.disconnect(self.s1)
-        self.manager.disconnect(self.s2)
+
+        try:
+            self.manager.disconnect(self.s1)
+            self.manager.disconnect(self.s2)
+        except AttributeError:
+            pass
 
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
