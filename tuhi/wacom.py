@@ -13,6 +13,7 @@
 
 
 import binascii
+import calendar
 import logging
 import threading
 import time
@@ -268,7 +269,8 @@ class WacomDevice(GObject.Object):
                                       expected_opcode=0xb3)
 
     def set_time(self):
-        self.current_time = time.strftime("%y%m%d%H%M%S")
+        # Device time is UTC
+        self.current_time = time.strftime("%y%m%d%H%M%S", time.gmtime())
         args = [int(i) for i in binascii.unhexlify(self.current_time)]
         self.send_nordic_command_sync(command=0xb6,
                                       expected_opcode=0xb3,
@@ -463,7 +465,7 @@ class WacomDevice(GObject.Object):
         x, y, p = 0, 0, 0
         dx, dy, dp = 0, 0, 0
 
-        timestamp = int(time.mktime(timestamp))
+        timestamp = int(calendar.timegm(timestamp))
         drawings = []
         drawing = None
         stroke = None
