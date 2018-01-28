@@ -139,7 +139,7 @@ org.freedesktop.tuhi1.Device
 
   Property: DrawingsAvailable (at)
       An array of timestamps of the available drawings. The timestamp of
-      each drawing can be used as index to GetJSONData().
+      each drawing can be used as argument to GetJSONData().
       Read-only
 
   Property: Listening (b)
@@ -204,14 +204,14 @@ org.freedesktop.tuhi1.Device
       signal arriving, the property DrawingsAvailable may still be updated
       and it's the responsibility of the client to fetch the JSON data.
 
-  Method: GetJSONData(index: t) -> (s)
-      Returns a JSON file with the drawings specified by the index argument.
-      Drawings are zero-indexed and the requested index must be less than
-      the DrawingsAvailable property value. See section JSON FILE FORMAT for
-      the format of the returned data.
+  Method: GetJSONData(timestamp: t) -> (s)
+      Returns a JSON file with the drawings specified by the timestamp
+      argument.  Drawings are zero-indexed and the requested index must be
+      less than the DrawingsAvailable property value. See section JSON FILE
+      FORMAT for the format of the returned data.
 
       Returns a string representing the JSON data from the last drawings or
-      the empty string if no data is available or the index is invalid.
+      the empty string if no data is available or the timestamp is invalid.
 
   Signal: ButtonPressRequired()
       Sent when the user is expected to press the physical button on the
