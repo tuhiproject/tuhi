@@ -553,7 +553,7 @@ class TuhiKeteShell(cmd.Cmd):
         return self.do_exit(arg)
 
     def do_exit(self, args):
-        '''leave the shell'''
+        '''Leave the shell'''
         for worker in self._workers:
             worker.stop()
         return True
@@ -582,16 +582,21 @@ class TuhiKeteShell(cmd.Cmd):
         self._workers.append(worker)
 
     def do_list(self, arg):
-        '''list known devices'''
+        '''List known devices. These are devices previously paired with the daemon.'''
         self.start_worker(Printer)
 
     def help_listen(self):
         self.do_listen('-h')
 
     def do_listen(self, args):
-        '''Listen to a specific device'''
+        desc = '''Enable or disable listening on the given device. When
+        listening, all drawings are downloaded from the device as they
+        device allows connections (this usually requires a button press).
+        Drawings are deleted from the device as they are downloaded, they
+        are available with the 'fetch' command.
+        '''
         parser = argparse.ArgumentParser(prog='listen',
-                                         description='Listen to a specific device',
+                                         description=desc,
                                          add_help=False)
         parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
         parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
@@ -637,8 +642,6 @@ class TuhiKeteShell(cmd.Cmd):
         self.do_fetch('-h')
 
     def do_fetch(self, args):
-        '''Fetches one or all drawing(s) from a specific device.'''
-
         def is_index_or_all(string):
             try:
                 n = int(string)
@@ -649,8 +652,13 @@ class TuhiKeteShell(cmd.Cmd):
             else:
                 return n
 
+        desc = '''
+        Fetches one or all drawings from the given device. These drawings
+        must have been previously downloaded from the device (see the
+        'listen' command) and are saved in $PWD as SVG files.
+        '''
         parser = argparse.ArgumentParser(prog='fetch',
-                                         description='Fetches a drawing or all drawings from a specific device.',
+                                         description=desc,
                                          add_help=False)
         parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
         parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
@@ -686,9 +694,12 @@ class TuhiKeteShell(cmd.Cmd):
         self.do_search('-h')
 
     def do_search(self, args):
-        '''Start/Stop listening for devices in pairable mode'''
+        desc = '''
+        Start/Stop listening for devices that can be paired with the daemon.
+        The devices must be in pairable mode (blue LED blinking).
+        '''
         parser = argparse.ArgumentParser(prog='search',
-                                         description='Start/Stop listening for devices in pairable mode.',
+                                         description=desc,
                                          add_help=False)
         parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
         parser.add_argument('mode', choices=['on', 'off'], nargs='?',
@@ -712,13 +723,16 @@ class TuhiKeteShell(cmd.Cmd):
         self.do_pair('-h')
 
     def do_pair(self, args):
-        '''Pair a specific device in pairable mode'''
         if not self._manager.searching and '-h' not in args.split():
             print("please call search first")
             return
 
+        desc = '''
+        Pair the given device. The device must be in pairable mode (blue LED
+        blinking).
+        '''
         parser = argparse.ArgumentParser(prog='pair',
-                                         description='Pair a specific device in pairable mode.',
+                                         description=desc,
                                          add_help=False)
         parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
         parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
@@ -749,10 +763,11 @@ class TuhiKeteShell(cmd.Cmd):
         self.do_info('-h')
 
     def do_info(self, args):
-        '''Show some informations about a given device or all of them'''
-
+        desc = '''
+        Show information about the given device. If no device is given, show
+        information about all known devices'''
         parser = argparse.ArgumentParser(prog='info',
-                                         description='Show some informations about a given device or all of them',
+                                         description=desc,
                                          add_help=False)
         parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
         parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
