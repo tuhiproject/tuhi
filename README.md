@@ -139,7 +139,9 @@ org.freedesktop.tuhi1.Device
 
   Property: DrawingsAvailable (at)
       An array of timestamps of the available drawings. The timestamp of
-      each drawing can be used as argument to GetJSONData().
+      each drawing can be used as argument to GetJSONData(). Timestamps are
+      in seconds since the Epoch and may be used to display information to
+      the user or sort data.
       Read-only
 
   Property: Listening (b)

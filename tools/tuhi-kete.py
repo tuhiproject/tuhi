@@ -502,7 +502,7 @@ class Fetcher(Worker):
         for idx in self.indices:
             jsondata = self.device.json(idx)
             data = json.loads(jsondata)
-            t = time.gmtime(data['timestamp'])
+            t = time.localtime(data['timestamp'])
             t = time.strftime('%Y-%m-%d-%H-%M', t)
             path = f'{data["devicename"]}-{t}.svg'
             self.json_to_svg(data, path)
