@@ -53,6 +53,12 @@ INTROSPECTION_XML = '''
     <property type='b' name='Listening' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
+    <property type='u' name='BatteryPercent' access='read'>
+      <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
+    </property>
+    <property type='b' name='BatteryState' access='read'>
+      <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
+    </property>
     <property type='at' name='DrawingsAvailable' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
@@ -146,7 +152,11 @@ class TuhiDBusDevice(_TuhiDBus):
         self._listening = False
         self._listening_client = None
         self._dbusid = self._register_object(connection)
+        self._battery_percent = 0
+        self._battery_state = device.battery_state
         device.connect('notify::paired', self._on_device_paired)
+        device.connect('notify::battery-percent', self._on_battery_percent)
+        device.connect('notify::battery-state', self._on_battery_state)
         device.connect('device-error', self._on_device_error)
 
     @GObject.Property
@@ -168,6 +178,30 @@ class TuhiDBusDevice(_TuhiDBus):
     @paired.setter
     def paired(self, paired):
         self._paired = paired
+
+    @GObject.Property
+    def battery_percent(self):
+        return self._battery_percent
+
+    @battery_percent.setter
+    def battery_percent(self, value):
+        if self._battery_percent == value:
+            return
+
+        self._battery_percent = value
+        self.properties_changed({'BatteryPercent': GLib.Variant.new_uint32(value)})
+
+    @GObject.Property
+    def battery_state(self):
+        return self._battery_state
+
+    @battery_state.setter
+    def battery_state(self, value):
+        if self._battery_state == value:
+            return
+
+        self._battery_state = value
+        self.properties_changed({'BatteryState': GLib.Variant.new_uint32(value.value)})
 
     def remove(self):
         self.connection.unregister_object(self._dbusid)
@@ -221,6 +255,10 @@ class TuhiDBusDevice(_TuhiDBus):
             return ts
         elif propname == 'Listening':
             return GLib.Variant.new_boolean(self.listening)
+        elif propname == 'BatteryPercent':
+            return GLib.Variant.new_uint32(self.battery_percent)
+        elif propname == 'BatteryState':
+            return GLib.Variant.new_uint32(self.battery_state.value)
 
         return None
 
@@ -234,6 +272,12 @@ class TuhiDBusDevice(_TuhiDBus):
         if self.paired == device.paired:
             return
         self.paired = device.paired
+
+    def _on_battery_percent(self, device, pspec):
+        self.battery_percent = device.battery_percent
+
+    def _on_battery_state(self, device, pspec):
+        self.battery_state = device.battery_state
 
     def _on_device_error(self, device, exception):
         logger.info('An error occured while synching the device')
