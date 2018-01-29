@@ -639,11 +639,11 @@ class TuhiKeteShell(cmd.Cmd):
         completion = []
         if len(fields) == 2:
             for device in self._manager.devices:
-                if device.address.startswith(text):
+                if device.address.startswith(text.upper()):
                     completion.append(device.address)
         elif len(fields) == 3:
             for v in ('on', 'off'):
-                if v.startswith(text):
+                if v.startswith(text.lower()):
                     completion.append(v)
         return completion
 
@@ -707,7 +707,7 @@ class TuhiKeteShell(cmd.Cmd):
         completion = []
         if len(fields) == 2:
             for device in self._manager.devices:
-                if device.address.startswith(text):
+                if device.address.startswith(text.upper()):
                     completion.append(device.address)
 
         elif len(fields) == 3:
@@ -726,7 +726,7 @@ class TuhiKeteShell(cmd.Cmd):
             logger.error(f'{device} / {timestamps}')
 
             for t in timestamps:
-                if t.startswith(text):
+                if t.startswith(text.lower()):
                     completion.append(t)
 
         return completion
@@ -779,7 +779,7 @@ class TuhiKeteShell(cmd.Cmd):
         completion = []
         if len(fields) == 2:
             for v in ('on', 'off'):
-                if v.startswith(text):
+                if v.startswith(text.lower()):
                     completion.append(v)
 
         return completion
@@ -821,7 +821,7 @@ class TuhiKeteShell(cmd.Cmd):
         completion = []
         if len(fields) == 2:
             for device in self._manager.pairable_devices + self._manager.devices:
-                if device.address.startswith(text):
+                if device.address.startswith(text.upper()):
                     completion.append(device.address)
 
         return completion
