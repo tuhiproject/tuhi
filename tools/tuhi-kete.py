@@ -312,10 +312,6 @@ class TuhiKeteManager(_DBusObject):
         pass
 
 
-class Args(object):
-    pass
-
-
 class Worker(GObject.Object):
     """Implements a command to be executed.
     Subclasses need to overwrite run() that will be executed
@@ -674,9 +670,7 @@ class TuhiKeteShell(cmd.Cmd):
                     break
             return
 
-        wargs = Args()
-        wargs.address = address
-        self.start_worker(Listener, wargs)
+        self.start_worker(Listener, parsed_args)
 
     def help_fetch(self):
         self.do_fetch('-h')
@@ -715,20 +709,7 @@ class TuhiKeteShell(cmd.Cmd):
         except SystemExit:
             return
 
-        address = parsed_args.address
-        index = parsed_args.index
-
-        if index != 'all':
-            try:
-                int(index)
-            except ValueError:
-                print(self._fetch_usage)
-                return
-
-        wargs = Args()
-        wargs.address = address
-        wargs.index = index
-        self.start_worker(Fetcher, wargs)
+        self.start_worker(Fetcher, parsed_args)
 
     def help_search(self):
         self.do_search('-h')
@@ -755,9 +736,8 @@ class TuhiKeteShell(cmd.Cmd):
             return
 
         Searcher.interactive = False
-        wargs = Args()
-        wargs.address = None
-        self.start_worker(Searcher, wargs)
+        parsed_args.address = None
+        self.start_worker(Searcher, parsed_args)
 
     def help_pair(self):
         self.do_pair('-h')
