@@ -12,6 +12,7 @@
 #
 
 import argparse
+import enum
 import logging
 import sys
 from gi.repository import GObject
@@ -34,6 +35,12 @@ class TuhiDevice(GObject.Object):
     real device) with the frontend DBusServer object that exports the device
     over Tuhi's DBus interface
     '''
+
+    class BatteryState(enum.Enum):
+        UNKNOWN = 0
+        CHARGING = 1
+        DISCHARGING = 2
+
     __gsignals__ = {
         # Signal sent when an error occurs on the device itself.
         # Argument is a Wacom*Exception
@@ -49,6 +56,8 @@ class TuhiDevice(GObject.Object):
         assert uuid is not None or paired is False
         self.paired = paired
         self._uuid = uuid
+        self._battery_state = TuhiDevice.BatteryState.UNKNOWN
+        self._battery_percent = 0
 
         bluez_device.connect('connected', self._on_bluez_device_connected)
         bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
@@ -93,6 +102,23 @@ class TuhiDevice(GObject.Object):
     def listening(self):
         return self._tuhi_dbus_device.listening
 
+    @GObject.Property
+    def battery_percent(self):
+        return self._battery_percent
+
+    @battery_percent.setter
+    def battery_percent(self, value):
+        self._battery_percent = value
+
+    @GObject.Property
+    def battery_state(self):
+        return self._battery_state
+
+    @battery_state.setter
+    def battery_state(self, value):
+        print('setting battery state on tuhidevice')
+        self._battery_state = value
+
     def connect_device(self):
         self._bluez_device.connect_device()
 
@@ -104,6 +130,7 @@ class TuhiDevice(GObject.Object):
             self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
             self._wacom_device.connect('button-press-required', self._on_button_press_required)
             self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
+            self._wacom_device.connect('battery-status', self._on_battery_status, bluez_device)
 
         self._wacom_device.start(not self.paired)
         self.pairing_mode = False
@@ -137,6 +164,13 @@ class TuhiDevice(GObject.Object):
 
     def _on_listening_updated(self, dbus_device, pspec):
         self.notify('listening')
+
+    def _on_battery_status(self, wacom_device, percent, is_charging, bluez_device):
+        if is_charging:
+            self.battery_state = TuhiDevice.BatteryState.CHARGING
+        else:
+            self.battery_state = TuhiDevice.BatteryState.DISCHARGING
+        self.battery_percent = percent
 
 
 class Tuhi(GObject.Object):

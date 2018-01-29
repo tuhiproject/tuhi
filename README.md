@@ -142,6 +142,26 @@ org.freedesktop.tuhi1.Device
       The physical dimensions (width, height) in µm
       Read-only
 
+  Property: BatteryPercent (u)
+      The last known battery charge level in percent. This charge level is
+      only valid when the BatteryState is other than Unknown.
+      Read-only
+
+  Property: BatteryState (u)
+      An enum describing the battery state. Permitted enum values are
+
+        0: Unknown
+        1: Charging
+        2: Discharging
+
+      'Unknown' may refer to a state that could not be read, a state
+      that has not yet been updated, or a state that has not updated within
+      a daemon-internal time period. Thus, a device that is connected but
+      does not regularly send battery updates may eventually switch to
+      'Unknown'.
+
+      Read-only
+
   Property: DrawingsAvailable (at)
       An array of timestamps of the available drawings. The timestamp of
       each drawing can be used as argument to GetJSONData(). Timestamps are

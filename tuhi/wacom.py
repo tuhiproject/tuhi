@@ -106,6 +106,9 @@ class WacomDevice(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
         'button-press-required':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
+        # battery level in %, boolean for is-charging
+        "battery-status":
+            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_INT, GObject.TYPE_BOOLEAN)),
     }
 
     def __init__(self, device, uuid=None):
@@ -544,6 +547,7 @@ class WacomDevice(GObject.Object):
                 logger.debug(f'device is plugged in and charged at {battery}%')
             else:
                 logger.debug(f'device is discharging: {battery}%')
+            self.emit('battery-status', battery, charging)
             if self.is_slate():
                 self.width = w = self.get_dimensions('width')
                 self.height = h = self.get_dimensions('height')

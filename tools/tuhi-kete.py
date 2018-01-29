@@ -163,6 +163,14 @@ class TuhiKeteDevice(_DBusObject):
     def drawings_available(self):
         return self.property('DrawingsAvailable')
 
+    @GObject.Property
+    def battery_percent(self):
+        return self.property('BatteryPercent')
+
+    @GObject.Property
+    def battery_state(self):
+        return self.property('BatteryState')
+
     def pair(self):
         logger.debug(f'{self}: Pairing')
         # FIXME: Pair() doesn't return anything useful yet, so we wait until
@@ -199,6 +207,10 @@ class TuhiKeteDevice(_DBusObject):
             self.notify('drawings-available')
         elif 'Listening' in changed_props:
             self.notify('listening')
+        elif 'BatteryPercent' in changed_props:
+            self.notify('battery-percent')
+        elif 'BatteryState' in changed_props:
+            self.notify('battery-state')
 
     def __repr__(self):
         return f'{self.address} - {self.name}'
@@ -899,6 +911,16 @@ class TuhiKeteShell(cmd.Cmd):
         for device in self._manager.devices:
             if parsed_args.address is None or parsed_args.address == device.address:
                 print(device)
+                charge_strs = {
+                    0: 'unknown',
+                    1: 'charging',
+                    2: 'discharging'
+                }
+                try:
+                    charge_str = charge_strs[device.battery_state]
+                except KeyError:
+                    charge_str = 'invalid'
+                print(f'\tBattery level: {device.battery_percent}%, {charge_str}')
                 print('\tAvailable drawings:')
                 for d in device.drawings_available:
                     t = time.localtime(d)
