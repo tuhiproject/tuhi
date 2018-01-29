@@ -67,6 +67,12 @@ ORG_FREEDESKTOP_TUHI1_MANAGER = 'org.freedesktop.tuhi1.Manager'
 ORG_FREEDESKTOP_TUHI1_DEVICE = 'org.freedesktop.tuhi1.Device'
 ROOT_PATH = '/org/freedesktop/tuhi1'
 
+# remove ':' from the completer delimiters of readline so we can match on
+# device addresses
+completer_delims = readline.get_completer_delims()
+completer_delims = completer_delims.replace(':', '')
+readline.set_completer_delims(completer_delims)
+
 
 class DBusError(Exception):
     def __init__(self, message):
@@ -624,6 +630,23 @@ class TuhiKeteShell(cmd.Cmd):
     def help_listen(self):
         self.do_listen('-h')
 
+    def complete_listen(self, text, line, begidx, endidx):
+        # mark the end of the line so we can match on the number of fields
+        if line.endswith(' '):
+            line += 'm'
+        fields = line.split()
+
+        completion = []
+        if len(fields) == 2:
+            for device in self._manager.devices:
+                if device.address.startswith(text):
+                    completion.append(device.address)
+        elif len(fields) == 3:
+            for v in ('on', 'off'):
+                if v.startswith(text):
+                    completion.append(v)
+        return completion
+
     def do_listen(self, args):
         desc = '''Enable or disable listening on the given device. When
         listening, all drawings are downloaded from the device as they
@@ -675,6 +698,39 @@ class TuhiKeteShell(cmd.Cmd):
     def help_fetch(self):
         self.do_fetch('-h')
 
+    def complete_fetch(self, text, line, begidx, endidx):
+        # mark the end of the line so we can match on the number of fields
+        if line.endswith(' '):
+            line += 'm'
+        fields = line.split()
+
+        completion = []
+        if len(fields) == 2:
+            for device in self._manager.devices:
+                if device.address.startswith(text):
+                    completion.append(device.address)
+
+        elif len(fields) == 3:
+            device = None
+            for d in self._manager.devices:
+                if d.address == fields[1]:
+                    device = d
+                    break
+
+            if device is None:
+                return
+
+            timestamps = [str(t) for t in d.drawings_available]
+            timestamps.append('all')
+
+            logger.error(f'{device} / {timestamps}')
+
+            for t in timestamps:
+                if t.startswith(text):
+                    completion.append(t)
+
+        return completion
+
     def do_fetch(self, args):
         def is_index_or_all(string):
             try:
@@ -714,6 +770,20 @@ class TuhiKeteShell(cmd.Cmd):
     def help_search(self):
         self.do_search('-h')
 
+    def complete_search(self, text, line, begidx, endidx):
+        # mark the end of the line so we can match on the number of fields
+        if line.endswith(' '):
+            line += 'm'
+        fields = line.split()
+
+        completion = []
+        if len(fields) == 2:
+            for v in ('on', 'off'):
+                if v.startswith(text):
+                    completion.append(v)
+
+        return completion
+
     def do_search(self, args):
         desc = '''
         Start/Stop listening for devices that can be paired with the daemon.
@@ -741,6 +811,20 @@ class TuhiKeteShell(cmd.Cmd):
 
     def help_pair(self):
         self.do_pair('-h')
+
+    def complete_pair(self, text, line, begidx, endidx):
+        # mark the end of the line so we can match on the number of fields
+        if line.endswith(' '):
+            line += 'm'
+        fields = line.split()
+
+        completion = []
+        if len(fields) == 2:
+            for device in self._manager.pairable_devices + self._manager.devices:
+                if device.address.startswith(text):
+                    completion.append(device.address)
+
+        return completion
 
     def do_pair(self, args):
         if not self._manager.searching and '-h' not in args.split():
@@ -781,6 +865,20 @@ class TuhiKeteShell(cmd.Cmd):
 
     def help_info(self):
         self.do_info('-h')
+
+    def complete_info(self, text, line, begidx, endidx):
+        # mark the end of the line so we can match on the number of fields
+        if line.endswith(' '):
+            line += 'm'
+        fields = line.split()
+
+        completion = []
+        if len(fields) == 2:
+            for device in self._manager.devices:
+                if device.address.startswith(text):
+                    completion.append(device.address)
+
+        return completion
 
     def do_info(self, args):
         desc = '''
