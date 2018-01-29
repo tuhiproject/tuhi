@@ -237,6 +237,10 @@ class TuhiKeteManager(_DBusObject):
         return [v for k, v in self._devices.items()]
 
     @GObject.Property
+    def pairable_devices(self):
+        return [v for k, v in self._pairable_devices.items()]
+
+    @GObject.Property
     def searching(self):
         return self.proxy.get_cached_property('Searching')
 
@@ -785,7 +789,7 @@ class TuhiKeteShell(cmd.Cmd):
 
         device = None
 
-        for d in self._manager.devices:
+        for d in self._manager.devices + self._manager.pairable_devices:
             if d.address == address:
                 device = d
                 break
