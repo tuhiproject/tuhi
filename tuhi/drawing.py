@@ -72,10 +72,10 @@ class Stroke(GObject.Object):
 
 
 class Drawing(GObject.Object):
-    """
+    '''
     Abstracts a drawing. The drawing is composed Strokes, each of which has
     Points.
-    """
+    '''
     JSON_FILE_FORMAT_VERSION = 1
 
     def __init__(self, name, dimensions, timestamp):
@@ -93,9 +93,9 @@ class Drawing(GObject.Object):
         return self.strokes[self._current_stroke]
 
     def new_stroke(self):
-        """
+        '''
         Create a new stroke and make it the current stroke
-        """
+        '''
         l = Stroke(self)
         self.strokes.append(l)
         self._current_stroke += 1

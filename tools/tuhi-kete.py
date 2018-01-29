@@ -36,9 +36,9 @@ class ColorFormatter(logging.Formatter):
         'CRITICAL': YELLOW,
         'ERROR': RED,
     }
-    RESET_SEQ = "\033[0m"
-    COLOR_SEQ = "\033[%dm"
-    BOLD_SEQ = "\033[1m"
+    RESET_SEQ = '\033[0m'
+    COLOR_SEQ = '\033[%dm'
+    BOLD_SEQ = '\033[1m'
 
     def __init__(self, *args, **kwargs):
         logging.Formatter.__init__(self, *args, **kwargs)
@@ -47,11 +47,11 @@ class ColorFormatter(logging.Formatter):
         levelname = record.levelname
         color = self.COLOR_SEQ % (self.COLORS[levelname])
         message = logging.Formatter.format(self, record)
-        message = message.replace("$RESET", self.RESET_SEQ)\
-                         .replace("$BOLD", self.BOLD_SEQ)\
-                         .replace("$COLOR", color)
+        message = message.replace('$RESET', self.RESET_SEQ)\
+                         .replace('$BOLD', self.BOLD_SEQ)\
+                         .replace('$COLOR', color)
         for k, v in self.COLORS.items():
-            message = message.replace("$" + k, self.COLOR_SEQ % (v + 30))
+            message = message.replace('$' + k, self.COLOR_SEQ % (v + 30))
         return message + self.RESET_SEQ
 
 
@@ -143,7 +143,7 @@ class TuhiKeteDevice(_DBusObject):
 
     @classmethod
     def is_device_address(cls, string):
-        if re.match(r"[0-9a-f]{2}(:[0-9a-f]{2}){5}$", string.lower()):
+        if re.match(r'[0-9a-f]{2}(:[0-9a-f]{2}){5}$', string.lower()):
             return string
         raise argparse.ArgumentTypeError(f'"{string}" is not a valid device address')
 
@@ -216,7 +216,7 @@ class TuhiKeteDevice(_DBusObject):
 
 class TuhiKeteManager(_DBusObject):
     __gsignals__ = {
-        "pairable-device":
+        'pairable-device':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
@@ -319,7 +319,7 @@ class TuhiKeteManager(_DBusObject):
 
 
 class Worker(GObject.Object):
-    """Implements a command to be executed.
+    '''Implements a command to be executed.
     Subclasses need to overwrite run() that will be executed
     to setup the command (before the mainloop).
     Subclass can also implement the stop() method which
@@ -328,7 +328,7 @@ class Worker(GObject.Object):
 
     The variable need_mainloop needs to be set from the
     subclass if the command requires the mainloop to be
-    run from an undetermined amount of time."""
+    run from an undetermined amount of time.'''
 
     need_mainloop = False
 
@@ -528,7 +528,7 @@ class Fetcher(Worker):
                 svgpoints.append((mode, x, y))
                 mode = 'L'
             path = svgwrite.path.Path(d=svgpoints,
-                                      style="fill:none;stroke:black;stroke-width:5")
+                                      style='fill:none;stroke:black;stroke-width:5')
             g.add(path)
 
         svg.add(g)
@@ -615,7 +615,7 @@ class TuhiKeteShell(cmd.Cmd):
         try:
             self.cmdloop(init)
         except KeyboardInterrupt as e:
-            print("^C")
+            print('^C')
             self.run('')
 
     def start_worker(self, worker_class, args=None):
@@ -828,7 +828,7 @@ class TuhiKeteShell(cmd.Cmd):
 
     def do_pair(self, args):
         if not self._manager.searching and '-h' not in args.split():
-            print("please call search first")
+            print('please call search first')
             return
 
         desc = '''
@@ -1009,5 +1009,5 @@ def main(args):
         logger.error(e.message)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main(sys.argv)

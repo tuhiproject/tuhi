@@ -18,7 +18,7 @@ from gi.repository import GObject, Gio, GLib
 
 logger = logging.getLogger('tuhi.dbus')
 
-INTROSPECTION_XML = """
+INTROSPECTION_XML = '''
 <node>
   <interface name='org.freedesktop.tuhi1.Manager'>
     <property type='ao' name='Devices' access='read'>
@@ -81,7 +81,7 @@ INTROSPECTION_XML = """
     </signal>
   </interface>
 </node>
-"""
+'''
 BASE_PATH = '/org/freedesktop/tuhi1'
 BUS_NAME = 'org.freedesktop.tuhi1'
 INTF_MANAGER = 'org.freedesktop.tuhi1.Manager'
@@ -96,11 +96,11 @@ class _TuhiDBus(GObject.Object):
         self.interface = interface
 
     def properties_changed(self, props, dest=None):
-        """
+        '''
         Send a PropertiesChanged signal to the given destination (if any).
         The props argument is a { name: value } dictionary of the
         property values, the values are GVariant.bool, etc.
-        """
+        '''
         builder = GLib.VariantBuilder(GLib.VariantType('a{sv}'))
         for name, value in props.items():
             de = GLib.Variant.new_dict_entry(GLib.Variant.new_string(name),
@@ -110,8 +110,8 @@ class _TuhiDBus(GObject.Object):
         inval_props = GLib.VariantBuilder(GLib.VariantType('as'))
         inval_props = inval_props.end()
         self.connection.emit_signal(dest, self.objpath,
-                                    "org.freedesktop.DBus.Properties",
-                                    "PropertiesChanged",
+                                    'org.freedesktop.DBus.Properties',
+                                    'PropertiesChanged',
                                     GLib.Variant.new_tuple(
                                         GLib.Variant.new_string(self.interface),
                                         properties,
@@ -124,12 +124,12 @@ class _TuhiDBus(GObject.Object):
 
 
 class TuhiDBusDevice(_TuhiDBus):
-    """
+    '''
     Class representing a DBus object for a Tuhi device. This class only
     handles the DBus bits, communication with the device is done elsewhere.
-    """
+    '''
     __gsignals__ = {
-        "pair-requested":
+        'pair-requested':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
@@ -307,7 +307,7 @@ class TuhiDBusDevice(_TuhiDBus):
         self.properties_changed({'DrawingsAvailable': ts})
 
     def notify_button_press_required(self):
-        logger.debug("Sending ButtonPressRequired signal")
+        logger.debug('Sending ButtonPressRequired signal')
         self.signal('ButtonPressRequired')
 
     def __repr__(self):
@@ -315,22 +315,22 @@ class TuhiDBusDevice(_TuhiDBus):
 
 
 class TuhiDBusServer(_TuhiDBus):
-    """
+    '''
     Class for the DBus server.
-    """
+    '''
     __gsignals__ = {
-        "bus-name-acquired":
+        'bus-name-acquired':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
-        "bus-name-lost":
+        'bus-name-lost':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
 
         # Signal arguments:
         #    search_stop_handler(status)
         #        to be called when the search process has terminated, with
         #        an integer status code (0 == success, negative errno)
-        "search-start-requested":
+        'search-start-requested':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        "search-stop-requested":
+        'search-stop-requested':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
@@ -405,7 +405,7 @@ class TuhiDBusServer(_TuhiDBus):
 
     def _start_search(self, connection, sender):
         if self.is_searching:
-            logger.debug("Already searching")
+            logger.debug('Already searching')
 
             # silently ignore it for the current client but send EAGAIN to
             # other clients
@@ -426,7 +426,7 @@ class TuhiDBusServer(_TuhiDBus):
                                         user_data=sender)
         self._searching_client = (sender, s)
 
-        self.emit("search-start-requested", self._on_search_stop)
+        self.emit('search-start-requested', self._on_search_stop)
         for d in self._devices:
             if not d.paired:
                 self._emit_pairable_signal(d)
@@ -446,16 +446,16 @@ class TuhiDBusServer(_TuhiDBus):
 
         connection.signal_unsubscribe(self._searching_client[1])
         self.is_searching = False
-        self.emit("search-stop-requested")
+        self.emit('search-stop-requested')
 
     def _on_search_stop(self, status):
-        """
+        '''
         Called by whoever handles the search-start-requested signal
-        """
-        logger.debug("Search has stopped")
+        '''
+        logger.debug('Search has stopped')
         self.is_searching = False
         status = GLib.Variant.new_int32(status)
-        self.signal("SearchStopped", status, dest=self._searching_client[0])
+        self.signal('SearchStopped', status, dest=self._searching_client[0])
         self._searching_client = None
 
         for dev in self._devices:

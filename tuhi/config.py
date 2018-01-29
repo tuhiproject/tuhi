@@ -42,9 +42,9 @@ class TuhiConfig(GObject.Object):
 
     @property
     def devices(self):
-        """
+        '''
         Returns a dictionary with the bluetooth address as key
-        """
+        '''
         return self._devices
 
     def _scan_config_dir(self):
@@ -110,7 +110,7 @@ class TuhiConfig(GObject.Object):
         logger.debug(f'{address}: adding new drawing, timestamp {drawing.timestamp}')
         path = os.path.join(ROOT_PATH, address, f'{drawing.timestamp}.json')
 
-        with open(path, "w") as f:
+        with open(path, 'w') as f:
             f.write(drawing.to_json())
 
     def load_drawings(self, address):
