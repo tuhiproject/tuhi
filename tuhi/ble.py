@@ -72,7 +72,7 @@ class BlueZCharacteristic(GObject.Object):
                 pass
 
     def __repr__(self):
-        return 'Characteristic {}:{}'.format(self.uuid, self.objpath)
+        return f'Characteristic {self.uuid}:{self.objpath}'
 
 
 class BlueZDevice(GObject.Object):
@@ -110,7 +110,7 @@ class BlueZDevice(GObject.Object):
         self.interface = obj.get_interface(ORG_BLUEZ_DEVICE1)
         assert(self.interface is not None)
 
-        logger.debug('Device {} - {} - {}'.format(self.objpath, self.address, self.name))
+        logger.debug(f'Device {self.objpath} - {self.address} - {self.name}')
 
         self.characteristics = {}
         self.resolve(om)
@@ -172,7 +172,7 @@ class BlueZDevice(GObject.Object):
             if device != self.objpath:
                 continue
 
-            logger.debug("GattService1: {} for device {}".format(obj.get_object_path(), device))
+            logger.debug(f'GattService1: {obj.get_object_path()} for device {device}')
             self.gatt_services.append(obj)
             self._resolve_gatt_characteristics(obj, objects)
 
@@ -190,7 +190,7 @@ class BlueZDevice(GObject.Object):
             if chrc.uuid in self.characteristics:
                 continue
 
-            logger.debug("GattCharacteristic: {} for service {}".format(chrc.uuid, service))
+            logger.debug(f'GattCharacteristic: {chrc.uuid} for service {service}')
 
             self.characteristics[chrc.uuid] = chrc
 
@@ -201,11 +201,11 @@ class BlueZDevice(GObject.Object):
         """
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if self.connected:
-            logger.info('{}: Device is already connected'.format(self.address))
+            logger.info(f'{self.address}: Device is already connected')
             self.emit('connected')
             return
 
-        logger.info('{}: Connecting'.format(self.address))
+        logger.info(f'{self.address}: Connecting')
         i.Connect(result_handler=self._on_connect_result)
 
     def _on_connect_result(self, obj, result, user_data):
@@ -214,9 +214,9 @@ class BlueZDevice(GObject.Object):
                 result.code == Gio.IOErrorEnum.DBUS_ERROR and
                 Gio.dbus_error_get_remote_error(result) == 'org.bluez.Error.Failed' and
                 'Operation already in progress' in result.message):
-                    logger.debug('{}: Already connecting'.format(self.address))
+                    logger.debug(f'{self.address}: Already connecting')
         elif isinstance(result, Exception):
-            logger.error('Connection failed: {}'.format(result))
+            logger.error(f'Connection failed: {result}')
 
     def disconnect_device(self):
         """
@@ -225,16 +225,16 @@ class BlueZDevice(GObject.Object):
         """
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if not i.get_cached_property('Connected').get_boolean():
-            logger.info('{}: Device is already disconnected'.format(self.address))
+            logger.info(f'{self.address}: Device is already disconnected')
             self.emit('disconnected')
             return
 
-        logger.info('{}: Disconnecting'.format(self.address))
+        logger.info(f'{self.address}: Disconnecting')
         i.Disconnect(result_handler=self._on_disconnect_result)
 
     def _on_disconnect_result(self, obj, result, user_data):
         if isinstance(result, Exception):
-            logger.error('Disconnection failed: {}'.format(result))
+            logger.error(f'Disconnection failed: {result}')
 
     def _on_properties_changed(self, obj, properties, invalidated_properties):
         properties = properties.unpack()
@@ -264,7 +264,7 @@ class BlueZDevice(GObject.Object):
             pass
 
     def __repr__(self):
-        return 'Device {}:{}'.format(self.name, self.objpath)
+        return f'Device {self.name}:{self.objpath}'
 
 
 class BlueZDeviceManager(GObject.Object):
@@ -340,12 +340,12 @@ class BlueZDeviceManager(GObject.Object):
             objpath = obj.get_object_path()
             try:
                 i.StartDiscovery()
-                logger.debug('{}: Discovery started (timeout {})'.format(objpath, timeout))
+                logger.debug(f'{objpath}: Discovery started (timeout {timeout})')
             except GLib.Error as e:
                 if (e.domain == 'g-io-error-quark' and
                         e.code == Gio.IOErrorEnum.DBUS_ERROR and
                         Gio.dbus_error_get_remote_error(e) == 'org.bluez.Error.InProgress'):
-                    logger.debug('{}: Already listening'.format(objpath))
+                    logger.debug(f'{objpath}: Already listening')
 
         if timeout > 0:
             GObject.timeout_add_seconds(timeout, self._discovery_timeout_expired)
@@ -372,9 +372,9 @@ class BlueZDeviceManager(GObject.Object):
             objpath = obj.get_object_path()
             try:
                 i.StopDiscovery()
-                logger.debug('{}: Discovery stopped'.format(objpath))
+                logger.debug(f'{objpath}: Discovery stopped')
             except GLib.Error as e:
-                logger.debug('{}: Failed to stop discovery ({})'.format(objpath, e))
+                logger.debug(f'{objpath}: Failed to stop discovery ({e})')
 
             # reset the discovery filters
             i.SetDiscoveryFilter('(a{sv})', {})
@@ -383,14 +383,14 @@ class BlueZDeviceManager(GObject.Object):
 
     def _on_device_updated(self, device):
         """Callback for Device's properties-changed"""
-        logger.debug('Object updated: {}'.format(device.name))
+        logger.debug(f'Object updated: {device.name}')
 
         self.emit("device-updated", device)
 
     def _on_om_object_added(self, om, obj):
         """Callback for ObjectManager's object-added"""
         objpath = obj.get_object_path()
-        logger.debug('Object added: {}'.format(objpath))
+        logger.debug(f'Object added: {objpath}')
         needs_resolve = self._process_object(obj, event=True)
 
         # we had at least one characteristic added, need to resolve the
@@ -403,7 +403,7 @@ class BlueZDeviceManager(GObject.Object):
     def _on_om_object_removed(self, om, obj):
         """Callback for ObjectManager's object-removed"""
         objpath = obj.get_object_path()
-        logger.debug('Object removed: {}'.format(objpath))
+        logger.debug(f'Object removed: {objpath}')
 
     def _process_object(self, obj, event=True):
         """Process a single DBusProxyObject"""
@@ -419,7 +419,7 @@ class BlueZDeviceManager(GObject.Object):
 
     def _process_adapter(self, obj):
         objpath = obj.get_object_path()
-        logger.debug('Adapter: {}'.format(objpath))
+        logger.debug(f'Adapter: {objpath}')
 
     def _process_device(self, obj, event=True):
         dev = BlueZDevice(self._om, obj)
@@ -429,4 +429,4 @@ class BlueZDeviceManager(GObject.Object):
 
     def _process_characteristic(self, obj):
         objpath = obj.get_object_path()
-        logger.debug('Characteristic {}'.format(objpath))
+        logger.debug(f'Characteristic {objpath}')

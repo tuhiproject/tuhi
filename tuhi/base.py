@@ -97,7 +97,7 @@ class TuhiDevice(GObject.Object):
         self._bluez_device.connect_device()
 
     def _on_bluez_device_connected(self, bluez_device):
-        logger.debug('{}: connected'.format(bluez_device.address))
+        logger.debug(f'{bluez_device.address}: connected')
         if self._wacom_device is None:
             self._wacom_device = WacomDevice(bluez_device, self._uuid)
             self._wacom_device.connect('drawing', self._on_drawing_received)
@@ -109,7 +109,7 @@ class TuhiDevice(GObject.Object):
         self.pairing_mode = False
 
     def _on_bluez_device_disconnected(self, bluez_device):
-        logger.debug('{}: disconnected'.format(bluez_device.address))
+        logger.debug(f'{bluez_device.address}: disconnected')
 
     def _on_pair_requested(self, dbus_device):
         if self.paired:
@@ -228,9 +228,9 @@ class Tuhi(GObject.Object):
 
         if not pairing_device:
             if uuid is None:
-                logger.info('{}: device without config, must be paired first'.format(bluez_device.address))
+                logger.info(f'{bluez_device.address}: device without config, must be paired first')
                 return
-            logger.debug('{}: UUID {}'.format(bluez_device.address, uuid))
+            logger.debug(f'{bluez_device.address}: UUID {uuid}')
 
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
@@ -243,7 +243,7 @@ class Tuhi(GObject.Object):
 
         if pairing_device:
             d.paired = False
-            logger.debug('{}: call Pair() on device'.format(bluez_device.objpath))
+            logger.debug(f'{bluez_device.objpath}: call Pair() on device')
         elif d.listening:
             d.connect_device()
 

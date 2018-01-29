@@ -26,6 +26,11 @@ Installation
  $> tuhi
 ```
 
+Note
+----
+
+TUHI requires Python v3.6 or above.
+
 Units used by this interface
 ----------------------------
 

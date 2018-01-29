@@ -57,7 +57,7 @@ def b2hex(bs):
 def list2hex(l):
     '''Converts a list of integers to a two-letter hex string in the form
     "1a 2b c3"'''
-    return ' '.join(['{:02x}'.format(x) for x in l])
+    return ' '.join([f'{x:02x}' for x in l])
 
 
 class NordicData(list):
@@ -351,7 +351,7 @@ class WacomDevice(GObject.Object):
                                              expected_opcode=0xcf)
         # logger.debug(f'cc returned {data} ')
         count = int.from_bytes(data[0:4], byteorder='little')
-        str_timestamp = ''.join(['{:02x}'.format(d) for d in data[4:]])
+        str_timestamp = ''.join([f'{d:02x}' for d in data[4:]])
         timestamp = time.strptime(str_timestamp, "%y%m%d%H%M%S")
         return count, timestamp
 
@@ -366,7 +366,7 @@ class WacomDevice(GObject.Object):
             data = self.wait_nordic_data(0xcd, 5)
             # logger.debug(f'cc returned {data} ')
 
-        str_timestamp = ''.join(['{:02x}'.format(d) for d in data])
+        str_timestamp = ''.join([f'{d:02x}' for d in data])
         timestamp = time.strptime(str_timestamp, "%y%m%d%H%M%S")
         return count, timestamp
 
@@ -609,7 +609,7 @@ class WacomDevice(GObject.Object):
 
     def pair_device(self):
         self._uuid = uuid.uuid4().hex[:12]
-        logger.debug("{}: pairing device, assigned {}".format(self.device.address, self.uuid))
+        logger.debug(f'{self.device.address}: pairing device, assigned {self.uuid}')
         if self.is_slate():
             self.pair_device_slate()
         else:
@@ -619,10 +619,10 @@ class WacomDevice(GObject.Object):
 
     def run(self):
         if self._is_running:
-            logger.error('{}: already synching, ignoring this request'.format(self.device.address))
+            logger.error(f'{self.device.address}: already synching, ignoring this request')
             return
 
-        logger.debug('{}: starting'.format(self.device.address))
+        logger.debug(f'{self.device.address}: starting')
         self._is_running = True
         exception = None
         try:

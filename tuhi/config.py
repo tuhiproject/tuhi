@@ -60,7 +60,7 @@ class TuhiConfig(GObject.Object):
                 if not os.path.isfile(path):
                     continue
 
-                logger.debug("{}: configuration found".format(entry.name))
+                logger.debug(f'{entry.name}: configuration found')
                 config = configparser.ConfigParser()
                 config.read(path)
 
@@ -71,7 +71,7 @@ class TuhiConfig(GObject.Object):
         assert is_btaddr(address)
         assert len(uuid) == 12
 
-        logger.debug("{}: adding new config, UUID {}".format(address, uuid))
+        logger.debug(f'{address}: adding new config, UUID {uuid}')
         path = os.path.join(ROOT_PATH, address)
         try:
             os.mkdir(path)
@@ -104,11 +104,11 @@ class TuhiConfig(GObject.Object):
         assert drawing is not None
 
         if address not in self.devices:
-            logger.error("{}: cannot store drawings for unknown device".format(address))
+            logger.error(f'{address}: cannot store drawings for unknown device')
             return
 
-        logger.debug("{}: adding new drawing, timestamp {}".format(address, drawing.timestamp))
-        path = os.path.join(ROOT_PATH, address, "{}.json".format(drawing.timestamp))
+        logger.debug(f'{address}: adding new drawing, timestamp {drawing.timestamp}')
+        path = os.path.join(ROOT_PATH, address, f'{drawing.timestamp}.json')
 
         with open(path, "w") as f:
             f.write(drawing.to_json())
