@@ -723,8 +723,6 @@ class TuhiKeteShell(cmd.Cmd):
             timestamps = [str(t) for t in d.drawings_available]
             timestamps.append('all')
 
-            logger.error(f'{device} / {timestamps}')
-
             for t in timestamps:
                 if t.startswith(text.lower()):
                     completion.append(t)
