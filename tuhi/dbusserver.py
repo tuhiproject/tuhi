@@ -135,7 +135,7 @@ class TuhiDBusDevice(_TuhiDBus):
 
     def __init__(self, device, connection):
         objpath = device.address.replace(':', '_')
-        objpath = "{}/{}".format(BASE_PATH, objpath)
+        objpath = f'{BASE_PATH}/{objpath}'
         _TuhiDBus.__init__(self, connection, objpath, INTF_DEVICE)
 
         self.name = device.name
@@ -243,7 +243,7 @@ class TuhiDBusDevice(_TuhiDBus):
 
     def _start_listening(self, connection, sender):
         if self.listening:
-            logger.debug("{} - already listening".format(self))
+            logger.debug(f'{self} - already listening')
 
             # silently ignore it for the current client but send EAGAIN to
             # other clients
@@ -261,7 +261,7 @@ class TuhiDBusDevice(_TuhiDBus):
                                         callback=self._on_name_owner_changed_signal_cb,
                                         user_data=sender)
         self._listening_client = (sender, s)
-        logger.debug('Listening started on {} for {}'.format(self.name, sender))
+        logger.debug(f'Listening started on {self.name} for {sender}')
 
         self.listening = True
         self.notify('listening')
@@ -281,7 +281,7 @@ class TuhiDBusDevice(_TuhiDBus):
 
         connection.signal_unsubscribe(self._listening_client[1])
         self._listening_client = None
-        logger.debug('Listening stopped on {} for {}'.format(self.name, sender))
+        logger.debug(f'Listening stopped on {self.name} for {sender}')
 
         self.notify('listening')
 
@@ -311,7 +311,7 @@ class TuhiDBusDevice(_TuhiDBus):
         self.signal('ButtonPressRequired')
 
     def __repr__(self):
-        return "{} - {}".format(self.objpath, self.name)
+        return f'{self.objpath} - {self.name}'
 
 
 class TuhiDBusServer(_TuhiDBus):

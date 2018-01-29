@@ -103,7 +103,7 @@ class _DBusObject(GObject.Object):
                 raise e
 
         if self.proxy.get_name_owner() is None:
-            raise DBusError('No-one is handling {}, is the daemon running?'.format(name))
+            raise DBusError(f'No-one is handling {name}, is the daemon running?')
 
         self.proxy.connect('g-properties-changed', self._on_properties_changed)
         self.proxy.connect('g-signal', self._on_signal_received)
@@ -164,7 +164,7 @@ class TuhiKeteDevice(_DBusObject):
         return self.property('DrawingsAvailable')
 
     def pair(self):
-        logger.debug('{}: Pairing'.format(self))
+        logger.debug(f'{self}: Pairing')
         # FIXME: Pair() doesn't return anything useful yet, so we wait until
         # the device is in the Manager's Devices property
         self.manager.connect('notify::devices', self._on_mgr_devices_updated)
@@ -201,7 +201,7 @@ class TuhiKeteDevice(_DBusObject):
             self.notify('listening')
 
     def __repr__(self):
-        return '{} - {}'.format(self.address, self.name)
+        return f'{self.address} - {self.name}'
 
     def _on_mgr_devices_updated(self, manager, pspec):
         if not self.is_pairing:
@@ -298,7 +298,7 @@ class TuhiKeteManager(_DBusObject):
             objpath = parameters[0]
             device = TuhiKeteDevice(self, objpath)
             self._pairable_devices[objpath] = device
-            logger.debug('Found pairable device: {}'.format(device))
+            logger.debug(f'Found pairable device: {device}')
             self.emit('pairable-device', device)
 
     def _on_name_vanished(self, connection, name):
@@ -409,7 +409,7 @@ class Searcher(Worker):
             device.pair()
 
     def _on_pairable_device(self, manager, device):
-        logger.info('Pairable device: {}'.format(device))
+        logger.info(f'Pairable device: {device}')
 
         if self.interactive:
             self._on_pairable_device_interactive(manager, device)
@@ -427,7 +427,7 @@ class Listener(Worker):
                 self.device = d
                 break
         else:
-            logger.error("{}: device not found".format(args.address))
+            logger.error(f'{args.address}: device not found')
             # FIXME: this should be an exception
             return
 
@@ -439,16 +439,16 @@ class Listener(Worker):
             self._log_drawings_available(self.device)
 
         if self.device.listening:
-            logger.info("{}: device already listening".format(self.device))
+            logger.info(f'{self.device}: device already listening')
             return
 
-        logger.debug("{}: starting listening".format(self.device))
+        logger.debug(f'{self.device}: starting listening')
         self.s1 = self.device.connect('notify::listening', self._on_device_listening)
         self.s2 = self.device.connect('notify::drawings-available', self._on_drawings_available)
         self.device.start_listening()
 
     def stop(self):
-        logger.debug("{}: stopping listening".format(self.device))
+        logger.debug(f'{self.device}: stopping listening')
         try:
             self.device.stop_listening()
             self.device.disconnect(self.s1)
@@ -463,14 +463,14 @@ class Listener(Worker):
         if self.device.listening:
             return
 
-        logger.info('{}: Listening stopped'.format(device))
+        logger.info(f'{device}: Listening stopped')
 
     def _on_drawings_available(self, device, pspec):
         self._log_drawings_available(device)
 
     def _log_drawings_available(self, device):
-        s = ", ".join(["{}".format(t) for t in device.drawings_available])
-        logger.info('{}: drawings available: {}'.format(device, s))
+        s = ', '.join([f'{t}' for t in device.drawings_available])
+        logger.info(f'{device}: drawings available: {s}')
 
 
 class Fetcher(Worker):
@@ -486,7 +486,7 @@ class Fetcher(Worker):
                 self.device = d
                 break
         else:
-            logger.error("{}: device not found".format(address))
+            logger.error(f'{address}: device not found')
             return
 
         if index != 'all':
@@ -496,7 +496,7 @@ class Fetcher(Worker):
                     raise ValueError()
                 self.indices = [index]
             except ValueError:
-                logger.error("Invalid index {}".format(index))
+                logger.error(f'Invalid index {index}')
                 return
         else:
             self.indices = self.device.drawings_available
@@ -858,7 +858,7 @@ class TuhiKeteShell(cmd.Cmd):
                 device = d
                 break
         else:
-            logger.error("{}: device not found".format(address))
+            logger.error(f'{address}: device not found')
             return
 
         device.pair()
