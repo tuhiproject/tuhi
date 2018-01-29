@@ -241,7 +241,7 @@ class Tuhi(GObject.Object):
 
         d = self.devices[bluez_device.address]
 
-        if Tuhi._is_pairing_device(bluez_device):
+        if pairing_device:
             d.paired = False
             logger.debug('{}: call Pair() on device'.format(bluez_device.objpath))
         elif d.listening:
