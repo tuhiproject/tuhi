@@ -29,11 +29,11 @@ WACOM_COMPANY_ID = 0x4755
 
 
 class TuhiDevice(GObject.Object):
-    """
+    '''
     Glue object to combine the backend bluez DBus object (that talks to the
     real device) with the frontend DBusServer object that exports the device
     over Tuhi's DBus interface
-    """
+    '''
     __gsignals__ = {
         # Signal sent when an error occurs on the device itself.
         # Argument is a Wacom*Exception
@@ -141,9 +141,9 @@ class TuhiDevice(GObject.Object):
 
 class Tuhi(GObject.Object):
     __gsignals__ = {
-        "device-added":
+        'device-added':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        "device-connected":
+        'device-connected':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
@@ -264,7 +264,7 @@ class Tuhi(GObject.Object):
 
 
 def main(args=sys.argv):
-    desc = "Daemon to extract the pen stroke data from Wacom SmartPad devices"
+    desc = 'Daemon to extract the pen stroke data from Wacom SmartPad devices'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-v', '--verbose',
                         help='Show some debugging informations',

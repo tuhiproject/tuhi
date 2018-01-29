@@ -50,7 +50,7 @@ def signed_char_to_int(v):
 
 def b2hex(bs):
     '''Convert bytes() to a two-letter hex string in the form "1a 2b c3"'''
-    hx = binascii.hexlify(bs).decode("ascii")
+    hx = binascii.hexlify(bs).decode('ascii')
     return ' '.join([''.join(s) for s in zip(hx[::2], hx[1::2])])
 
 
@@ -92,19 +92,19 @@ class WacomCorruptDataException(WacomException):
 
 
 class WacomDevice(GObject.Object):
-    """
+    '''
     Class to communicate with the Wacom device. Communication is handled in
     a separate thread.
 
     :param device: the BlueZDevice object that is this wacom device
-    """
+    '''
 
     __gsignals__ = {
-        "drawing":
+        'drawing':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        "done":
+        'done':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
-        "button-press-required":
+        'button-press-required':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
@@ -135,7 +135,7 @@ class WacomDevice(GObject.Object):
         return self._uuid
 
     def is_slate(self):
-        return self.name == "Bamboo Slate"
+        return self.name == 'Bamboo Slate'
 
     def _on_pen_data_changed(self, name, value):
         logger.debug(binascii.hexlify(bytes(value)))
@@ -180,11 +180,11 @@ class WacomDevice(GObject.Object):
                 data = data[6:]
 
     def _on_pen_data_received(self, name, data):
-        self.fw_logger.debug(f"RX Pen    <-- {list2hex(data)}")
+        self.fw_logger.debug(f'RX Pen    <-- {list2hex(data)}')
         self.pen_data_buffer.extend(data)
 
     def _on_nordic_data_received(self, name, value):
-        self.fw_logger.debug(f"RX Nordic <-- {list2hex(value)}")
+        self.fw_logger.debug(f'RX Nordic <-- {list2hex(value)}')
         self.nordic_answer = value
 
     def send_nordic_command(self, command, arguments):
@@ -195,14 +195,14 @@ class WacomDevice(GObject.Object):
 
     def check_nordic_incoming(self):
         if self.nordic_answer is None:
-            raise WacomTimeoutException(f"{self.name}: Timeout while reading data")
+            raise WacomTimeoutException(f'{self.name}: Timeout while reading data')
 
         answer = self.nordic_answer
         self.nordic_answer = None
         length = answer[1]
         args = answer[2:]
         if length != len(args):
-            raise WacomException(f"error while processing answer, should get an answer of size {length} instead of {len(args)}")
+            raise WacomException(f'error while processing answer, should get an answer of size {length} instead of {len(args)}')
         return NordicData(answer)
 
     def wait_nordic_data(self, expected_opcode, timeout):
@@ -216,23 +216,23 @@ class WacomDevice(GObject.Object):
 
         if isinstance(expected_opcode, list):
             if data.opcode not in expected_opcode:
-                raise WacomException(f"unexpected opcode: {data.opcode:02x}")
+                raise WacomException(f'unexpected opcode: {data.opcode:02x}')
         else:
             if data.opcode != expected_opcode:
-                raise WacomException(f"unexpected opcode: {data.opcode:02x}")
+                raise WacomException(f'unexpected opcode: {data.opcode:02x}')
 
         return data
 
     def check_ack(self, data):
         if len(data) != 1:
             str_b = binascii.hexlify(bytes(data))
-            raise WacomException(f"unexpected data: {str_b}")
+            raise WacomException(f'unexpected data: {str_b}')
         if data[0] == 0x07:
-            raise WacomNotPairedException(f"wrong device, please redo pairing")
+            raise WacomNotPairedException(f'wrong device, please redo pairing')
         if data[0] == 0x02:
-            raise WacomEEAGAINException(f"unexpected answer: {data[0]:02x}")
+            raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
         if data[0] == 0x01:
-            raise WacomWrongModeException(f"wrong device mode")
+            raise WacomWrongModeException(f'wrong device mode')
 
     def send_nordic_command_sync(self,
                                  command,
@@ -270,7 +270,7 @@ class WacomDevice(GObject.Object):
 
     def set_time(self):
         # Device time is UTC
-        self.current_time = time.strftime("%y%m%d%H%M%S", time.gmtime())
+        self.current_time = time.strftime('%y%m%d%H%M%S', time.gmtime())
         args = [int(i) for i in binascii.unhexlify(self.current_time)]
         self.send_nordic_command_sync(command=0xb6,
                                       expected_opcode=0xb3,
@@ -352,7 +352,7 @@ class WacomDevice(GObject.Object):
         # logger.debug(f'cc returned {data} ')
         count = int.from_bytes(data[0:4], byteorder='little')
         str_timestamp = ''.join([f'{d:02x}' for d in data[4:]])
-        timestamp = time.strptime(str_timestamp, "%y%m%d%H%M%S")
+        timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
         return count, timestamp
 
     def get_stroke_data_spark(self):
@@ -367,7 +367,7 @@ class WacomDevice(GObject.Object):
             # logger.debug(f'cc returned {data} ')
 
         str_timestamp = ''.join([f'{d:02x}' for d in data])
-        timestamp = time.strptime(str_timestamp, "%y%m%d%H%M%S")
+        timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
         return count, timestamp
 
     def get_stroke_data(self):
@@ -379,12 +379,12 @@ class WacomDevice(GObject.Object):
         data = self.send_nordic_command_sync(command=0xc3,
                                              expected_opcode=0xc8)
         if data[0] != 0xbe:
-            raise WacomException(f"unexpected answer: {data[0]:02x}")
+            raise WacomException(f'unexpected answer: {data[0]:02x}')
 
     def wait_for_end_read(self):
         data = self.wait_nordic_data(0xc8, 5)
         if data[0] != 0xed:
-            raise WacomException(f"unexpected answer: {data[0]:02x}")
+            raise WacomException(f'unexpected answer: {data[0]:02x}')
         crc = data[1:]
         if not self.is_slate():
             data = self.wait_nordic_data(0xc9, 5)
@@ -457,10 +457,10 @@ class WacomDevice(GObject.Object):
         return v, dv, is_rel
 
     def parse_pen_data(self, data, timestamp):
-        """
+        '''
         :param timestamp: a tuple with 9 entries, corresponding to the
         local time
-        """
+        '''
         offset = 0
         x, y, p = 0, 0, 0
         dx, dy, dp = 0, 0, 0
@@ -517,11 +517,11 @@ class WacomDevice(GObject.Object):
         transaction_count = 0
         while self.is_data_available():
             count, timestamp = self.get_stroke_data()
-            logger.info(f"receiving {count} bytes drawn on {time.asctime(timestamp)}")
+            logger.info(f'receiving {count} bytes drawn on {time.asctime(timestamp)}')
             self.start_reading()
             pen_data = self.wait_for_end_read()
             str_pen = binascii.hexlify(bytes(pen_data))
-            logger.info(f"received {str_pen}")
+            logger.info(f'received {str_pen}')
             prefix = pen_data[:4]
             # not sure if we really need this check
             # note: \x38\x62\x74 translates to '8bt'
@@ -558,13 +558,13 @@ class WacomDevice(GObject.Object):
                 logger.debug(f'firmware is {fw_high}-{fw_low}')
                 self.ec_command()
             if self.read_offline_data() == 0:
-                logger.info("no data to retrieve")
+                logger.info('no data to retrieve')
         except WacomEEAGAINException:
-            logger.warning("no data, please make sure the LED is blue and the button is pressed to switch it back to green")
+            logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
 
     def pair_device_slate(self):
         self.register_connection()
-        logger.info("Press the button now to confirm")
+        logger.info('Press the button now to confirm')
         self.emit('button-press-required')
         data = self.wait_nordic_data([0xe4, 0xb3], 10)
         if data.opcode == 0xb3:
@@ -590,7 +590,7 @@ class WacomDevice(GObject.Object):
             pass
         self.send_nordic_command(command=0xe3,
                                  arguments=[0x01])
-        logger.info("Press the button now to confirm")
+        logger.info('Press the button now to confirm')
         self.emit('button-press-required')
         # Wait for the button confirmation event, or any error
         data = self.wait_nordic_data([0xe4, 0xb3], 10)
@@ -636,7 +636,7 @@ class WacomDevice(GObject.Object):
         finally:
             self._pairing_mode = False
             self._is_running = False
-            self.emit("done", exception)
+            self.emit('done', exception)
 
     def start(self, pairing_mode):
         self._pairing_mode = pairing_mode

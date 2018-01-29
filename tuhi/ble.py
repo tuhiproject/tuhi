@@ -22,17 +22,17 @@ ORG_BLUEZ_ADAPTER1 = 'org.bluez.Adapter1'
 
 
 class BlueZCharacteristic(GObject.Object):
-    """
+    '''
     Abstraction for a org.bluez.GattCharacteristic1 object.
 
     Use start_notify() to receive notifications about the characteristics.
     Hook up a property with connect_property() first.
 
-    """
+    '''
     def __init__(self, obj):
-        """
+        '''
         :param obj: the org.bluez.GattCharacteristic1 DBus proxy object
-        """
+        '''
         self.obj = obj
         self.objpath = obj.get_object_path()
         self.interface = obj.get_interface(ORG_BLUEZ_GATTCHARACTERISTIC1)
@@ -46,7 +46,7 @@ class BlueZCharacteristic(GObject.Object):
                                self._on_properties_changed)
 
     def connect_property(self, propname, callback):
-        """
+        '''
         Connect the property with the given name to the callback function
         provide. When the property chages, callback is invoked as:
 
@@ -54,7 +54,7 @@ class BlueZCharacteristic(GObject.Object):
 
         The common way is connect_property('Value', do_something) to get
         notified about Value changes on this characteristic.
-        """
+        '''
         self._property_callbacks[propname] = callback
 
     def start_notify(self):
@@ -76,7 +76,7 @@ class BlueZCharacteristic(GObject.Object):
 
 
 class BlueZDevice(GObject.Object):
-    """
+    '''
     Abstraction for a org.bluez.Device1 object
 
     The device initializes itself based on the given object manager and
@@ -89,21 +89,21 @@ class BlueZDevice(GObject.Object):
     established.
 
     The device's characteristics are in self.characteristics[uuid]
-    """
+    '''
     __gsignals__ = {
-        "connected":
+        'connected':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
-        "disconnected":
+        'disconnected':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
-        "updated":
+        'updated':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self, om, obj):
-        """
+        '''
         :param om: The ObjectManager for name org.bluez path /
         :param obj: The org.bluez.Device1 DBus proxy object
-        """
+        '''
         GObject.Object.__init__(self)
         self.objpath = obj.get_object_path()
         self.obj = obj
@@ -152,12 +152,12 @@ class BlueZDevice(GObject.Object):
         return None
 
     def resolve(self, om):
-        """
+        '''
         Resolve the GattServices and GattCharacteristics. This function does
         not need to be called for existing objects but if a device comes in
         at runtime not all services may have been resolved by the time the
         org.bluez.Device1 shows up.
-        """
+        '''
         objects = om.get_objects()
         self._resolve_gatt_services(objects)
 
@@ -195,10 +195,10 @@ class BlueZDevice(GObject.Object):
             self.characteristics[chrc.uuid] = chrc
 
     def connect_device(self):
-        """
+        '''
         Connect to the bluetooth device via bluez. This function is
         asynchronous and returns immediately.
-        """
+        '''
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if self.connected:
             logger.info(f'{self.address}: Device is already connected')
@@ -219,10 +219,10 @@ class BlueZDevice(GObject.Object):
             logger.error(f'Connection failed: {result}')
 
     def disconnect_device(self):
-        """
+        '''
         Disconnect the bluetooth device via bluez. This function is
         asynchronous and returns immediately.
-        """
+        '''
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if not i.get_cached_property('Connected').get_boolean():
             logger.info(f'{self.address}: Device is already disconnected')
@@ -252,10 +252,10 @@ class BlueZDevice(GObject.Object):
             self.emit('updated')
 
     def connect_gatt_value(self, uuid, callback):
-        """
+        '''
         Connects Value property changes of the given GATT Characteristics
         UUID to the callback.
-        """
+        '''
         try:
             chrc = self.characteristics[uuid]
             chrc.connect_property('Value', callback)
@@ -268,18 +268,18 @@ class BlueZDevice(GObject.Object):
 
 
 class BlueZDeviceManager(GObject.Object):
-    """
+    '''
     Manager object that connects to org.bluez's root object and handles the
     devices.
-    """
+    '''
     __gsignals__ = {
-        "device-added":
+        'device-added':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_BOOLEAN)),
-        "device-updated":
+        'device-updated':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        "discovery-started":
+        'discovery-started':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
-        "discovery-stopped":
+        'discovery-stopped':
             (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
@@ -289,11 +289,11 @@ class BlueZDeviceManager(GObject.Object):
         self._discovery = False
 
     def connect_to_bluez(self):
-        """
+        '''
         Connect to bluez's DBus interface. Once called, devices will be
         resolved as they come in. The device-added signal is emitted for
         each device.
-        """
+        '''
         self._om = Gio.DBusObjectManagerClient.new_for_bus_sync(
             Gio.BusType.SYSTEM,
             Gio.DBusObjectManagerClientFlags.NONE,
@@ -316,14 +316,14 @@ class BlueZDeviceManager(GObject.Object):
         return False
 
     def start_discovery(self, timeout=0):
-        """
+        '''
         Start discovery mode, terminating after the specified timeout (in
         seconds). If timeout is 0, no timeout is imposed and the discovery
         mode stays on.
 
         This emits the discovery-started signal
-        """
-        self.emit("discovery-started")
+        '''
+        self.emit('discovery-started')
         if self._discovery:
             return
 
@@ -354,11 +354,11 @@ class BlueZDeviceManager(GObject.Object):
         # signal with the status code
 
     def stop_discovery(self):
-        """
+        '''
         Stop an ongoing discovery mode. Any errors are logged but ignored.
 
         This emits the discovery-stopped signal
-        """
+        '''
         if not self._discovery:
             return
 
@@ -379,16 +379,16 @@ class BlueZDeviceManager(GObject.Object):
             # reset the discovery filters
             i.SetDiscoveryFilter('(a{sv})', {})
 
-        self.emit("discovery-stopped")
+        self.emit('discovery-stopped')
 
     def _on_device_updated(self, device):
-        """Callback for Device's properties-changed"""
+        '''Callback for Device's properties-changed'''
         logger.debug(f'Object updated: {device.name}')
 
-        self.emit("device-updated", device)
+        self.emit('device-updated', device)
 
     def _on_om_object_added(self, om, obj):
-        """Callback for ObjectManager's object-added"""
+        '''Callback for ObjectManager's object-added'''
         objpath = obj.get_object_path()
         logger.debug(f'Object added: {objpath}')
         needs_resolve = self._process_object(obj, event=True)
@@ -401,12 +401,12 @@ class BlueZDeviceManager(GObject.Object):
                 d.resolve(om)
 
     def _on_om_object_removed(self, om, obj):
-        """Callback for ObjectManager's object-removed"""
+        '''Callback for ObjectManager's object-removed'''
         objpath = obj.get_object_path()
         logger.debug(f'Object removed: {objpath}')
 
     def _process_object(self, obj, event=True):
-        """Process a single DBusProxyObject"""
+        '''Process a single DBusProxyObject'''
 
         if obj.get_interface(ORG_BLUEZ_ADAPTER1) is not None:
             self._process_adapter(obj)
@@ -424,8 +424,8 @@ class BlueZDeviceManager(GObject.Object):
     def _process_device(self, obj, event=True):
         dev = BlueZDevice(self._om, obj)
         self.devices.append(dev)
-        dev.connect("updated", self._on_device_updated)
-        self.emit("device-added", dev, event)
+        dev.connect('updated', self._on_device_updated)
+        self.emit('device-added', dev, event)
 
     def _process_characteristic(self, obj):
         objpath = obj.get_object_path()
