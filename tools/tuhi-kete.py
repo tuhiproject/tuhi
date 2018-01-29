@@ -26,9 +26,38 @@ import time
 import svgwrite
 
 
-log_format = '%(levelname)s: %(message)s'
+class ColorFormatter(logging.Formatter):
+    BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, LIGHT_GRAY = range(30, 38)
+    DARK_GRAY, LIGHT_RED, LIGHT_GREEN, LIGHT_YELLOW, LIGHT_BLUE, LIGHT_MAGENTA, LIGHT_CYAN, WHITE = range(90, 98)
+    COLORS = {
+        'WARNING': LIGHT_RED,
+        'INFO': LIGHT_GREEN,
+        'DEBUG': LIGHT_GRAY,
+        'CRITICAL': YELLOW,
+        'ERROR': RED,
+    }
+    RESET_SEQ = "\033[0m"
+    COLOR_SEQ = "\033[%dm"
+    BOLD_SEQ = "\033[1m"
+
+    def __init__(self, *args, **kwargs):
+        logging.Formatter.__init__(self, *args, **kwargs)
+
+    def format(self, record):
+        levelname = record.levelname
+        color = self.COLOR_SEQ % (self.COLORS[levelname])
+        message = logging.Formatter.format(self, record)
+        message = message.replace("$RESET", self.RESET_SEQ)\
+                         .replace("$BOLD", self.BOLD_SEQ)\
+                         .replace("$COLOR", color)
+        for k, v in self.COLORS.items():
+            message = message.replace("$" + k, self.COLOR_SEQ % (v + 30))
+        return message + self.RESET_SEQ
+
+
+log_format = '$COLOR%(levelname)s: %(message)s'
 logger_handler = logging.StreamHandler()
-logger_handler.setFormatter(logging.Formatter(log_format))
+logger_handler.setFormatter(ColorFormatter(log_format))
 logger = logging.getLogger('tuhi-kete')
 logger.addHandler(logger_handler)
 logger.setLevel(logging.INFO)
@@ -510,7 +539,7 @@ class Printer(Worker):
 class TuhiKeteShellLogHandler(logging.StreamHandler):
     def __init__(self):
         super(TuhiKeteShellLogHandler, self).__init__(sys.stdout)
-        self.setFormatter(logging.Formatter(log_format))
+        self.setFormatter(ColorFormatter(log_format))
         self._prompt = ''
 
     def emit(self, record):
@@ -519,7 +548,7 @@ class TuhiKeteShellLogHandler(logging.StreamHandler):
 
     def set_normal_mode(self):
         self.acquire()
-        self.setFormatter(logging.Formatter(log_format))
+        self.setFormatter(ColorFormatter(log_format))
         self.terminator = '\n'
         self._prompt = ''
         self.release()
@@ -527,7 +556,7 @@ class TuhiKeteShellLogHandler(logging.StreamHandler):
     def set_prompt_mode(self, prompt):
         self.acquire()
         # '\x1b[2K\r' clears the current line and start again from the beginning
-        self.setFormatter(logging.Formatter(f'\x1b[2K\r{log_format}'))
+        self.setFormatter(ColorFormatter(f'\x1b[2K\r{log_format}'))
         self._prompt = prompt
         self.release()
 
