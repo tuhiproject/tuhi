@@ -609,6 +609,9 @@ class TuhiKeteShell(cmd.Cmd):
         # overwrite the logger facility to remove the current prompt and append
         # a new one
         self._log_handler.set_prompt_mode(self.prompt)
+
+        # restore any completion display hook we might have set
+        readline.set_completion_display_matches_hook()
         return stop
 
     def run(self, init=None):
@@ -699,6 +702,26 @@ class TuhiKeteShell(cmd.Cmd):
         self.do_fetch('-h')
 
     def complete_fetch(self, text, line, begidx, endidx):
+
+        def draw_timestamp(substitution, matches, longest_match_length):
+            print()
+
+            for drawing in matches:
+                # we underline the current matching, because it makes easier to
+                # visually go through the list
+                display_drawing = f'\033[4m{drawing[:len(substitution)]}\033[0m{drawing[len(substitution):]}'
+
+                try:
+                    t = time.localtime(int(drawing))
+                    t = time.strftime('%Y-%m-%d at %H:%M', t)
+                    print(f'{display_drawing}: drawn on the {t}')
+                except ValueError:
+                    # 'all' case
+                    print(f'{display_drawing}{":":<8} fetch all drawings')
+
+            print(self.prompt, readline.get_line_buffer(), sep='', end='')
+            sys.stdout.flush()
+
         # mark the end of the line so we can match on the number of fields
         if line.endswith(' '):
             line += 'm'
@@ -711,6 +734,7 @@ class TuhiKeteShell(cmd.Cmd):
                     completion.append(device.address)
 
         elif len(fields) == 3:
+            readline.set_completion_display_matches_hook(draw_timestamp)
             device = None
             for d in self._manager.devices:
                 if d.address == fields[1]:
