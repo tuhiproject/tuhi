@@ -302,7 +302,7 @@ class WacomDevice(GObject.Object):
         data = self.send_nordic_command_sync(command=0xb7,
                                              expected_opcode=0xb8,
                                              arguments=(arg,))
-        fw = ''.join([hex(d)[2:] for d in data])
+        fw = ''.join([hex(d)[2:] for d in data[1:]])
         return fw.upper()
 
     def bb_command(self):
