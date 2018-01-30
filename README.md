@@ -16,6 +16,22 @@ Devices tested and known to be supported:
 * Bamboo Spark
 * Bamboo Slate
 
+Warning
+-------
+
+A device can only be paired with one application at a time. Thus, when a
+device is paired with Tuhi, other applications (e.g. Wacom Inkspace)
+cannot not connect to the device anymore. Likewise, when paired with another
+application, Tuhi cannot connect.
+
+To make the tablet connect again, simply re-pair with the respective
+application or Tuhi, whichever desired.
+
+The reason for this behavior is that pairing assigns a application-generated
+unique UUID to the device. Subsequent connections must use that UUID for the
+tablet device to respond. Without knowing that UUID, other applications
+cannot connect.
+
 Installation
 ------------
 
