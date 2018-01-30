@@ -142,8 +142,8 @@ class WacomDevice(GObject.Object):
         assert self._uuid is not None
         return self._uuid
 
-    def is_slate(self):
-        return MYSTERIOUS_NOTIFICATION_CHRC_UUID in self.device.characteristics
+    def is_spark(self):
+        return MYSTERIOUS_NOTIFICATION_CHRC_UUID not in self.device.characteristics
 
     def _on_mysterious_data_received(self, name, value):
         self.fw_logger.debug(f'mysterious: {binascii.hexlify(bytes(value))}')
@@ -350,10 +350,10 @@ class WacomDevice(GObject.Object):
         data = self.send_nordic_command_sync(command=0xc1,
                                              expected_opcode=0xc2)
         n = 0
-        if self.is_slate():
-            n = int.from_bytes(data[0:2], byteorder='little')
-        else:
+        if self.is_spark():
             n = int.from_bytes(data[0:2], byteorder='big')
+        else:
+            n = int.from_bytes(data[0:2], byteorder='little')
         logger.debug(f'Drawings available: {n}')
         return n > 0
 
@@ -382,7 +382,7 @@ class WacomDevice(GObject.Object):
         return count, timestamp
 
     def get_stroke_data(self):
-        if self.is_slate():
+        if not self.is_spark():
             return self.get_stroke_data_slate()
         return self.get_stroke_data_spark()
 
@@ -397,7 +397,7 @@ class WacomDevice(GObject.Object):
         if data[0] != 0xed:
             raise WacomException(f'unexpected answer: {data[0]:02x}')
         crc = data[1:]
-        if not self.is_slate():
+        if self.is_spark():
             data = self.wait_nordic_data(0xc9, 5)
             crc = data
         crc.reverse()
@@ -405,17 +405,17 @@ class WacomDevice(GObject.Object):
         pen_data = self.pen_data_buffer
         self.pen_data_buffer = []
         if crc != binascii.crc32(bytes(pen_data)):
-            if self.is_slate():
+            if not self.is_spark():
                 raise WacomCorruptDataException("CRCs don't match")
             else:
                 logger.error("CRCs don't match")
         return pen_data
 
     def ack_transaction(self):
-        if self.is_slate():
-            opcode = 0xb3
-        else:
+        if self.is_spark():
             opcode = None
+        else:
+            opcode = 0xb3
         self.send_nordic_command_sync(command=0xca,
                                       expected_opcode=opcode)
 
@@ -547,7 +547,7 @@ class WacomDevice(GObject.Object):
     def retrieve_data(self):
         try:
             self.check_connection()
-            if not self.is_slate():
+            if self.is_spark():
                 self.e3_command()
             self.set_time()
             battery, charging = self.get_battery_info()
@@ -556,7 +556,7 @@ class WacomDevice(GObject.Object):
             else:
                 logger.debug(f'device is discharging: {battery}%')
             self.emit('battery-status', battery, charging)
-            if self.is_slate():
+            if not self.is_spark():
                 self.width = w = self.get_dimensions('width')
                 self.height = h = self.get_dimensions('height')
                 if self.orientation in [ORIENTATION_PORTRAIT,
@@ -622,10 +622,10 @@ class WacomDevice(GObject.Object):
     def pair_device(self):
         self._uuid = uuid.uuid4().hex[:12]
         logger.debug(f'{self.device.address}: pairing device, assigned {self.uuid}')
-        if self.is_slate():
-            self.pair_device_slate()
-        else:
+        if self.is_spark():
             self.pair_device_spark()
+        else:
+            self.pair_device_slate()
         logger.info('pairing completed')
         self.notify('uuid')
 
