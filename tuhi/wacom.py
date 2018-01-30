@@ -35,6 +35,9 @@ WACOM_CHRC_LIVE_PEN_DATA_UUID = '00001524-1212-efde-1523-785feabcd123'
 WACOM_OFFLINE_SERVICE_UUID = 'ffee0001-bbaa-9988-7766-554433221100'
 WACOM_OFFLINE_CHRC_PEN_DATA_UUID = 'ffee0003-bbaa-9988-7766-554433221100'
 
+MYSTERIOUS_NOTIFICATION_SERVICE_UUID = '3a340720-c572-11e5-86c5-0002a5d5c51b'
+MYSTERIOUS_NOTIFICATION_CHRC_UUID = '3a340721-c572-11e5-86c5-0002a5d5c51b'
+
 WACOM_SLATE_WIDTH = 21600
 WACOM_SLATE_HEIGHT = 14800
 
@@ -131,6 +134,8 @@ class WacomDevice(GObject.Object):
                                   self._on_pen_data_received)
         device.connect_gatt_value(NORDIC_UART_CHRC_RX_UUID,
                                   self._on_nordic_data_received)
+        device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
+                                  self._on_mysterious_data_received)
 
     @GObject.Property
     def uuid(self):
@@ -138,7 +143,10 @@ class WacomDevice(GObject.Object):
         return self._uuid
 
     def is_slate(self):
-        return self.name == 'Bamboo Slate'
+        return MYSTERIOUS_NOTIFICATION_CHRC_UUID in self.device.characteristics
+
+    def _on_mysterious_data_received(self, name, value):
+        self.fw_logger.debug(f'mysterious: {binascii.hexlify(bytes(value))}')
 
     def _on_pen_data_changed(self, name, value):
         logger.debug(binascii.hexlify(bytes(value)))
