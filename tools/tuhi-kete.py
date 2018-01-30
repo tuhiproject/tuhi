@@ -15,6 +15,7 @@ from gi.repository import GObject, Gio, GLib
 import sys
 import argparse
 import cmd
+import errno
 import os
 import json
 import logging
@@ -193,8 +194,10 @@ class TuhiKeteDevice(_DBusObject):
             logger.info(f'{self}: Press button on device now')
         elif signal == 'ListeningStopped':
             err = parameters[0]
-            if err < 0:
-                logger.error(f'{self}: an error occured: {os.strerror(err)}')
+            if err == -errno.EACCES:
+                logger.error(f'{self}: wrong device, please redo pairing.')
+            elif err < 0:
+                logger.error(f'{self}: an error occured: {os.strerror(-err)}')
             self.notify('listening')
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
