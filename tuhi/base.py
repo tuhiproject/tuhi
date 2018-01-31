@@ -78,15 +78,15 @@ class TuhiDevice(GObject.Object):
     def paired(self, paired):
         self._paired = paired
 
-    @property
+    @GObject.Property
     def name(self):
         return self._bluez_device.name
 
-    @property
+    @GObject.Property
     def address(self):
         return self._bluez_device.address
 
-    @property
+    @GObject.Property
     def dbus_device(self):
         return self._tuhi_dbus_device
 

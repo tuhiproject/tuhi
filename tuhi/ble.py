@@ -118,29 +118,29 @@ class BlueZDevice(GObject.Object):
         if self.connected:
             self.emit('connected')
 
-    @property
+    @GObject.property
     def name(self):
         try:
             return self.interface.get_cached_property('Name').unpack()
         except AttributeError:
             return 'UNKNOWN'
 
-    @property
+    @GObject.property
     def address(self):
         return self.interface.get_cached_property('Address').unpack()
 
-    @property
+    @GObject.property
     def uuids(self):
         return self.interface.get_cached_property('UUIDs').unpack()
 
-    @property
+    @GObject.property
     def vendor_id(self):
         md = self.interface.get_cached_property('ManufacturerData')
         if md is not None:
             return md.keys()[0]
         return None
 
-    @property
+    @GObject.property
     def connected(self):
         return (self.interface.get_cached_property('Connected').unpack() and
                 self.interface.get_cached_property('ServicesResolved').unpack())
