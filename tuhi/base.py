@@ -116,7 +116,6 @@ class TuhiDevice(GObject.Object):
 
     @battery_state.setter
     def battery_state(self, value):
-        print('setting battery state on tuhidevice')
         self._battery_state = value
 
     def connect_device(self):
