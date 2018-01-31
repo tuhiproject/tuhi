@@ -783,7 +783,10 @@ class TuhiKeteShell(cmd.Cmd):
         except SystemExit:
             return
 
-        self.start_worker(Fetcher, parsed_args)
+        # we do not call start_worker() as we don't need to retain the
+        # worker
+        worker = Fetcher(self._manager, parsed_args)
+        worker.run()
 
     def help_search(self):
         self.do_search('-h')
