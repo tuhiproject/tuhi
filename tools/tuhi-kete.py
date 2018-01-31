@@ -233,6 +233,8 @@ class TuhiKeteManager(_DBusObject):
     __gsignals__ = {
         'pairable-device':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        'dbus-name-vanished':
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self):
@@ -304,8 +306,11 @@ class TuhiKeteManager(_DBusObject):
 
     def _on_name_vanished(self, connection, name):
         logger.error('Tuhi daemon went away')
-        # FIXME: need to bubble this up to the Worker
-        self.mainloop.quit()
+        self.emit('dbus-name-vanished')
+        try:
+            self.mainloop.quit()
+        except AttributeError:
+            pass
 
     def __getitem__(self, btaddr):
         return self._devices[btaddr]
@@ -580,11 +585,16 @@ class TuhiKeteShell(cmd.Cmd):
         logger.addHandler(self._log_handler)
         # patching get_names to hide some functions we do not want in the help
         self.get_names = self._filtered_get_names
+        self.want_to_stop = threading.Event()
+        manager.connect('dbus-name-vanished', self._on_name_vanished)
 
     def _filtered_get_names(self):
         names = super(TuhiKeteShell, self).get_names()
         names.remove('do_EOF')
         return names
+
+    def _on_name_vanished(self, manager):
+        self.want_to_stop.set()
 
     def emptyline(self):
         # make sure we do not re-enter the last typed command
@@ -601,6 +611,9 @@ class TuhiKeteShell(cmd.Cmd):
         return True
 
     def precmd(self, line):
+        if self.want_to_stop.is_set():
+            return 'exit'
+
         # Restore the logger facility to something sane:
         self._log_handler.set_normal_mode()
         return line
@@ -612,6 +625,8 @@ class TuhiKeteShell(cmd.Cmd):
 
         # restore any completion display hook we might have set
         readline.set_completion_display_matches_hook()
+        if self.want_to_stop.is_set():
+            return True
         return stop
 
     def run(self, init=None):
