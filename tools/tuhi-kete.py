@@ -226,7 +226,6 @@ class TuhiKeteDevice(_DBusObject):
             if d.address == self.address:
                 self.is_pairing = False
                 logger.info(f'{self}: Pairing successful')
-                self.manager.quit()
 
 
 class TuhiKeteManager(_DBusObject):
@@ -257,6 +256,10 @@ class TuhiKeteManager(_DBusObject):
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
             self._devices[device.address] = device
+
+        self._glib_thread = threading.Thread(target=self.run)
+        self._glib_thread.daemon = True
+        self._glib_thread.start()
 
     @GObject.Property
     def devices(self):
@@ -955,13 +958,7 @@ class TuhiKeteShellWorker(Worker):
     def __init__(self, manager):
         super(TuhiKeteShellWorker, self).__init__(manager)
 
-    def start_mainloop(self):
-        self.manager.run()
-
     def start(self):
-        self._glib_thread = threading.Thread(target=self.start_mainloop)
-        self._glib_thread.daemon = True
-        self._glib_thread.start()
 
         self.run()
 
