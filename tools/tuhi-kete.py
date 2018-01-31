@@ -337,16 +337,10 @@ class TuhiKeteManager(_DBusObject):
 class Worker(GObject.Object):
     '''Implements a command to be executed.
     Subclasses need to overwrite run() that will be executed
-    to setup the command (before the mainloop).
+    while calling the command.
     Subclass can also implement the stop() method which
     will be executed to terminate the command, once the
-    mainloop has finished.
-
-    The variable need_mainloop needs to be set from the
-    subclass if the command requires the mainloop to be
-    run from an undetermined amount of time.'''
-
-    need_mainloop = False
+    mainloop has finished.'''
 
     def __init__(self, manager, args=None):
         GObject.GObject.__init__(self)
@@ -358,17 +352,8 @@ class Worker(GObject.Object):
     def stop(self):
         pass
 
-    def start(self):
-        self.run()
-
-        if self.need_mainloop:
-            self.manager.run()
-
-        self.stop()
-
 
 class Searcher(Worker):
-    need_mainloop = True
     interactive = True
 
     def __init__(self, manager, args):
@@ -430,8 +415,6 @@ class Searcher(Worker):
 
 
 class Listener(Worker):
-    need_mainloop = True
-
     def __init__(self, manager, args):
         super(Listener, self).__init__(manager)
 
