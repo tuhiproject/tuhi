@@ -305,7 +305,7 @@ class Tuhi(GObject.Object):
             d.connect_device()
 
     def _on_listening_updated(self, tuhi_dbus_device, pspec):
-        listen = False
+        listen = self._search_stop_handler is not None
         for dev in self.devices.values():
             if dev.listening:
                 listen = True
