@@ -355,14 +355,14 @@ class Worker(GObject.Object):
 class Searcher(Worker):
     def __init__(self, manager, args):
         super(Searcher, self).__init__(manager)
+        self.s1 = self.manager.connect('notify::searching', self._on_notify_search)
+        self.s2 = self.manager.connect('pairable-device', self._on_pairable_device)
 
     def run(self):
         if self.manager.searching:
             logger.error('Another client is already searching')
             return
 
-        self.s1 = self.manager.connect('notify::searching', self._on_notify_search)
-        self.s2 = self.manager.connect('pairable-device', self._on_pairable_device)
         self.manager.start_search()
         logger.debug('Started searching')
 
@@ -374,11 +374,8 @@ class Searcher(Worker):
             logger.debug('Stopping search')
             self.manager.stop_search()
 
-        try:
-            self.manager.disconnect(self.s1)
-            self.manager.disconnect(self.s2)
-        except AttributeError:
-            pass
+        self.manager.disconnect(self.s1)
+        self.manager.disconnect(self.s2)
 
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
@@ -794,11 +791,20 @@ class TuhiKeteShell(cmd.Cmd):
         except SystemExit:
             return
 
-        if parsed_args.mode == 'off':
-            self._manager.stop_search()
-            return
+        current_searcher = None
+        workers = [w for w in self._workers if isinstance(w, Searcher)]
+        if len(workers) == 1:
+            current_searcher = workers[0]
 
-        self.start_worker(Searcher, parsed_args)
+        if current_searcher is None:
+            if parsed_args.mode == 'on':
+                self.start_worker(Searcher, parsed_args)
+        else:
+            if parsed_args.mode == 'off':
+                current_searcher.stop()
+                self._workers.remove(current_searcher)
+            else:
+                logger.info('Already searching')
 
     def help_pair(self):
         self.do_pair('-h')
