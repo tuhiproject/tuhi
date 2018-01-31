@@ -64,6 +64,8 @@ class TuhiConfig(GObject.Object):
                 config = configparser.ConfigParser()
                 config.read(path)
 
+                self._purge_drawings(entry)
+
                 assert config['Device']['Address'] == entry.name
                 self._devices[entry.name] = config['Device']
 
@@ -133,3 +135,22 @@ class TuhiConfig(GObject.Object):
                 drawings.append(d)
 
         return drawings
+
+    def _purge_drawings(self, directory):
+        '''Removes all but the most recent 10 files from the config
+        directory. This is primarily done so that no-one relies on the tuhi
+        daemon for permanent storage.'''
+
+        files = []
+        with os.scandir(directory) as it:
+            for entry in it:
+                if entry.is_file() and entry.name.endswith('.json'):
+                    files.append(entry)
+
+        if len(files) <= 10:
+            return
+
+        files.sort(key=lambda e: e.name)
+        for f in files[:-10]:
+            logger.debug(f'{directory.name}: purging {f.name}')
+            os.remove(f)
