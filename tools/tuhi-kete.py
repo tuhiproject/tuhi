@@ -67,6 +67,8 @@ ORG_FREEDESKTOP_TUHI1_MANAGER = 'org.freedesktop.tuhi1.Manager'
 ORG_FREEDESKTOP_TUHI1_DEVICE = 'org.freedesktop.tuhi1.Device'
 ROOT_PATH = '/org/freedesktop/tuhi1'
 
+ORG_BLUEZ_DEVICE1 = 'org.bluez.Device1'
+
 # remove ':' from the completer delimiters of readline so we can match on
 # device addresses
 completer_delims = readline.get_completer_delims()
@@ -92,7 +94,7 @@ class _DBusObject(GObject.Object):
         self.objpath = objpath
 
         try:
-            self.proxy = Gio.DBusProxy.new_sync(_DBusObject._connection,
+            self.proxy = Gio.DBusProxy.new_sync(self._connection,
                                                 Gio.DBusProxyFlags.NONE, None,
                                                 name, objpath, interface, None)
         except GLib.Error as e:
@@ -133,6 +135,30 @@ class _DBusObject(GObject.Object):
         return p
 
 
+class _DBusSystemObject(_DBusObject):
+    '''
+    Same as the _DBusObject, but connects to the system bus instead
+    '''
+    def __init__(self, name, interface, objpath):
+        self._connect_to_system()
+        super().__init__(name, interface, objpath)
+
+    def _connect_to_system(self):
+        try:
+            self._connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+        except GLib.Error as e:
+            if (e.domain == 'g-io-error-quark' and
+                    e.code == Gio.IOErrorEnum.DBUS_ERROR):
+                raise DBusError(e.message)
+            else:
+                raise e
+
+
+class BlueZDevice(_DBusSystemObject):
+    def __init__(self, objpath):
+        super().__init__('org.bluez', ORG_BLUEZ_DEVICE1, objpath)
+
+
 class TuhiKeteDevice(_DBusObject):
     def __init__(self, manager, objpath):
         _DBusObject.__init__(self, TUHI_DBUS_NAME,
@@ -140,6 +166,7 @@ class TuhiKeteDevice(_DBusObject):
                              objpath)
         self.manager = manager
         self.is_pairing = False
+        self._bluez_device = BlueZDevice(self.property('BlueZDevice'))
 
     @classmethod
     def is_device_address(cls, string):
@@ -149,11 +176,11 @@ class TuhiKeteDevice(_DBusObject):
 
     @GObject.Property
     def address(self):
-        return self.property('Address')
+        return self._bluez_device.property('Address')
 
     @GObject.Property
     def name(self):
-        return self.property('Name')
+        return self._bluez_device.property('Name')
 
     @GObject.Property
     def listening(self):

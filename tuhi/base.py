@@ -87,6 +87,10 @@ class TuhiDevice(GObject.Object):
         return self._bluez_device.address
 
     @GObject.Property
+    def bluez_device(self):
+        return self._bluez_device
+
+    @GObject.Property
     def dbus_device(self):
         return self._tuhi_dbus_device
 

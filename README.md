@@ -143,12 +143,8 @@ org.freedesktop.tuhi1.Device
   Interface to a device known by tuhi. Each object in Manager.Devices
   implements this interface.
 
-  Property: Name (s)
-      Human-readable name of the device.
-      Read-only
-
-  Property: Address (s)
-      Bluetooth address of the device.
+  Property: BlueZDevice (o)
+      Object path to the org.bluez.Device1 device that is this device.
       Read-only
 
   Property: Dimensions (uu)

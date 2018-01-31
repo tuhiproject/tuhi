@@ -47,8 +47,7 @@ INTROSPECTION_XML = '''
   </interface>
 
   <interface name='org.freedesktop.tuhi1.Device'>
-    <property type='s' name='Name' access='read'/>
-    <property type='s' name='Address' access='read'/>
+    <property type='o' name='BlueZDevice' access='read'/>
     <property type='uu' name='Dimensions' access='read'/>
     <property type='b' name='Listening' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
@@ -144,8 +143,8 @@ class TuhiDBusDevice(_TuhiDBus):
         objpath = f'{BASE_PATH}/{objpath}'
         _TuhiDBus.__init__(self, connection, objpath, INTF_DEVICE)
 
+        self.bluez_device_objpath = device.bluez_device.objpath
         self.name = device.name
-        self.btaddr = device.address
         self.width, self.height = 0, 0
         self.drawings = {}
         self.paired = device.paired
@@ -240,10 +239,8 @@ class TuhiDBusDevice(_TuhiDBus):
         if interface != INTF_DEVICE:
             return None
 
-        if propname == 'Name':
-            return GLib.Variant.new_string(self.name)
-        elif propname == 'Address':
-            return GLib.Variant.new_string(self.btaddr)
+        if propname == 'BlueZDevice':
+            return GLib.Variant.new_object_path(self.bluez_device_objpath)
         elif propname == 'Dimensions':
             w = GLib.Variant.new_uint32(self.width)
             h = GLib.Variant.new_uint32(self.height)
