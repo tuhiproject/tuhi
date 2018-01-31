@@ -157,7 +157,11 @@ org.freedesktop.tuhi1.Device
 
   Property: BatteryPercent (u)
       The last known battery charge level in percent. This charge level is
-      only valid when the BatteryState is other than Unknown.
+      only accurate when the BatteryState is other than Unknown.
+
+      When the BatteryState is Unknown and BatteryPercent is nonzero, the
+      value is the last known percentage value.
+
       Read-only
 
   Property: BatteryState (u)

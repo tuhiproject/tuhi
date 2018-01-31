@@ -15,6 +15,7 @@ import argparse
 import enum
 import logging
 import sys
+import time
 from gi.repository import GObject
 
 from tuhi.dbusserver import TuhiDBusServer
@@ -48,6 +49,8 @@ class TuhiDevice(GObject.Object):
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
+    BATTERY_UPDATE_MIN_INTERVAL = 300
+
     def __init__(self, bluez_device, config, uuid=None, paired=True):
         GObject.Object.__init__(self)
         self.config = config
@@ -58,6 +61,8 @@ class TuhiDevice(GObject.Object):
         self._uuid = uuid
         self._battery_state = TuhiDevice.BatteryState.UNKNOWN
         self._battery_percent = 0
+        self._last_battery_update_time = 0
+        self._battery_timer_source = None
 
         bluez_device.connect('connected', self._on_bluez_device_connected)
         bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
@@ -170,6 +175,21 @@ class TuhiDevice(GObject.Object):
         else:
             self.battery_state = TuhiDevice.BatteryState.DISCHARGING
         self.battery_percent = percent
+
+        # If we don't get battery updates for a while, switch the state
+        # to unknown
+        if self._battery_timer_source is not None:
+            GObject.source_remove(self._battery_timer_source)
+        self._battery_timer_source = \
+            GObject.timeout_add_seconds(self.BATTERY_UPDATE_MIN_INTERVAL,
+                                        self._on_battery_timeout)
+        self._last_battery_update_time = time.time()
+
+    def _on_battery_timeout(self):
+        if self._last_battery_update_time < time.time() - self.BATTERY_UPDATE_MIN_INTERVAL:
+            self.battery_state = TuhiDevice.BatteryState.UNKNOWN
+        self._battery_timer_source = None  # gets auto-destroyed
+        return False
 
 
 class Tuhi(GObject.Object):
