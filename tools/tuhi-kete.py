@@ -332,8 +332,6 @@ class Worker(GObject.Object):
     def __init__(self, manager, args=None):
         GObject.GObject.__init__(self)
         self.manager = manager
-        self._run = self.run
-        self._stop = self.stop
 
     def run(self):
         pass
@@ -342,12 +340,12 @@ class Worker(GObject.Object):
         pass
 
     def start(self):
-        self._run()
+        self.run()
 
         if self.need_mainloop:
             self.manager.run()
 
-        self._stop()
+        self.stop()
 
 
 class Searcher(Worker):
