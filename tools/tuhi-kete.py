@@ -578,7 +578,8 @@ class TuhiKeteShell(cmd.Cmd):
         return names
 
     def _on_name_vanished(self, manager):
-        logger.debug('Tuhi daemon went away, I should stop the current workers')
+        logger.debug('Tuhi daemon went away, terminating the current workers')
+        self.terminate_workers()
 
     def emptyline(self):
         # make sure we do not re-enter the last typed command
@@ -590,8 +591,7 @@ class TuhiKeteShell(cmd.Cmd):
 
     def do_exit(self, args):
         '''Leave the shell'''
-        for worker in self._workers:
-            worker.stop()
+        self.terminate_workers()
         return True
 
     def precmd(self, line):
@@ -619,6 +619,15 @@ class TuhiKeteShell(cmd.Cmd):
         worker = worker_class(self._manager, args)
         worker.run()
         self._workers.append(worker)
+
+    def terminate_worker(self, worker):
+        worker.stop()
+        self._workers.remove(worker)
+
+    def terminate_workers(self):
+        for worker in self._workers:
+            worker.stop()
+        self._workers = []
 
     def do_devices(self, arg):
         '''List known devices. These are devices previously paired with the daemon.'''
@@ -687,8 +696,7 @@ class TuhiKeteShell(cmd.Cmd):
         if mode == 'off':
             for worker in [w for w in self._workers if isinstance(w, Listener)]:
                 if worker.device.address == address:
-                    worker.stop()
-                    self._workers.remove(worker)
+                    self.terminate_worker(worker)
                     break
             return
 
@@ -832,8 +840,7 @@ class TuhiKeteShell(cmd.Cmd):
                 self.start_worker(Searcher, parsed_args)
         else:
             if parsed_args.mode == 'off':
-                current_searcher.stop()
-                self._workers.remove(current_searcher)
+                self.terminate_worker(current_searcher)
             else:
                 logger.info('Already searching')
 
@@ -880,6 +887,11 @@ class TuhiKeteShell(cmd.Cmd):
         address = parsed_args.address
 
         device = None
+
+        # make sure we do not keep a listener on the device
+        for worker in [w for w in self._workers if isinstance(w, Listener)]:
+            if worker.device.address == address:
+                self.terminate_worker(worker)
 
         for d in self._manager.devices + self._manager.pairable_devices:
             if d.address == address:
