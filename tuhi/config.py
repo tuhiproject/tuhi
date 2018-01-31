@@ -56,7 +56,7 @@ class TuhiConfig(GObject.Object):
                 if not is_btaddr(entry.name):
                     continue
 
-                path = os.path.join(ROOT_PATH, entry.name, 'settings.ini')
+                path = os.path.join(entry, 'settings.ini')
                 if not os.path.isfile(path):
                     continue
 
