@@ -248,6 +248,7 @@ class TuhiKeteManager(_DBusObject):
 
         self._devices = {}
         self._pairable_devices = {}
+        self.mainloop = None  # To be set externally
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
             self._devices[device.address] = device
@@ -304,6 +305,7 @@ class TuhiKeteManager(_DBusObject):
     def _on_name_vanished(self, connection, name):
         logger.error('Tuhi daemon went away')
         # FIXME: need to bubble this up to the Worker
+        self.mainloop.quit()
 
     def __getitem__(self, btaddr):
         return self._devices[btaddr]
@@ -312,7 +314,10 @@ class TuhiKeteManager(_DBusObject):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        try:
+            self.mainloop.quit()
+        except AttributeError:
+            pass
 
 
 class Worker(GObject.Object):
@@ -943,9 +948,8 @@ class TuhiKeteShellWorker(Worker):
         # we can not call GLib.MainLoop() here or it will install a unix signal
         # handler for SIGINT, and we will not be able to catch
         # KeyboardInterrupt in cmdloop()
-        mainloop = GLib.MainLoop.new(None, False)
-
-        mainloop.run()
+        self.manager.mainloop = GLib.MainLoop.new(None, False)
+        self.manager.mainloop.run()
 
     def start(self):
         self._glib_thread = threading.Thread(target=self.start_mainloop)
