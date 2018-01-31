@@ -503,13 +503,6 @@ class Fetcher(Worker):
         svg.save()
 
 
-class Printer(Worker):
-    def run(self):
-        logger.debug('Listing available devices:')
-        for d in self.manager.devices:
-            print(d)
-
-
 class TuhiKeteShellLogHandler(logging.StreamHandler):
     def __init__(self):
         super(TuhiKeteShellLogHandler, self).__init__(sys.stdout)
@@ -596,7 +589,9 @@ class TuhiKeteShell(cmd.Cmd):
 
     def do_list(self, arg):
         '''List known devices. These are devices previously paired with the daemon.'''
-        self.start_worker(Printer)
+        logger.debug('Listing available devices:')
+        for d in self._manager.devices:
+            print(d)
 
     def help_listen(self):
         self.do_listen('-h')
