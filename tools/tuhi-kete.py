@@ -21,7 +21,6 @@ import json
 import logging
 import re
 import readline
-import select
 import threading
 import time
 import svgwrite
@@ -354,12 +353,8 @@ class Worker(GObject.Object):
 
 
 class Searcher(Worker):
-    interactive = True
-
     def __init__(self, manager, args):
         super(Searcher, self).__init__(manager)
-        self.address = args.address
-        self.is_pairing = False
 
     def run(self):
         if self.manager.searching:
@@ -388,30 +383,9 @@ class Searcher(Worker):
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
             logger.info('Search cancelled')
-            if not self.is_pairing and self.interactive:
-                self.stop()
-
-    def _on_pairable_device_interactive(self, manager, device):
-        if self.address is None:
-            print('Connect to device? [y/N] ', end='')
-            sys.stdout.flush()
-            i, o, e = select.select([sys.stdin], [], [], 5)
-            if i:
-                answer = sys.stdin.readline().strip()
-                if answer.lower() == 'y':
-                    self.address = device.address
-            else:
-                print('timed out')
-
-        if device.address == self.address:
-            self.is_pairing = True
-            device.pair()
 
     def _on_pairable_device(self, manager, device):
         logger.info(f'Pairable device: {device}')
-
-        if self.interactive:
-            self._on_pairable_device_interactive(manager, device)
 
 
 class Listener(Worker):
@@ -824,8 +798,6 @@ class TuhiKeteShell(cmd.Cmd):
             self._manager.stop_search()
             return
 
-        Searcher.interactive = False
-        parsed_args.address = None
         self.start_worker(Searcher, parsed_args)
 
     def help_pair(self):
