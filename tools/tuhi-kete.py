@@ -233,6 +233,8 @@ class TuhiKeteManager(_DBusObject):
     __gsignals__ = {
         'pairable-device':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        'dbus-name-vanished':
+            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self):
@@ -246,9 +248,9 @@ class TuhiKeteManager(_DBusObject):
                            None,
                            self._on_name_vanished)
 
-        self.mainloop = None
         self._devices = {}
         self._pairable_devices = {}
+        self.mainloop = None  # To be set externally
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
             self._devices[device.address] = device
@@ -272,20 +274,6 @@ class TuhiKeteManager(_DBusObject):
     def stop_search(self):
         self.proxy.StopSearch()
         self._pairable_devices = {}
-
-    def run(self):
-        if self.mainloop is None:
-            self.mainloop = GObject.MainLoop()
-
-        try:
-            self.mainloop.run()
-        except KeyboardInterrupt:
-            print('\r', end='')  # to remove the ^C
-            self.mainloop.quit()
-
-    def quit(self):
-        if self.mainloop is not None:
-            self.mainloop.quit()
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
         if changed_props is None:
@@ -318,6 +306,7 @@ class TuhiKeteManager(_DBusObject):
 
     def _on_name_vanished(self, connection, name):
         logger.error('Tuhi daemon went away')
+        self.emit('dbus-name-vanished')
         try:
             self.mainloop.quit()
         except AttributeError:
@@ -330,7 +319,10 @@ class TuhiKeteManager(_DBusObject):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        try:
+            self.mainloop.quit()
+        except AttributeError:
+            pass
 
 
 class Worker(GObject.Object):
@@ -350,8 +342,6 @@ class Worker(GObject.Object):
     def __init__(self, manager, args=None):
         GObject.GObject.__init__(self)
         self.manager = manager
-        self._run = self.run
-        self._stop = self.stop
 
     def run(self):
         pass
@@ -360,12 +350,12 @@ class Worker(GObject.Object):
         pass
 
     def start(self):
-        self._run()
+        self.run()
 
         if self.need_mainloop:
             self.manager.run()
 
-        self._stop()
+        self.stop()
 
 
 class Searcher(Worker):
@@ -595,11 +585,16 @@ class TuhiKeteShell(cmd.Cmd):
         logger.addHandler(self._log_handler)
         # patching get_names to hide some functions we do not want in the help
         self.get_names = self._filtered_get_names
+        self.want_to_stop = threading.Event()
+        manager.connect('dbus-name-vanished', self._on_name_vanished)
 
     def _filtered_get_names(self):
         names = super(TuhiKeteShell, self).get_names()
         names.remove('do_EOF')
         return names
+
+    def _on_name_vanished(self, manager):
+        self.want_to_stop.set()
 
     def emptyline(self):
         # make sure we do not re-enter the last typed command
@@ -616,6 +611,9 @@ class TuhiKeteShell(cmd.Cmd):
         return True
 
     def precmd(self, line):
+        if self.want_to_stop.is_set():
+            return 'exit'
+
         # Restore the logger facility to something sane:
         self._log_handler.set_normal_mode()
         return line
@@ -627,6 +625,8 @@ class TuhiKeteShell(cmd.Cmd):
 
         # restore any completion display hook we might have set
         readline.set_completion_display_matches_hook()
+        if self.want_to_stop.is_set():
+            return True
         return stop
 
     def run(self, init=None):
@@ -956,16 +956,15 @@ class TuhiKeteShell(cmd.Cmd):
 
 
 class TuhiKeteShellWorker(Worker):
-    def __init__(self, manager, args):
+    def __init__(self, manager):
         super(TuhiKeteShellWorker, self).__init__(manager)
 
     def start_mainloop(self):
         # we can not call GLib.MainLoop() here or it will install a unix signal
         # handler for SIGINT, and we will not be able to catch
         # KeyboardInterrupt in cmdloop()
-        mainloop = GLib.MainLoop.new(None, False)
-
-        mainloop.run()
+        self.manager.mainloop = GLib.MainLoop.new(None, False)
+        self.manager.mainloop.run()
 
     def start(self):
         self._glib_thread = threading.Thread(target=self.start_mainloop)
@@ -981,60 +980,13 @@ class TuhiKeteShellWorker(Worker):
         self._shell.run()
 
 
-def parse_list(parser):
-    sub = parser.add_parser('list', help='list known devices')
-    sub.set_defaults(worker=Printer)
-
-
-def parse_pair(parser):
-    sub = parser.add_parser('pair', help='pair a new device')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
-                     type=TuhiKeteDevice.is_device_address,
-                     nargs='?', default=None,
-                     help='the address of the device to pair')
-    sub.set_defaults(worker=Searcher)
-
-
-def parse_listen(parser):
-    sub = parser.add_parser('listen', help='listen to events from a device')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
-                     type=TuhiKeteDevice.is_device_address,
-                     default=None,
-                     help='the address of the device to listen to')
-    sub.set_defaults(worker=Listener)
-
-
-def parse_fetch(parser):
-    sub = parser.add_parser('fetch', help='download a drawing from a device and save as svg in $PWD')
-    sub.add_argument('address', metavar='12:34:56:AB:CD:EF',
-                     type=TuhiKeteDevice.is_device_address,
-                     default=None,
-                     help='the address of the device to fetch from')
-    sub.add_argument('index', metavar='[<index>|all]', type=str,
-                     default=None,
-                     help='the index of the drawing to fetch or a literal "all"')
-    sub.set_defaults(worker=Fetcher)
-
-
-def parse_shell(parser):
-    sub = parser.add_parser('shell', help='run a bash-like shell')
-    sub.set_defaults(worker=TuhiKeteShellWorker)
-
-
 def parse(args):
-    desc = 'Commandline client to the Tuhi DBus daemon'
+    desc = 'Interactive commandline client to the Tuhi DBus daemon'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-v', '--verbose',
                         help='Show some debugging informations',
                         action='store_true',
                         default=False)
-
-    subparser = parser.add_subparsers(help='Available commands')
-    parse_list(subparser)
-    parse_pair(subparser)
-    parse_listen(subparser)
-    parse_fetch(subparser)
-    parse_shell(subparser)
 
     return parser.parse_args(args[1:])
 
@@ -1044,12 +996,9 @@ def main(args):
     if args.verbose:
         logger.setLevel(logging.DEBUG)
 
-    if not hasattr(args, 'worker'):
-        args.worker = TuhiKeteShellWorker
-
     try:
         with TuhiKeteManager() as mgr:
-            worker = args.worker(mgr, args)
+            worker = TuhiKeteShellWorker(mgr)
             worker.start()
 
     except DBusError as e:
