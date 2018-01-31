@@ -620,7 +620,7 @@ class TuhiKeteShell(cmd.Cmd):
         worker.run()
         self._workers.append(worker)
 
-    def do_list(self, arg):
+    def do_devices(self, arg):
         '''List known devices. These are devices previously paired with the daemon.'''
         logger.debug('Listing available devices:')
         for d in self._manager.devices:
