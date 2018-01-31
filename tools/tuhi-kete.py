@@ -954,21 +954,6 @@ class TuhiKeteShell(cmd.Cmd):
                     print(f'\t\t* {d}: drawn on the {t}')
 
 
-class TuhiKeteShellWorker(Worker):
-    def __init__(self, manager):
-        super(TuhiKeteShellWorker, self).__init__(manager)
-
-    def start(self):
-
-        self.run()
-
-        self.stop()
-
-    def run(self):
-        self._shell = TuhiKeteShell(self.manager)
-        self._shell.run()
-
-
 def parse(args):
     desc = 'Interactive commandline client to the Tuhi DBus daemon'
     parser = argparse.ArgumentParser(description=desc)
@@ -987,8 +972,8 @@ def main(args):
 
     try:
         with TuhiKeteManager() as mgr:
-            worker = TuhiKeteShellWorker(mgr)
-            worker.start()
+            shell = TuhiKeteShell(mgr)
+            shell.run()
 
     except DBusError as e:
         logger.error(e.message)
