@@ -134,6 +134,9 @@ class _DBusObject(GObject.Object):
             return p.unpack()
         return p
 
+    def terminate(self):
+        del(self.proxy)
+
 
 class _DBusSystemObject(_DBusObject):
     '''
@@ -202,7 +205,7 @@ class TuhiKeteDevice(_DBusObject):
         logger.debug(f'{self}: Pairing')
         # FIXME: Pair() doesn't return anything useful yet, so we wait until
         # the device is in the Manager's Devices property
-        self.manager.connect('notify::devices', self._on_mgr_devices_updated)
+        self.s1 = self.manager.connect('notify::devices', self._on_mgr_devices_updated)
         self.is_pairing = True
         self.proxy.Pair()
 
@@ -251,15 +254,23 @@ class TuhiKeteDevice(_DBusObject):
         for d in manager.devices:
             if d.address == self.address:
                 self.is_pairing = False
+                self.manager.disconnect(self.s1)
+                del(self.s1)
                 logger.info(f'{self}: Pairing successful')
+
+    def terminate(self):
+        try:
+            self.manager.disconnect(self.s1)
+        except AttributeError:
+            pass
+        self._bluez_device.terminate()
+        super(TuhiKeteDevice, self).terminate()
 
 
 class TuhiKeteManager(_DBusObject):
     __gsignals__ = {
         'pairable-device':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        'dbus-name-vanished':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     def __init__(self):
@@ -267,27 +278,12 @@ class TuhiKeteManager(_DBusObject):
                              ORG_FREEDESKTOP_TUHI1_MANAGER,
                              ROOT_PATH)
 
-        Gio.bus_watch_name(Gio.BusType.SESSION,
-                           TUHI_DBUS_NAME,
-                           Gio.BusNameWatcherFlags.NONE,
-                           None,
-                           self._on_name_vanished)
-
-        # we can not call GLib.MainLoop() here or it will install a unix signal
-        # handler for SIGINT, and we will not be able to catch
-        # KeyboardInterrupt in cmdloop()
-        self.mainloop = GLib.MainLoop.new(None, False)
-
         self._devices = {}
         self._pairable_devices = {}
 
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
             self._devices[device.address] = device
-
-        self._glib_thread = threading.Thread(target=self.run)
-        self._glib_thread.daemon = True
-        self._glib_thread.start()
 
     @GObject.Property
     def devices(self):
@@ -309,14 +305,12 @@ class TuhiKeteManager(_DBusObject):
         self.proxy.StopSearch()
         self._pairable_devices = {}
 
-    def run(self):
-        try:
-            self.mainloop.run()
-        except KeyboardInterrupt:
-            self.mainloop.quit()
-
-    def quit(self):
-        self.mainloop.quit()
+    def terminate(self):
+        for dev in self._devices.values():
+            dev.terminate()
+        self._devices = {}
+        self._pairable_devices = {}
+        super(TuhiKeteManager, self).terminate()
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
         if changed_props is None:
@@ -347,19 +341,8 @@ class TuhiKeteManager(_DBusObject):
             logger.debug(f'Found pairable device: {device}')
             self.emit('pairable-device', device)
 
-    def _on_name_vanished(self, connection, name):
-        logger.error('Tuhi daemon went away')
-        self.emit('dbus-name-vanished')
-        self.mainloop.quit()
-
     def __getitem__(self, btaddr):
         return self._devices[btaddr]
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.mainloop.quit()
 
 
 class Worker(GObject.Object):
@@ -561,25 +544,58 @@ class TuhiKeteShell(cmd.Cmd):
     intro = 'Tuhi shell control'
     prompt = 'tuhi> '
 
-    def __init__(self, manager, completekey='tab', stdin=None, stdout=None):
+    def __init__(self, completekey='tab', stdin=None, stdout=None):
         super(TuhiKeteShell, self).__init__(completekey, stdin, stdout)
-        self._manager = manager
+        self._manager = None
         self._workers = []
         self._log_handler = TuhiKeteShellLogHandler()
         logger.removeHandler(logger_handler)
         logger.addHandler(self._log_handler)
+        self._log_handler.set_prompt_mode(self.prompt)
+
         # patching get_names to hide some functions we do not want in the help
         self.get_names = self._filtered_get_names
-        manager.connect('dbus-name-vanished', self._on_name_vanished)
+
+        Gio.bus_watch_name(Gio.BusType.SESSION,
+                           TUHI_DBUS_NAME,
+                           Gio.BusNameWatcherFlags.NONE,
+                           self._on_name_appeared,
+                           self._on_name_vanished)
+
+    def __enter__(self):
+        # we can not call GLib.MainLoop() here or it will install a unix signal
+        # handler for SIGINT, and we will not be able to catch
+        # KeyboardInterrupt in cmdloop()
+        self._mainloop = GLib.MainLoop.new(None, False)
+
+        self._glib_thread = threading.Thread(target=self._mainloop.run)
+        self._glib_thread.daemon = True
+        self._glib_thread.start()
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._mainloop.quit()
+        self._glib_thread.join()
 
     def _filtered_get_names(self):
         names = super(TuhiKeteShell, self).get_names()
         names.remove('do_EOF')
         return names
 
-    def _on_name_vanished(self, manager):
-        logger.debug('Tuhi daemon went away, terminating the current workers')
+    def _on_name_appeared(self, connection, name, client):
+        logger.debug('Tuhi daemon is up and running')
+        self._manager = TuhiKeteManager()
+
+    def _on_name_vanished(self, connection, name):
+        if self._manager is not None:
+            logger.error('Tuhi daemon went away')
+        else:
+            logger.warning('Tuhi daemon not started')
         self.terminate_workers()
+        if self._manager is not None:
+            self._manager.terminate()
+        self._manager = None
 
     def emptyline(self):
         # make sure we do not re-enter the last typed command
@@ -597,6 +613,8 @@ class TuhiKeteShell(cmd.Cmd):
     def precmd(self, line):
         # Restore the logger facility to something sane:
         self._log_handler.set_normal_mode()
+        if self._manager is None and line not in ['EOF', 'exit']:
+            return ''
         return line
 
     def postcmd(self, stop, line):
@@ -975,8 +993,7 @@ def main(args):
         logger.setLevel(logging.DEBUG)
 
     try:
-        with TuhiKeteManager() as mgr:
-            shell = TuhiKeteShell(mgr)
+        with TuhiKeteShell() as shell:
             shell.run()
 
     except DBusError as e:
