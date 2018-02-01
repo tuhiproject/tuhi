@@ -302,7 +302,13 @@ class TuhiKeteManager(_DBusObject):
         self.proxy.StartSearch()
 
     def stop_search(self):
-        self.proxy.StopSearch()
+        try:
+            self.proxy.StopSearch()
+        except GLib.Error as e:
+            if (e.domain != 'g-dbus-error-quark' or
+                    e.code != Gio.IOErrorEnum.EXISTS or
+                    Gio.dbus_error_get_remote_error(e) != 'org.freedesktop.DBus.Error.ServiceUnknown'):
+                raise e
         self._pairable_devices = {}
 
     def terminate(self):
