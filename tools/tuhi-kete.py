@@ -584,14 +584,14 @@ class TuhiKeteShell(cmd.Cmd):
         return names
 
     def _on_name_appeared(self, connection, name, client):
-        logger.debug('Tuhi daemon is up and running')
+        logger.info('Connected to the Tuhi daemon')
         self._manager = TuhiKeteManager()
 
     def _on_name_vanished(self, connection, name):
         if self._manager is not None:
-            logger.error('Tuhi daemon went away')
+            logger.error('Tuhi daemon has quit')
         else:
-            logger.warning('Tuhi daemon not started')
+            logger.warning('Tuhi daemon not running')
         self.terminate_workers()
         if self._manager is not None:
             self._manager.terminate()
