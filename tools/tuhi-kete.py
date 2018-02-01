@@ -270,7 +270,7 @@ class TuhiKeteDevice(_DBusObject):
 class TuhiKeteManager(_DBusObject):
     __gsignals__ = {
         'pairable-device':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self):

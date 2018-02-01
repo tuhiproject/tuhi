@@ -104,14 +104,14 @@ class WacomDevice(GObject.Object):
 
     __gsignals__ = {
         'drawing':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         'done':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
         'button-press-required':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
         # battery level in %, boolean for is-charging
         "battery-status":
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_INT, GObject.TYPE_BOOLEAN)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_INT, GObject.TYPE_BOOLEAN)),
     }
 
     def __init__(self, device, uuid=None):

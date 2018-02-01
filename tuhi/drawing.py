@@ -88,7 +88,7 @@ class Drawing(GObject.Object):
 
     # The way we're building drawings, we don't need to change the current
     # stroke at runtime, so this is read-ony
-    @GObject.property
+    @GObject.Property
     def current_stroke(self):
         return self.strokes[self._current_stroke]
 
