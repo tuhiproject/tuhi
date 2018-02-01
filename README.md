@@ -16,21 +16,33 @@ Devices tested and known to be supported:
 * Bamboo Spark
 * Bamboo Slate
 
-Warning
--------
+Registering devices
+-------------------
 
-A device can only be paired with one application at a time. Thus, when a
-device is paired with Tuhi, other applications (e.g. Wacom Inkspace)
-cannot not connect to the device anymore. Likewise, when paired with another
-application, Tuhi cannot connect.
+For a device to work with Tuhi, it must be registered first. This is
+achieved by holiding the device button for 6 or more seconds until the blue
+LED starts blinking. Only in that mode can Tuhi detect it during
+`Searching` and register it.
 
-To make the tablet connect again, simply re-pair with the respective
+Registration sends a randomly generated UUID to the device. Subsequent
+connections must use that UUID as identifier for the tablet device to
+respond. Without knowing that UUID, other applications cannot connect.
+
+A device can only be registered with one application at a time. Thus, when a
+device is registered with Tuhi, other applications (e.g. Wacom Inkspace)
+cannot not connect to the device anymore. Likewise, when registered with
+another application, Tuhi cannot connect.
+
+To make the tablet connect again, simply re-register with the respective
 application or Tuhi, whichever desired.
 
-The reason for this behavior is that pairing assigns a application-generated
-unique UUID to the device. Subsequent connections must use that UUID for the
-tablet device to respond. Without knowing that UUID, other applications
-cannot connect.
+This is not registering the device with some cloud service, vendor, or
+other networked service. It is a communication between Tuhi and the firmware
+on the device only. It is merely a process of "your ID is now $foo" followed
+by "hi $foo, I want to connect".
+
+The word "register" was chosen because "pairing" is already in use by
+Bluetooth.
 
 Installation
 ------------
@@ -64,36 +76,35 @@ The following interfaces are provided:
 org.freedesktop.tuhi1.Manager
 
   Property: Devices (ao)
-      Array of object paths to known (previously paired, but not necessarily
-      connected) devices. Note that a "paired" device is one that has been
-      initialized via the Wacom SmartPad custom protocol. This
-      initialization is independent of the Bluetooth pairing process. A Tuhi
-      paired device may or may not be paired over Bluetooth.
+      Array of object paths to known (previously registered, but not necessarily
+      connected) devices. Note that a "registered" device is one that has been
+      initialized via the Wacom SmartPad custom protocol. A device does not
+      need to be paired over Bluetooth to register.
 
   Property: Searching (b)
-      Indicates whether the daemon is currently searching for pairable devices.
+      Indicates whether the daemon is currently searching for devices.
 
       This property is set to True when a StartSearching() request initiates
       the search for device connections. When the StartSearching() request
       completes upon timeout, or when StopSearching() is called, the property
       is set to False.
 
-      When a pariable device is found, the PairableDevice signal is sent to
+      When a pariable device is found, the UnregisteredDevice signal is sent to
       the caller that initiated the search process.
 
       Read-only
 
   Method: StartSearch() -> ()
-      Start searching for available devices in pairing mode for an
-      unspecified timeout. When the timeout expires or an error occurs, a
-      SearchStopped signal is sent indicating success or error.
+      Start searching for available devices ready for registering
+      for an unspecified timeout. When the timeout expires or an error
+      occurs, a SearchStopped signal is sent indicating success or error.
 
       If a client that successfully initated a listening process calls
       StartSearching() again, that call is ignored and no signal is
       generated for that call.
 
   Method: StopSearch() -> ()
-      Stop listening to available devices in pairing mode. If called after
+      Stop listening to available devices ready for registering. If called after
       StartSearch() and before a SearchStopped signal has been received,
       this method triggers the SearchStopped signal. That signal indicates
       success or an error.
@@ -102,10 +113,10 @@ org.freedesktop.tuhi1.Manager
       SearchStopped signal, it is ignored and no signal is generated.
 
       Note that between calling StopSearch() and the SearchStopped signal
-      arriving, PairableDevice signals may still arrive.
+      arriving, UnregisteredDevice signals may still arrive.
 
-  Signal: PairableDevice(o)
-      Indicates that a device is available for pairing. This signal may be
+  Signal: UnregisteredDevice(o)
+      Indicates that a device can be registered. This signal may be
       sent after a StartSearch() call and before SearchStopped(). This
       signal is sent once per available device and only to the client that
       initiated the search process with StartSearch.
@@ -113,18 +124,18 @@ org.freedesktop.tuhi1.Manager
       When this signal is sent, a org.freedesktop.tuhi1.Device object was
       created, the object path is the argument to this signal.
 
-      A client must immediately call Pair() on that object if pairing with
-      that object is desired. See the documentation for that interface
-      for details.
+      A client must immediately call Register() on that object if
+      registering with that object is desired. See the documentation for
+      that interface for details.
 
       When the search timeout expires, the device may be removed by the
-      daemon again. Note that until the device is paired, the device is not
+      daemon again. Note that until the device is registered, the device is not
       listed in the managers Devices property.
 
   Signal: SearchStopped(i)
       Sent when the search has stopped. An argument of 0 indicates a
       successful termination of the search process, either when a device
-      has been paired or the timeout expired.
+      has been registered or the timeout expired.
 
       If the errno is -EAGAIN, the daemon is already searching for devices
       on behalf of another client. In this case, this client should wait for
@@ -132,8 +143,8 @@ org.freedesktop.tuhi1.Manager
       property is set to False.
 
       Once this signal has been sent, all devices announced through
-      PairableDevice signals should be considered invalidated. Attempting to
-      Pair() one of the devices after the SearchStopped() signal may result
+      UnregisteredDevice signals should be considered invalidated. Attempting to
+      Register() one of the devices after the SearchStopped() signal may result
       in an error.
 
       In case of error, the argument is a negative errno.
@@ -208,11 +219,11 @@ org.freedesktop.tuhi1.Device
 
       Read-only
 
-  Method: Pair() -> (i)
-      Pair the device. If the device is already paired, calls to this method
-      immediately return success.
+  Method: Register() -> (i)
+      Register the device. If the device is already registered, calls to
+      this method immediately return success.
 
-      Otherwise, the device is paired and this function returns success (0)
+      Otherwise, the device is registered and this function returns success (0)
       or a negative errno on failure.
 
   Method: StartListening() -> ()
@@ -270,14 +281,14 @@ org.freedesktop.tuhi1.Device
       the Listening property to change and StartListening() once the
       property is set to False.
 
-      If the error is -EBADE, the device is not in pairing/listening mode
-      and pairing/listening was requested. In this case, the client should
-      indicate to the user that the device needs to be paired first or
-      switched to listening mode.
+      If the error is -EBADE, the device is not ready for registering/in
+      listening mode and registration/listening was requested. In
+      this case, the client should indicate to the user that the device
+      needs to be registered first or switched to listening mode.
 
-      If the error is -EACCES, the device is not paired with the daemon or
-      incorrectly paired. This may happen when the device was paired with
-      another host since the last connection.
+      If the error is -EACCES, the device is not registered with the daemon
+      or incorrectly registered. This may happen when the device was
+      registered with another host since the last connection.
 
       The following other errnos may be sent by the daemon:
       -EPROTO: the daemon has encountered a protocol error with the device.

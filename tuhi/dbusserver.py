@@ -41,7 +41,7 @@ INTROSPECTION_XML = '''
        <arg name='status' type='i' />
     </signal>
 
-    <signal name='PairableDevice'>
+    <signal name='UnregisteredDevice'>
        <arg name='info' type='o' />
     </signal>
   </interface>
@@ -62,7 +62,7 @@ INTROSPECTION_XML = '''
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
 
-    <method name='Pair'>
+    <method name='Register'>
       <arg name='result' type='i' direction='out'/>
     </method>
 
@@ -134,7 +134,7 @@ class TuhiDBusDevice(_TuhiDBus):
     handles the DBus bits, communication with the device is done elsewhere.
     '''
     __gsignals__ = {
-        'pair-requested':
+        'register-requested':
             (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
@@ -147,13 +147,13 @@ class TuhiDBusDevice(_TuhiDBus):
         self.name = device.name
         self.width, self.height = 0, 0
         self.drawings = {}
-        self.paired = device.paired
+        self.registered = device.registered
         self._listening = False
         self._listening_client = None
         self._dbusid = self._register_object(connection)
         self._battery_percent = 0
         self._battery_state = device.battery_state
-        device.connect('notify::paired', self._on_device_paired)
+        device.connect('notify::registered', self._on_device_registered)
         device.connect('notify::battery-percent', self._on_battery_percent)
         device.connect('notify::battery-state', self._on_battery_state)
         device.connect('device-error', self._on_device_error)
@@ -171,12 +171,12 @@ class TuhiDBusDevice(_TuhiDBus):
         self.properties_changed({'Listening': GLib.Variant.new_boolean(value)})
 
     @GObject.Property
-    def paired(self):
-        return self._paired
+    def registered(self):
+        return self._registered
 
-    @paired.setter
-    def paired(self, paired):
-        self._paired = paired
+    @registered.setter
+    def registered(self, registered):
+        self._registered = registered
 
     @GObject.Property
     def battery_percent(self):
@@ -219,10 +219,10 @@ class TuhiDBusDevice(_TuhiDBus):
         if interface != self.interface:
             return None
 
-        if methodname == 'Pair':
+        if methodname == 'Register':
             # FIXME: we should cache the method invocation here, wait for a
             # successful result from Tuhi and then return the value
-            self._pair()
+            self._register()
             result = GLib.Variant.new_int32(0)
             invocation.return_value(GLib.Variant.new_tuple(result))
         elif methodname == 'StartListening':
@@ -262,13 +262,13 @@ class TuhiDBusDevice(_TuhiDBus):
     def _property_write_cb(self):
         pass
 
-    def _pair(self):
-        self.emit('pair-requested')
+    def _register(self):
+        self.emit('register-requested')
 
-    def _on_device_paired(self, device, pspec):
-        if self.paired == device.paired:
+    def _on_device_registered(self, device, pspec):
+        if self.registered == device.registered:
             return
-        self.paired = device.paired
+        self.registered = device.registered
 
     def _on_battery_percent(self, device, pspec):
         self.battery_percent = device.battery_percent
@@ -378,7 +378,7 @@ class TuhiDBusServer(_TuhiDBus):
     def __init__(self):
         _TuhiDBus.__init__(self, None, BASE_PATH, INTF_MANAGER)
         self._devices = []
-        self._pairable_devices = {}
+        self._unregistered_devices = {}
         self._dbus = Gio.bus_own_name(Gio.BusType.SESSION,
                                       BUS_NAME,
                                       Gio.BusNameOwnerFlags.NONE,
@@ -435,7 +435,7 @@ class TuhiDBusServer(_TuhiDBus):
             return None
 
         if propname == 'Devices':
-            return GLib.Variant.new_objv([d.objpath for d in self._devices if d.paired])
+            return GLib.Variant.new_objv([d.objpath for d in self._devices if d.registered])
         elif propname == 'Searching':
             return GLib.Variant.new_boolean(self.is_searching)
 
@@ -469,8 +469,8 @@ class TuhiDBusServer(_TuhiDBus):
 
         self.emit('search-start-requested', self._on_search_stop)
         for d in self._devices:
-            if not d.paired:
-                self._emit_pairable_signal(d)
+            if not d.registered:
+                self._emit_unregistered_signal(d)
 
     def _on_name_owner_changed_signal_cb(self, connection, sender, object_path,
                                          interface_name, node,
@@ -500,29 +500,29 @@ class TuhiDBusServer(_TuhiDBus):
         self._searching_client = None
 
         for dev in self._devices:
-            if dev.paired:
+            if dev.registered:
                 continue
 
             dev.remove()
-        self._devices = [d for d in self._devices if d.paired]
+        self._devices = [d for d in self._devices if d.registered]
 
     def cleanup(self):
         Gio.bus_unown_name(self._dbus)
 
     def create_device(self, device):
         dev = TuhiDBusDevice(device, self.connection)
-        dev.connect('notify::paired', self._on_device_paired)
+        dev.connect('notify::registered', self._on_device_registered)
         self._devices.append(dev)
-        if not device.paired:
-            self._emit_pairable_signal(dev)
+        if not device.registered:
+            self._emit_unregistered_signal(dev)
         return dev
 
-    def _on_device_paired(self, device, param):
+    def _on_device_registered(self, device, param):
         objpaths = GLib.Variant.new_array(GLib.VariantType('o'),
                                           [GLib.Variant.new_object_path(d.objpath)
-                                              for d in self._devices if d.paired])
+                                              for d in self._devices if d.registered])
         self.properties_changed({'Devices': objpaths})
 
-    def _emit_pairable_signal(self, device):
+    def _emit_unregistered_signal(self, device):
         arg = GLib.Variant.new_object_path(device.objpath)
-        self.signal('PairableDevice', arg, dest=self._searching_client[0])
+        self.signal('UnregisteredDevice', arg, dest=self._searching_client[0])

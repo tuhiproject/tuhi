@@ -82,7 +82,7 @@ class WacomWrongModeException(WacomException):
     errno = errno.EBADE
 
 
-class WacomNotPairedException(WacomException):
+class WacomNotRegisteredException(WacomException):
     errno = errno.EACCES
 
 
@@ -239,7 +239,7 @@ class WacomDevice(GObject.Object):
             str_b = binascii.hexlify(bytes(data))
             raise WacomException(f'unexpected data: {str_b}')
         if data[0] == 0x07:
-            raise WacomNotPairedException(f'wrong device, please redo pairing')
+            raise WacomNotRegisteredException(f'wrong device, please re-register')
         if data[0] == 0x02:
             raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
         if data[0] == 0x01:
@@ -574,7 +574,7 @@ class WacomDevice(GObject.Object):
         except WacomEEAGAINException:
             logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
 
-    def pair_device_slate(self):
+    def register_device_slate(self):
         self.register_connection()
         logger.info('Press the button now to confirm')
         self.emit('button-press-required')
@@ -594,7 +594,7 @@ class WacomDevice(GObject.Object):
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
 
-    def pair_device_spark(self):
+    def register_device_spark(self):
         try:
             self.check_connection()
         except WacomWrongModeException:
@@ -619,14 +619,14 @@ class WacomDevice(GObject.Object):
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
 
-    def pair_device(self):
+    def register_device(self):
         self._uuid = uuid.uuid4().hex[:12]
-        logger.debug(f'{self.device.address}: pairing device, assigned {self.uuid}')
+        logger.debug(f'{self.device.address}: registering device, assigned {self.uuid}')
         if self.is_spark():
-            self.pair_device_spark()
+            self.register_device_spark()
         else:
-            self.pair_device_slate()
-        logger.info('pairing completed')
+            self.register_device_slate()
+        logger.info('registration completed')
         self.notify('uuid')
 
     def run(self):
@@ -638,19 +638,19 @@ class WacomDevice(GObject.Object):
         self._is_running = True
         exception = None
         try:
-            if self._pairing_mode:
-                self.pair_device()
+            if self._register_mode:
+                self.register_device()
             else:
                 self.retrieve_data()
         except WacomException as e:
             logger.error(f'**** Exception: {e} ****')
             exception = e
         finally:
-            self._pairing_mode = False
+            self._register_mode = False
             self._is_running = False
             self.emit('done', exception)
 
-    def start(self, pairing_mode):
-        self._pairing_mode = pairing_mode
+    def start(self, register_mode):
+        self._register_mode = register_mode
         self.thread = threading.Thread(target=self.run)
         self.thread.start()
