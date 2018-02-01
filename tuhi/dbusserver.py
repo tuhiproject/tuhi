@@ -135,7 +135,7 @@ class TuhiDBusDevice(_TuhiDBus):
     '''
     __gsignals__ = {
         'pair-requested':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, device, connection):
@@ -361,18 +361,18 @@ class TuhiDBusServer(_TuhiDBus):
     '''
     __gsignals__ = {
         'bus-name-acquired':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
         'bus-name-lost':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
 
         # Signal arguments:
         #    search_stop_handler(status)
         #        to be called when the search process has terminated, with
         #        an integer status code (0 == success, negative errno)
         'search-start-requested':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         'search-stop-requested':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self):

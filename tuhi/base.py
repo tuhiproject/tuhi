@@ -16,7 +16,7 @@ import enum
 import logging
 import sys
 import time
-from gi.repository import GObject
+from gi.repository import GObject, GLib
 
 from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
@@ -46,7 +46,7 @@ class TuhiDevice(GObject.Object):
         # Signal sent when an error occurs on the device itself.
         # Argument is a Wacom*Exception
         'device-error':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     BATTERY_UPDATE_MIN_INTERVAL = 300
@@ -199,9 +199,9 @@ class TuhiDevice(GObject.Object):
 class Tuhi(GObject.Object):
     __gsignals__ = {
         'device-added':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         'device-connected':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self):
@@ -222,7 +222,7 @@ class Tuhi(GObject.Object):
         self.devices = {}
 
         self._search_stop_handler = None
-        self.mainloop = GObject.MainLoop()
+        self.mainloop = GLib.MainLoop()
 
     def _on_tuhi_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()

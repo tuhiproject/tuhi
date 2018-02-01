@@ -40,7 +40,7 @@ class TuhiConfig(GObject.Object):
         self._devices = {}
         self._scan_config_dir()
 
-    @GObject.property
+    @GObject.Property
     def devices(self):
         '''
         Returns a dictionary with the bluetooth address as key

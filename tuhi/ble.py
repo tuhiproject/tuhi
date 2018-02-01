@@ -92,11 +92,11 @@ class BlueZDevice(GObject.Object):
     '''
     __gsignals__ = {
         'connected':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
         'disconnected':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
         'updated':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, om, obj):
@@ -118,29 +118,29 @@ class BlueZDevice(GObject.Object):
         if self.connected:
             self.emit('connected')
 
-    @GObject.property
+    @GObject.Property
     def name(self):
         try:
             return self.interface.get_cached_property('Name').unpack()
         except AttributeError:
             return 'UNKNOWN'
 
-    @GObject.property
+    @GObject.Property
     def address(self):
         return self.interface.get_cached_property('Address').unpack()
 
-    @GObject.property
+    @GObject.Property
     def uuids(self):
         return self.interface.get_cached_property('UUIDs').unpack()
 
-    @GObject.property
+    @GObject.Property
     def vendor_id(self):
         md = self.interface.get_cached_property('ManufacturerData')
         if md is not None:
             return md.keys()[0]
         return None
 
-    @GObject.property
+    @GObject.Property
     def connected(self):
         return (self.interface.get_cached_property('Connected').unpack() and
                 self.interface.get_cached_property('ServicesResolved').unpack())
@@ -274,13 +274,13 @@ class BlueZDeviceManager(GObject.Object):
     '''
     __gsignals__ = {
         'device-added':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_BOOLEAN)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_BOOLEAN)),
         'device-updated':
-            (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         'discovery-started':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
         'discovery-stopped':
-            (GObject.SIGNAL_RUN_FIRST, None, ()),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, **kwargs):
