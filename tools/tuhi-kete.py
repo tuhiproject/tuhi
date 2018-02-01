@@ -613,7 +613,7 @@ class TuhiKeteShell(cmd.Cmd):
     def precmd(self, line):
         # Restore the logger facility to something sane:
         self._log_handler.set_normal_mode()
-        if self._manager is None and line not in ['EOF', 'exit']:
+        if self._manager is None and line not in ['EOF', 'exit', 'help']:
             print('Not connected to the Tuhi daemon')
             return ''
         return line
