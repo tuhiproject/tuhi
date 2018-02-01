@@ -614,6 +614,7 @@ class TuhiKeteShell(cmd.Cmd):
         # Restore the logger facility to something sane:
         self._log_handler.set_normal_mode()
         if self._manager is None and line not in ['EOF', 'exit']:
+            print('Not connected to the Tuhi daemon')
             return ''
         return line
 
