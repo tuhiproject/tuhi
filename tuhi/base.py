@@ -51,13 +51,13 @@ class TuhiDevice(GObject.Object):
 
     BATTERY_UPDATE_MIN_INTERVAL = 300
 
-    def __init__(self, bluez_device, config, uuid=None, paired=True):
+    def __init__(self, bluez_device, config, uuid=None, registered=True):
         GObject.Object.__init__(self)
         self.config = config
         self._wacom_device = None
-        # We need either uuid or paired as false
-        assert uuid is not None or paired is False
-        self.paired = paired
+        # We need either uuid or registered as false
+        assert uuid is not None or registered is False
+        self.registered = registered
         self._uuid = uuid
         self._battery_state = TuhiDevice.BatteryState.UNKNOWN
         self._battery_percent = 0
@@ -71,12 +71,12 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device = None
 
     @GObject.Property
-    def paired(self):
-        return self._paired
+    def registered(self):
+        return self._registered
 
-    @paired.setter
-    def paired(self, paired):
-        self._paired = paired
+    @registered.setter
+    def registered(self, registered):
+        self._registered = registered
 
     @GObject.Property
     def name(self):
@@ -98,7 +98,7 @@ class TuhiDevice(GObject.Object):
     def dbus_device(self, device):
         assert self._tuhi_dbus_device is None
         self._tuhi_dbus_device = device
-        self._tuhi_dbus_device.connect('pair-requested', self._on_pair_requested)
+        self._tuhi_dbus_device.connect('register-requested', self._on_register_requested)
         self._tuhi_dbus_device.connect('notify::listening', self._on_listening_updated)
 
         drawings = self.config.load_drawings(self.address)
@@ -140,14 +140,14 @@ class TuhiDevice(GObject.Object):
             self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
             self._wacom_device.connect('battery-status', self._on_battery_status, bluez_device)
 
-        self._wacom_device.start(not self.paired)
-        self.pairing_mode = False
+        self._wacom_device.start(not self.registered)
+        self.registering_mode = False
 
     def _on_bluez_device_disconnected(self, bluez_device):
         logger.debug(f'{bluez_device.address}: disconnected')
 
-    def _on_pair_requested(self, dbus_device):
-        if self.paired:
+    def _on_register_requested(self, dbus_device):
+        if self.registered:
             return
 
         self.connect_device()
@@ -168,7 +168,7 @@ class TuhiDevice(GObject.Object):
 
     def _on_uuid_updated(self, wacom_device, pspec, bluez_device):
         self.config.new_device(bluez_device.address, wacom_device.uuid)
-        self.paired = True
+        self.registered = True
 
     def _on_listening_updated(self, dbus_device, pspec):
         self.notify('listening')
@@ -243,7 +243,7 @@ class Tuhi(GObject.Object):
         self._search_device_handler = None
 
     @classmethod
-    def _is_pairing_device(cls, bluez_device):
+    def _device_in_register_mode(cls, bluez_device):
         if bluez_device.vendor_id != WACOM_COMPANY_ID:
             return False
 
@@ -278,29 +278,29 @@ class Tuhi(GObject.Object):
 
         # if event is set, the device has been 'hotplugged' in the bluez stack
         # so ManufacturerData is reliable. Else, consider the device not in
-        # the pairing mode
-        pairing_device = False
+        # the register mode
+        register_mode = False
         if event:
-            pairing_device = Tuhi._is_pairing_device(bluez_device)
+            register_mode = Tuhi._device_in_register_mode(bluez_device)
 
-        if not pairing_device:
+        if not register_mode:
             if uuid is None:
-                logger.info(f'{bluez_device.address}: device without config, must be paired first')
+                logger.info(f'{bluez_device.address}: device without config, must be registered first')
                 return
             logger.debug(f'{bluez_device.address}: UUID {uuid}')
 
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
-                d = TuhiDevice(bluez_device, self.config, uuid=uuid, paired=not pairing_device)
+                d = TuhiDevice(bluez_device, self.config, uuid=uuid, registered=not register_mode)
                 d.dbus_device = self.server.create_device(d)
                 d.connect('notify::listening', self._on_listening_updated)
                 self.devices[bluez_device.address] = d
 
         d = self.devices[bluez_device.address]
 
-        if pairing_device:
-            d.paired = False
-            logger.debug(f'{bluez_device.objpath}: call Pair() on device')
+        if register_mode:
+            d.registered = False
+            logger.debug(f'{bluez_device.objpath}: call Register() on device')
         elif d.listening:
             d.connect_device()
 
