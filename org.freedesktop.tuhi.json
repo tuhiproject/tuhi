@@ -45,8 +45,8 @@
             },
             "buildsystem": "simple",
             "build-commands": [
-                "python3 ./setup.py build",
-                "python3 ./setup.py install"
+                "python3 ./setup.py sdist",
+                "pip3 install dist/*.tar.gz"
             ],
             "sources": [
                 {
@@ -74,11 +74,6 @@
         {
             "name": "pyxdg",
             "buildsystem": "simple",
-            "build-options" : {
-                "env": {
-                    "PYTHON": "/app/bin/python3"
-                }
-            },
             "sources": [
                 {
                     "type": "git",
@@ -86,7 +81,37 @@
                 }
             ],
             "build-commands": [
-                "python3 setup.py install --verbose"
+                "python3 ./setup.py sdist",
+                "pip3 install dist/*.tar.gz"
+            ]
+        },
+        {
+            "name": "python-pyparsing",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "http://downloads.sourceforge.net/pyparsing/pyparsing-2.1.10.tar.gz",
+                    "sha512": "21af73d6f479d52746f269c8fbaf90c1107a8aec756d30af8c7c4e6a2ff0ea9659cc07816b7ea19286bc12d43497f5e8e63351453bf18daf6a1cb380a195532e"
+                }
+            ],
+            "build-commands": [
+                "python3 ./setup.py sdist",
+                "pip3 install dist/*.tar.gz"
+            ]
+        },
+        {
+            "name": "python-svgwrite",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/mozman/svgwrite.git"
+                }
+            ],
+            "build-commands": [
+                "python3 ./setup.py sdist",
+                "pip3 install dist/*.tar.gz"
             ]
         },
         {
@@ -100,6 +125,11 @@
             ],
             "build-commands": [
                 "python3 setup.py install --verbose"
+            ],
+            "post-install": [
+                "cp tools/tuhi-kete.py /app/lib/python3.6/site-packages/tuhi_kete.py",
+                "cp tools/tuhi-kete-sandboxed.py /app/bin/tuhi-kete",
+                "chmod +x /app/bin/tuhi-kete"
             ]
         }
     ]
