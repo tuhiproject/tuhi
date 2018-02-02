@@ -168,7 +168,7 @@ class TuhiKeteDevice(_DBusObject):
                              ORG_FREEDESKTOP_TUHI1_DEVICE,
                              objpath)
         self.manager = manager
-        self.is_pairing = False
+        self.is_registering = False
         self._bluez_device = BlueZDevice(self.property('BlueZDevice'))
 
     @classmethod
@@ -201,13 +201,13 @@ class TuhiKeteDevice(_DBusObject):
     def battery_state(self):
         return self.property('BatteryState')
 
-    def pair(self):
-        logger.debug(f'{self}: Pairing')
-        # FIXME: Pair() doesn't return anything useful yet, so we wait until
+    def register(self):
+        logger.debug(f'{self}: Register')
+        # FIXME: Register() doesn't return anything useful yet, so we wait until
         # the device is in the Manager's Devices property
         self.s1 = self.manager.connect('notify::devices', self._on_mgr_devices_updated)
-        self.is_pairing = True
-        self.proxy.Pair()
+        self.is_registering = True
+        self.proxy.Register()
 
     def start_listening(self):
         self.proxy.StartListening()
@@ -224,7 +224,7 @@ class TuhiKeteDevice(_DBusObject):
         elif signal == 'ListeningStopped':
             err = parameters[0]
             if err == -errno.EACCES:
-                logger.error(f'{self}: wrong device, please redo pairing.')
+                logger.error(f'{self}: wrong device, please re-register.')
             elif err < 0:
                 logger.error(f'{self}: an error occured: {os.strerror(-err)}')
             self.notify('listening')
@@ -248,15 +248,15 @@ class TuhiKeteDevice(_DBusObject):
         return f'{self.address} - {self.name}'
 
     def _on_mgr_devices_updated(self, manager, pspec):
-        if not self.is_pairing:
+        if not self.is_registering:
             return
 
         for d in manager.devices:
             if d.address == self.address:
-                self.is_pairing = False
+                self.is_registering = False
                 self.manager.disconnect(self.s1)
                 del(self.s1)
-                logger.info(f'{self}: Pairing successful')
+                logger.info(f'{self}: Registration successful')
 
     def terminate(self):
         try:
@@ -269,7 +269,7 @@ class TuhiKeteDevice(_DBusObject):
 
 class TuhiKeteManager(_DBusObject):
     __gsignals__ = {
-        'pairable-device':
+        'unregistered-device':
             (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
@@ -279,7 +279,7 @@ class TuhiKeteManager(_DBusObject):
                              ROOT_PATH)
 
         self._devices = {}
-        self._pairable_devices = {}
+        self._unregistered_devices = {}
 
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
@@ -290,15 +290,15 @@ class TuhiKeteManager(_DBusObject):
         return [v for k, v in self._devices.items()]
 
     @GObject.Property
-    def pairable_devices(self):
-        return [v for k, v in self._pairable_devices.items()]
+    def unregistered_devices(self):
+        return [v for k, v in self._unregistered_devices.items()]
 
     @GObject.Property
     def searching(self):
         return self.proxy.get_cached_property('Searching')
 
     def start_search(self):
-        self._pairable_devices = {}
+        self._unregistered_devices = {}
         self.proxy.StartSearch()
 
     def stop_search(self):
@@ -309,13 +309,13 @@ class TuhiKeteManager(_DBusObject):
                     e.code != Gio.IOErrorEnum.EXISTS or
                     Gio.dbus_error_get_remote_error(e) != 'org.freedesktop.DBus.Error.ServiceUnknown'):
                 raise e
-        self._pairable_devices = {}
+        self._unregistered_devices = {}
 
     def terminate(self):
         for dev in self._devices.values():
             dev.terminate()
         self._devices = {}
-        self._pairable_devices = {}
+        self._unregistered_devices = {}
         super(TuhiKeteManager, self).terminate()
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
@@ -328,24 +328,24 @@ class TuhiKeteManager(_DBusObject):
             objpaths = changed_props['Devices']
             for objpath in objpaths:
                 try:
-                    d = self._pairable_devices[objpath]
+                    d = self._unregistered_devices[objpath]
                     self._devices[d.address] = d
-                    del self._pairable_devices[objpath]
+                    del self._unregistered_devices[objpath]
                 except KeyError:
-                    # if we called Pair() on an existing device it's not in
-                    # pairable devices
+                    # if we called Register() on an existing device it's not
+                    # in unregistered devices
                     pass
             self.notify('devices')
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'SearchStopped':
             self.notify('searching')
-        elif signal == 'PairableDevice':
+        elif signal == 'UnregisteredDevice':
             objpath = parameters[0]
             device = TuhiKeteDevice(self, objpath)
-            self._pairable_devices[objpath] = device
-            logger.debug(f'Found pairable device: {device}')
-            self.emit('pairable-device', device)
+            self._unregistered_devices[objpath] = device
+            logger.debug(f'Found unregistered device: {device}')
+            self.emit('unregistered-device', device)
 
     def __getitem__(self, btaddr):
         return self._devices[btaddr]
@@ -374,7 +374,7 @@ class Searcher(Worker):
     def __init__(self, manager, args):
         super(Searcher, self).__init__(manager)
         self.s1 = self.manager.connect('notify::searching', self._on_notify_search)
-        self.s2 = self.manager.connect('pairable-device', self._on_pairable_device)
+        self.s2 = self.manager.connect('unregistered-device', self._on_unregistered_device)
 
     def run(self):
         if self.manager.searching:
@@ -385,7 +385,7 @@ class Searcher(Worker):
         logger.debug('Started searching')
 
         for d in self.manager.devices:
-            self._on_pairable_device(self.manager, d)
+            self._on_unregistered_device(self.manager, d)
 
     def stop(self):
         if self.manager.searching:
@@ -399,8 +399,8 @@ class Searcher(Worker):
         if not manager.searching:
             logger.info('Search cancelled')
 
-    def _on_pairable_device(self, manager, device):
-        logger.info(f'Pairable device: {device}')
+    def _on_unregistered_device(self, manager, device):
+        logger.info(f'Unregistered device: {device}')
 
 
 class Listener(Worker):
@@ -655,7 +655,8 @@ class TuhiKeteShell(cmd.Cmd):
         self._workers = []
 
     def do_devices(self, arg):
-        '''List known devices. These are devices previously paired with the daemon.'''
+        '''List known devices. These are devices previously registered with
+        the daemon.'''
         logger.debug('Listing available devices:')
         for d in self._manager.devices:
             print(d)
@@ -840,8 +841,8 @@ class TuhiKeteShell(cmd.Cmd):
 
     def do_search(self, args):
         desc = '''
-        Start/Stop listening for devices that can be paired with the daemon.
-        The devices must be in pairable mode (blue LED blinking).
+        Start/Stop listening for devices that can be registered with the
+        daemon. The devices must be in registration mode (blue LED blinking).
         '''
         parser = argparse.ArgumentParser(prog='search',
                                          description=desc,
@@ -869,10 +870,10 @@ class TuhiKeteShell(cmd.Cmd):
             else:
                 logger.info('Already searching')
 
-    def help_pair(self):
-        self.do_pair('-h')
+    def help_register(self):
+        self.do_register('-h')
 
-    def complete_pair(self, text, line, begidx, endidx):
+    def complete_register(self, text, line, begidx, endidx):
         # mark the end of the line so we can match on the number of fields
         if line.endswith(' '):
             line += 'm'
@@ -880,29 +881,29 @@ class TuhiKeteShell(cmd.Cmd):
 
         completion = []
         if len(fields) == 2:
-            for device in self._manager.pairable_devices + self._manager.devices:
+            for device in self._manager.unregistered_devices + self._manager.devices:
                 if device.address.startswith(text.upper()):
                     completion.append(device.address)
 
         return completion
 
-    def do_pair(self, args):
+    def do_register(self, args):
         if not self._manager.searching and '-h' not in args.split():
             print('please call search first')
             return
 
         desc = '''
-        Pair the given device. The device must be in pairable mode (blue LED
-        blinking).
+        Register the given device. The device must be in registration mode
+        (blue LED blinking).
         '''
-        parser = argparse.ArgumentParser(prog='pair',
+        parser = argparse.ArgumentParser(prog='register',
                                          description=desc,
                                          add_help=False)
         parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
         parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
                             type=TuhiKeteDevice.is_device_address,
                             default=None,
-                            help='the address of the device to pair')
+                            help='the address of the device to register')
 
         try:
             parsed_args = parser.parse_args(args.split())
@@ -918,7 +919,7 @@ class TuhiKeteShell(cmd.Cmd):
             if worker.device.address == address:
                 self.terminate_worker(worker)
 
-        for d in self._manager.devices + self._manager.pairable_devices:
+        for d in self._manager.devices + self._manager.unregistered_devices:
             if d.address == address:
                 device = d
                 break
@@ -926,7 +927,7 @@ class TuhiKeteShell(cmd.Cmd):
             logger.error(f'{address}: device not found')
             return
 
-        device.pair()
+        device.register()
 
     def help_info(self):
         self.do_info('-h')
