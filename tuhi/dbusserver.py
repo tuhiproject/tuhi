@@ -81,7 +81,7 @@ INTROSPECTION_XML = '''
 
     <signal name='ButtonPressRequired' />
 
-    <signal name='ListenComplete'>
+    <signal name='ListeningStopped'>
        <arg name='status' type='i' />
     </signal>
   </interface>
