@@ -24,6 +24,10 @@ import readline
 import threading
 import time
 import svgwrite
+import xdg.BaseDirectory
+
+
+CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
 
 
 class ColorFormatter(logging.Formatter):
@@ -562,6 +566,20 @@ class TuhiKeteShell(cmd.Cmd):
         # patching get_names to hide some functions we do not want in the help
         self.get_names = self._filtered_get_names
 
+        try:
+            os.mkdir(CONFIG_PATH)
+        except FileExistsError:
+            pass
+
+        self._history_file = os.path.join(CONFIG_PATH, 'history')
+
+        try:
+            readline.read_history_file(self._history_file)
+        except FileNotFoundError:
+            readline.write_history_file(self._history_file)
+
+        readline.set_history_length(100)
+
         Gio.bus_watch_name(Gio.BusType.SESSION,
                            TUHI_DBUS_NAME,
                            Gio.BusNameWatcherFlags.NONE,
@@ -622,6 +640,8 @@ class TuhiKeteShell(cmd.Cmd):
         if self._manager is None and line not in ['EOF', 'exit', 'help']:
             print('Not connected to the Tuhi daemon')
             return ''
+
+        readline.write_history_file(self._history_file)
         return line
 
     def postcmd(self, stop, line):

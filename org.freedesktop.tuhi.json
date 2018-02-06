@@ -127,7 +127,7 @@
                 "python3 setup.py install --verbose"
             ],
             "post-install": [
-                "cp tools/tuhi-kete.py /app/lib/python3.6/site-packages/tuhi_kete.py",
+                "cp tools/tuhi_kete.py /app/lib/python3.6/site-packages/tuhi_kete.py",
                 "cp tools/tuhi-kete-sandboxed.py /app/bin/tuhi-kete",
                 "chmod +x /app/bin/tuhi-kete"
             ]
