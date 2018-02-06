@@ -321,6 +321,9 @@ class Tuhi(GObject.Object):
 
 
 def main(args=sys.argv):
+    if sys.version_info < (3, 6):
+        sys.exit('Python 3.6 or later required')
+
     desc = 'Daemon to extract the pen stroke data from Wacom SmartPad devices'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-v', '--verbose',
