@@ -27,7 +27,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s: %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('tuhi')
 
-WACOM_COMPANY_ID = 0x4755
+WACOM_COMPANY_IDS = [0x4755]
 
 
 class TuhiDevice(GObject.Object):
@@ -244,10 +244,10 @@ class Tuhi(GObject.Object):
 
     @classmethod
     def _device_in_register_mode(cls, bluez_device):
-        if bluez_device.vendor_id != WACOM_COMPANY_ID:
+        if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return False
 
-        manufacturer_data = bluez_device.get_manufacturer_data(WACOM_COMPANY_ID)
+        manufacturer_data = bluez_device.get_manufacturer_data(bluez_device.vendor_id)
         return manufacturer_data is not None and len(manufacturer_data) == 4
 
     def _on_bluez_discovery_started(self, manager):
@@ -273,7 +273,7 @@ class Tuhi(GObject.Object):
         except KeyError:
             pass
 
-        if uuid is None and bluez_device.vendor_id != WACOM_COMPANY_ID:
+        if uuid is None and bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return
 
         # if event is set, the device has been 'hotplugged' in the bluez stack
