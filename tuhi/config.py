@@ -82,7 +82,7 @@ class TuhiConfig(GObject.Object):
     def new_device(self, address, uuid, protocol):
         assert is_btaddr(address)
         assert len(uuid) == 12
-        assert protocol != Protocol.UNKNOWN
+        assert protocol != TuhiConfig.Protocol.UNKNOWN
 
         logger.debug(f'{address}: adding new config, UUID {uuid}')
         path = os.path.join(ROOT_PATH, address)

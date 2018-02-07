@@ -58,7 +58,6 @@ class TuhiDevice(GObject.Object):
         # We need either uuid or registered as false
         assert uuid is not None or registered is False
         self.registered = registered
-        self._uuid = uuid
         self._battery_state = TuhiDevice.BatteryState.UNKNOWN
         self._battery_percent = 0
         self._last_battery_update_time = 0
@@ -133,7 +132,7 @@ class TuhiDevice(GObject.Object):
     def _on_bluez_device_connected(self, bluez_device):
         logger.debug(f'{bluez_device.address}: connected')
         if self._wacom_device is None:
-            self._wacom_device = WacomDevice(bluez_device, self._uuid)
+            self._wacom_device = WacomDevice(bluez_device, self.config)
             self._wacom_device.connect('drawing', self._on_drawing_received)
             self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
             self._wacom_device.connect('button-press-required', self._on_button_press_required)
@@ -167,10 +166,7 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device.notify_button_press_required()
 
     def _on_uuid_updated(self, wacom_device, pspec, bluez_device):
-        protocol = TuhiConfig.Protocol.SLATE
-        if wacom_device.is_spark():
-            protocol = TuhiConfig.Protocol.SPARK
-        self.config.new_device(bluez_device.address, wacom_device.uuid, protocol)
+        self.config.new_device(bluez_device.address, wacom_device.uuid, wacom_device.protocol)
         self.registered = True
 
     def _on_listening_updated(self, dbus_device, pspec):
