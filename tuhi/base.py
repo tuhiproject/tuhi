@@ -167,7 +167,10 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device.notify_button_press_required()
 
     def _on_uuid_updated(self, wacom_device, pspec, bluez_device):
-        self.config.new_device(bluez_device.address, wacom_device.uuid)
+        protocol = TuhiConfig.Protocol.SLATE
+        if wacom_device.is_spark():
+            protocol = TuhiConfig.Protocol.SPARK
+        self.config.new_device(bluez_device.address, wacom_device.uuid, protocol)
         self.registered = True
 
     def _on_listening_updated(self, dbus_device, pspec):
@@ -287,7 +290,7 @@ class Tuhi(GObject.Object):
             if uuid is None:
                 logger.info(f'{bluez_device.address}: device without config, must be registered first')
                 return
-            logger.debug(f'{bluez_device.address}: UUID {uuid}')
+            logger.debug(f'{bluez_device.address}: UUID {uuid} protocol: {config["Protocol"]}')
 
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
