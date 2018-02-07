@@ -14,6 +14,7 @@
 
 import binascii
 import calendar
+import enum
 import logging
 import threading
 import time
@@ -40,6 +41,14 @@ MYSTERIOUS_NOTIFICATION_CHRC_UUID = '3a340721-c572-11e5-86c5-0002a5d5c51b'
 
 WACOM_SLATE_WIDTH = 21600
 WACOM_SLATE_HEIGHT = 14800
+
+
+@enum.unique
+class Protocol(enum.Enum):
+    UNKNOWN = 'unknown'
+    SPARK = 'spark'
+    SLATE = 'slate'
+    INTUOS_PRO = 'intuos-pro'
 
 
 def signed_char_to_int(v):
