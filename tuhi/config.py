@@ -16,6 +16,7 @@ from gi.repository import GObject
 import xdg.BaseDirectory
 import os
 import configparser
+import enum
 import re
 import logging
 from .drawing import Drawing
@@ -30,6 +31,13 @@ def is_btaddr(addr):
 
 
 class TuhiConfig(GObject.Object):
+
+    class Protocol(enum.Enum):
+        UNKNOWN = 0
+        SPARK = 1
+        SLATE = 2
+        INTUOS_PRO = 3
+
     def __init__(self):
         GObject.Object.__init__(self)
         try:
@@ -67,9 +75,11 @@ class TuhiConfig(GObject.Object):
                 self._purge_drawings(entry)
 
                 assert config['Device']['Address'] == entry.name
+                if 'Protocol' not in config['Device']:
+                    config['Device']['Protocol'] = str(TuhiConfig.Protocol.UNKNOWN)
                 self._devices[entry.name] = config['Device']
 
-    def new_device(self, address, uuid):
+    def new_device(self, address, uuid, protocol):
         assert is_btaddr(address)
         assert len(uuid) == 12
 
@@ -92,6 +102,7 @@ class TuhiConfig(GObject.Object):
         config['Device'] = {
             'Address': address,
             'UUID': uuid,
+            'Protocol': protocol,
         }
 
         with open(path, 'w') as configfile:
