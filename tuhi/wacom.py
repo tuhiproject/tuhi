@@ -287,11 +287,13 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
         self.emit('button-press-required')
 
         # Wait for the button confirmation event, or any error
-        data = self.wait_nordic_data([0xe4, 0xb3], 10)
+        data = self.wait_nordic_data([0xe4, 0xb3, 0x53], 10)
 
         if protocol == Protocol.UNKNOWN:
             if data.opcode == 0xe4:
                 protocol = Protocol.SLATE
+            elif data.opcode == 0x53:
+                protocol = Protocol.INTUOS_PRO
             else:
                 raise WacomException(f'unexpected opcode to register reply: {data.opcode:02x}')
 
@@ -836,6 +838,125 @@ class WacomProtocolSlate(WacomProtocolSpark):
         return True
 
 
+class WacomProtocolIntuosPro(WacomProtocolSlate):
+    '''
+    Subclass to handle the communication oddities with the Wacom
+    IntuosPro-like devices.
+
+    :param device: the BlueZDevice object that is this wacom device
+    :param uuid: the UUID {to be} assigned to the device
+    '''
+    width = 44800
+    height = 29600
+    protocol = Protocol.INTUOS_PRO
+
+    def __init__(self, device, uuid):
+        super().__init__(device, uuid)
+
+    def time_to_bytes(self):
+        t = int(time.time())
+        return list(t.to_bytes(length=4, byteorder='little')) + [0x00, 0x00]
+
+    def time_from_bytes(self, data):
+        seconds = int.from_bytes(data[0:4], byteorder='little')
+        return time.gmtime(seconds)
+
+    # set_time is identical to spark/slate except the timestamp format
+
+    def read_time(self):
+        data = self.send_nordic_command_sync(command=0xd6,
+                                             expected_opcode=0xbd)
+
+        # Last two bytes are unknown
+        t = self.time_from_bytes(data)
+        ts = time.strftime('%y-%m-%d %H:%M:%S', time.localtime(t))
+        logger.debug(f'b6 returned: {ts}')
+
+    def get_firmware_version(self, arg):
+        data = self.send_nordic_command_sync(command=0xb7,
+                                             expected_opcode=0xb8,
+                                             arguments=(arg,))
+        fw = ''.join([chr(d) for d in data[1:]])
+        return fw
+
+    def get_name(self):
+        data = self.send_nordic_command_sync(command=0xdb,
+                                             expected_opcode=0xbc)
+        return bytes(data)
+
+    def set_name(self, name):
+        args = [ord(c) for c in name]
+        data = self.send_nordic_command_sync(command=0xbb,
+                                             arguments=args,
+                                             expected_opcode=0xb3)
+        return bytes(data)
+
+    def check_connection(self):
+        args = [int(i) for i in binascii.unhexlify(self._uuid)]
+        self.send_nordic_command_sync(command=0xe6,
+                                      expected_opcode=[0x50, 0x51],
+                                      arguments=args)
+
+    def parse_pen_data_prefix(self, data):
+        expected_prefix = b'\x67\x82\x69\x65'
+        prefix = data[:4]
+        offset = len(prefix)
+        # not sure if we really need this check
+        if bytes(prefix) != expected_prefix:
+            logger.debug(f'Expected pen data prefix {expected_prefix} but got {prefix}')
+            return False, 0
+
+        # This is the time the button was pressed after drawing, i.e. the
+        # end of the drawing
+        t = self.time_from_bytes(data[offset:])
+        offset += 6
+
+        # Confirmed it's LE for at least 2 bytes (that was fun...), but
+        # could be 4 or more. Are 0xffff strokes enough for everybody?
+        nstrokes = int.from_bytes(data[offset:offset + 2], byteorder='little')
+        offset += 2
+
+        # Can't have enough zeroes. They'll come in handy one day
+        expected_header = b'\x00\x00\x00\x00'
+        data_header = data[offset:offset + len(expected_header)]
+        if bytes(data_header) != expected_header:
+            logger.debug(f'Missing zeroes, got {data_header}')
+        offset += 4
+
+        # First stroke timestamp, note this is less than the above timestamp
+        # ff fa c3 <6-byte-timestamp>
+        expected_header = b'\xff\xfa\xc3'
+        data_header = data[offset:offset + len(expected_header)]
+        if bytes(data_header) != expected_header:
+            logger.debug(f'Missing first stroke timestamp, got {data_header}')
+        offset += len(expected_header)
+
+        ot = self.time_from_bytes(data[offset:])
+        offset += 6
+
+        # Unclear what this is
+        expected_header = b'\xff\x0a\x87\x75\x80\x28\x42\x00\x10'
+        data_header = data[offset:offset + len(expected_header)]
+        if bytes(data_header) != expected_header:
+            logger.debug(f'Missing header 2, got {data_header}')
+        offset += len(expected_header)
+
+        t = time.strftime("%y%m%d%H%M%S", t)
+        ot = time.strftime("%y%m%d%H%M%S", ot)
+        logger.debug(f'Drawing timestamp: {t}, {nstrokes} strokes, other timestamp {ot}')
+
+        return True, offset
+
+    def parse_next_stroke_prefix(self, opcode, raw_args):
+        if opcode != 0x03fa:
+            return False
+
+        t = self.time_from_bytes(raw_args[2:])
+        t = time.strftime("%y%m%d%H%M%S", t)
+        logger.info(f'stroke time: {t}')
+        return True
+
+
 class WacomDevice(GObject.Object):
     '''
     Class to communicate with the Wacom device. Communication is handled in
@@ -896,10 +1017,9 @@ class WacomDevice(GObject.Object):
             self._wacom_protocol = WacomProtocolSpark(self._device, self._uuid)
         elif protocol == Protocol.SLATE:
             self._wacom_protocol = WacomProtocolSlate(self._device, self._uuid)
+        elif protocol == Protocol.INTUOS_PRO:
+            self._wacom_protocol = WacomProtocolIntuosPro(self._device, self._uuid)
         else:
-            # FIXME: change to an assert once intuos-pro is implemented, we
-            # never get here
-            logger.error(f'Unknown Protocol {protocol}')
             raise WacomCorruptDataException(f'Protocol "{protocol}" not implemented')
 
         logger.debug(f'{self._device.name} is using protocol {protocol}')

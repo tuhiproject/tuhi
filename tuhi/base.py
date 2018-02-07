@@ -27,7 +27,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s: %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('tuhi')
 
-WACOM_COMPANY_IDS = [0x4755]
+WACOM_COMPANY_IDS = [0x4755, 0x4157]
 
 
 class TuhiDevice(GObject.Object):
