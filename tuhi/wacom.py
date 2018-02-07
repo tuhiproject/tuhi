@@ -98,10 +98,9 @@ class WacomCorruptDataException(WacomException):
     errno = errno.EPROTO
 
 
-class WacomDevice(GObject.Object):
+class WacomProtocol(GObject.Object):
     '''
-    Class to communicate with the Wacom device. Communication is handled in
-    a separate thread.
+    Internal class to handle the communication with the Wacom device.
 
     :param device: the BlueZDevice object that is this wacom device
     '''
@@ -109,8 +108,6 @@ class WacomDevice(GObject.Object):
     __gsignals__ = {
         'drawing':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        'done':
-            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
         'button-press-required':
             (GObject.SignalFlags.RUN_FIRST, None, ()),
         # battery level in %, boolean for is-charging
@@ -118,31 +115,16 @@ class WacomDevice(GObject.Object):
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_INT, GObject.TYPE_BOOLEAN)),
     }
 
-    def __init__(self, device, config):
+    def __init__(self, device, uuid):
         GObject.Object.__init__(self)
         self.device = device
         self.nordic_answer = None
         self.pen_data_buffer = []
-        self.thread = None
         self.width = WACOM_SLATE_WIDTH
         self.height = WACOM_SLATE_HEIGHT
         self.name = device.name
-        self._config = None
+        self._uuid = uuid
         self.fw_logger = logging.getLogger('tuhi.fw')
-        self._is_running = False
-
-        try:
-            self._config = config.devices[device.address]
-        except KeyError:
-            self._uuid = None
-            self._wacom_protocol = None
-        else:
-            self._uuid = self._config['uuid']
-            try:
-                self._protocol = next(p for p in Protocol if p.value == self._config['Protocol'])
-            except StopIteration:
-                logger.error(f'Unknown protocol in configuration: {self._config["Protocol"]}')
-                raise WacomCorruptDataException(f'Unknown Protocol {self._config["Protocol"]}')
 
         device.connect_gatt_value(WACOM_CHRC_LIVE_PEN_DATA_UUID,
                                   self._on_pen_data_changed)
@@ -152,11 +134,6 @@ class WacomDevice(GObject.Object):
                                   self._on_nordic_data_received)
         device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
                                   self._on_mysterious_data_received)
-
-    @GObject.Property
-    def uuid(self):
-        assert self._uuid is not None
-        return self._uuid
 
     def is_spark(self):
         return MYSTERIOUS_NOTIFICATION_CHRC_UUID not in self.device.characteristics
@@ -268,13 +245,13 @@ class WacomDevice(GObject.Object):
         return args
 
     def check_connection(self):
-        args = [int(i) for i in binascii.unhexlify(self.uuid)]
+        args = [int(i) for i in binascii.unhexlify(self._uuid)]
         self.send_nordic_command_sync(command=0xe6,
                                       expected_opcode=0xb3,
                                       arguments=args)
 
     def register_connection(self):
-        args = [int(i) for i in binascii.unhexlify(self.uuid)]
+        args = [int(i) for i in binascii.unhexlify(self._uuid)]
         self.send_nordic_command(command=0xe7,
                                  arguments=args)
 
@@ -620,29 +597,102 @@ class WacomDevice(GObject.Object):
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
 
+
+class WacomDevice(GObject.Object):
+    '''
+    Class to communicate with the Wacom device. Communication is handled in
+    a separate thread.
+
+    :param device: the BlueZDevice object that is this wacom device
+    '''
+
+    __gsignals__ = {
+        'drawing':
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        'done':
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
+        'button-press-required':
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
+        # battery level in %, boolean for is-charging
+        "battery-status":
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_INT, GObject.TYPE_BOOLEAN)),
+    }
+
+    def __init__(self, device, config=None):
+        GObject.Object.__init__(self)
+        self._device = device
+        self.thread = None
+        self._is_running = False
+        self._config = None
+
+        try:
+            self._config = config.devices[device.address]
+        except KeyError:
+            # unregistered device
+            self._uuid = None
+            self._protocol = None
+            self._wacom_protocol = None
+        else:
+            self._uuid = self._config['uuid']
+            try:
+                self._protocol = next(p for p in Protocol if p.value == self._config['Protocol'])
+            except StopIteration:
+                logger.error(f'Unknown protocol in configuration: {self._config["Protocol"]}')
+                raise WacomCorruptDataException(f'Unknown Protocol {self._config["Protocol"]}')
+            self._init_protocol()
+
+    def _init_protocol(self):
+        self._wacom_protocol = WacomProtocol(self._device, self._uuid)
+        self._wacom_protocol.connect('drawing', self._on_drawing_received)
+        self._wacom_protocol.connect('button-press-required', self._on_button_press_required)
+        self._wacom_protocol.connect('battery-status', self._on_battery_status)
+
+    def _on_drawing_received(self, protocol, drawing):
+        self.emit('drawing', drawing)
+
+    def _on_button_press_required(self, protocol):
+        self.emit('button-press-required')
+
+    def _on_battery_status(self, protocol, percent, is_charging):
+        self.emit('battery-status', percent, is_charging)
+
+    @GObject.Property
+    def uuid(self):
+        assert self._uuid is not None
+        return self._uuid
+
+    @GObject.Property
+    def protocol(self):
+        assert self._protocol is not None
+        return self._protocol
+
     def register_device(self):
         self._uuid = uuid.uuid4().hex[:12]
-        logger.debug(f'{self.device.address}: registering device, assigned {self.uuid}')
-        if self.is_spark():
-            self.register_device_spark()
+        logger.debug(f'{self._device.address}: registering device, assigned {self.uuid}')
+        self._init_protocol()
+        if self._wacom_protocol.is_spark():
+            self._wacom_protocol.register_device_spark()
+            self._protocol = Protocol.SPARK
         else:
-            self.register_device_slate()
+            self._wacom_protocol.register_device_slate()
+            self._protocol = Protocol.SLATE
         logger.info('registration completed')
         self.notify('uuid')
 
     def run(self):
         if self._is_running:
-            logger.error(f'{self.device.address}: already synching, ignoring this request')
+            logger.error(f'{self._device.address}: already synching, ignoring this request')
             return
 
-        logger.debug(f'{self.device.address}: starting')
+        logger.debug(f'{self._device.address}: starting')
         self._is_running = True
         exception = None
         try:
             if self._register_mode:
                 self.register_device()
             else:
-                self.retrieve_data()
+                assert self._wacom_protocol is not None
+                self._wacom_protocol.retrieve_data()
         except WacomException as e:
             logger.error(f'**** Exception: {e} ****')
             exception = e
