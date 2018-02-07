@@ -38,6 +38,14 @@ class TuhiConfig(GObject.Object):
         SLATE = 'slate'
         INTUOS_PRO = 'intuos-pro'
 
+        @classmethod
+        def from_string(cls, string):
+            for e in cls:
+                if e.value == string:
+                    return e
+
+            return TuhiConfig.Protocol.UNKNOWN
+
     def __init__(self):
         GObject.Object.__init__(self)
         try:
