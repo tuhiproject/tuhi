@@ -21,6 +21,7 @@ import uuid
 import errno
 from gi.repository import GObject
 from .drawing import Drawing
+from .config import TuhiConfig
 
 logger = logging.getLogger('tuhi.wacom')
 
@@ -94,19 +95,17 @@ class WacomCorruptDataException(WacomException):
     errno = errno.EPROTO
 
 
-class WacomDevice(GObject.Object):
+class WacomProtocol(GObject.Object):
     '''
-    Class to communicate with the Wacom device. Communication is handled in
-    a separate thread.
+    Internal class to handle the communication with the Wacom device.
 
     :param device: the BlueZDevice object that is this wacom device
     '''
+    type = TuhiConfig.Protocol.UNKNOWN
 
     __gsignals__ = {
         'drawing':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        'done':
-            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
         'button-press-required':
             (GObject.SignalFlags.RUN_FIRST, None, ()),
         # battery level in %, boolean for is-charging
@@ -114,19 +113,15 @@ class WacomDevice(GObject.Object):
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_INT, GObject.TYPE_BOOLEAN)),
     }
 
-    def __init__(self, device, uuid=None):
+    def __init__(self, device, uuid):
         GObject.Object.__init__(self)
         self.device = device
         self.nordic_answer = None
         self.pen_data_buffer = []
         self.orientation = ORIENTATION_PORTRAIT
-        self.thread = None
-        self.width = WACOM_SLATE_WIDTH
-        self.height = WACOM_SLATE_HEIGHT
         self.name = device.name
         self._uuid = uuid
         self.fw_logger = logging.getLogger('tuhi.fw')
-        self._is_running = False
 
         device.connect_gatt_value(WACOM_CHRC_LIVE_PEN_DATA_UUID,
                                   self._on_pen_data_changed)
@@ -137,13 +132,9 @@ class WacomDevice(GObject.Object):
         device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
                                   self._on_mysterious_data_received)
 
-    @GObject.Property
-    def uuid(self):
-        assert self._uuid is not None
-        return self._uuid
-
-    def is_spark(self):
-        return MYSTERIOUS_NOTIFICATION_CHRC_UUID not in self.device.characteristics
+    @classmethod
+    def is_spark(cls, device):
+        return MYSTERIOUS_NOTIFICATION_CHRC_UUID not in device.characteristics
 
     def _on_mysterious_data_received(self, name, value):
         self.fw_logger.debug(f'mysterious: {binascii.hexlify(bytes(value))}')
@@ -265,13 +256,13 @@ class WacomDevice(GObject.Object):
         return args
 
     def check_connection(self):
-        args = [int(i) for i in binascii.unhexlify(self.uuid)]
+        args = [int(i) for i in binascii.unhexlify(self._uuid)]
         self.send_nordic_command_sync(command=0xe6,
                                       expected_opcode=0xb3,
                                       arguments=args)
 
     def register_connection(self):
-        args = [int(i) for i in binascii.unhexlify(self.uuid)]
+        args = [int(i) for i in binascii.unhexlify(self._uuid)]
         self.send_nordic_command(command=0xe7,
                                  arguments=args)
 
@@ -305,10 +296,10 @@ class WacomDevice(GObject.Object):
         fw = ''.join([hex(d)[2:] for d in data[1:]])
         return fw.upper()
 
-    def bb_command(self):
+    def get_name(self):
         data = self.send_nordic_command_sync(command=0xbb,
                                              expected_opcode=0xbc)
-        logger.debug(f'bb returned {data}')
+        return bytes(data)
 
     def get_dimensions(self, arg):
         possible_args = {
@@ -349,15 +340,11 @@ class WacomDevice(GObject.Object):
     def is_data_available(self):
         data = self.send_nordic_command_sync(command=0xc1,
                                              expected_opcode=0xc2)
-        n = 0
-        if self.is_spark():
-            n = int.from_bytes(data[0:2], byteorder='big')
-        else:
-            n = int.from_bytes(data[0:2], byteorder='little')
+        n = int.from_bytes(data[0:2], byteorder='little')
         logger.debug(f'Drawings available: {n}')
         return n > 0
 
-    def get_stroke_data_slate(self):
+    def get_stroke_data(self):
         data = self.send_nordic_command_sync(command=0xcc,
                                              expected_opcode=0xcf)
         # logger.debug(f'cc returned {data} ')
@@ -365,26 +352,6 @@ class WacomDevice(GObject.Object):
         str_timestamp = ''.join([f'{d:02x}' for d in data[4:]])
         timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
         return count, timestamp
-
-    def get_stroke_data_spark(self):
-        data = self.send_nordic_command_sync(command=0xc5,
-                                             expected_opcode=[0xc7, 0xcd])
-        # FIXME: Sometimes the 0xc7 is missing on the spark? Not in any of
-        # the btsnoop logs but I only rarely get a c7 response here
-        count = 0
-        if data.opcode == 0xc7:
-            count = int.from_bytes(data[0:4], byteorder='little')
-            data = self.wait_nordic_data(0xcd, 5)
-            # logger.debug(f'cc returned {data} ')
-
-        str_timestamp = ''.join([f'{d:02x}' for d in data])
-        timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
-        return count, timestamp
-
-    def get_stroke_data(self):
-        if not self.is_spark():
-            return self.get_stroke_data_slate()
-        return self.get_stroke_data_spark()
 
     def start_reading(self):
         data = self.send_nordic_command_sync(command=0xc3,
@@ -397,27 +364,17 @@ class WacomDevice(GObject.Object):
         if data[0] != 0xed:
             raise WacomException(f'unexpected answer: {data[0]:02x}')
         crc = data[1:]
-        if self.is_spark():
-            data = self.wait_nordic_data(0xc9, 5)
-            crc = data
         crc.reverse()
         crc = int(binascii.hexlify(bytes(crc)), 16)
         pen_data = self.pen_data_buffer
         self.pen_data_buffer = []
         if crc != binascii.crc32(bytes(pen_data)):
-            if not self.is_spark():
-                raise WacomCorruptDataException("CRCs don't match")
-            else:
-                logger.error("CRCs don't match")
+            raise WacomCorruptDataException("CRCs don't match")
         return pen_data
 
     def ack_transaction(self):
-        if self.is_spark():
-            opcode = None
-        else:
-            opcode = 0xb3
         self.send_nordic_command_sync(command=0xca,
-                                      expected_opcode=opcode)
+                                      expected_opcode=0xb3)
 
     def next_pen_data(self, data, offset):
         debug_data = []
@@ -547,8 +504,6 @@ class WacomDevice(GObject.Object):
     def retrieve_data(self):
         try:
             self.check_connection()
-            if self.is_spark():
-                self.e3_command()
             self.set_time()
             battery, charging = self.get_battery_info()
             if charging:
@@ -556,25 +511,24 @@ class WacomDevice(GObject.Object):
             else:
                 logger.debug(f'device is discharging: {battery}%')
             self.emit('battery-status', battery, charging)
-            if not self.is_spark():
-                self.width = w = self.get_dimensions('width')
-                self.height = h = self.get_dimensions('height')
-                if self.orientation in [ORIENTATION_PORTRAIT,
-                                        ORIENTATION_UPSIDEDOWN_PORTRAIT]:
-                    w = self.height
-                    h = self.width
-                logger.debug(f'dimensions: {w}x{h}')
+            self.width = w = self.get_dimensions('width')
+            self.height = h = self.get_dimensions('height')
+            if self.orientation in [ORIENTATION_PORTRAIT,
+                                    ORIENTATION_UPSIDEDOWN_PORTRAIT]:
+                w = self.height
+                h = self.width
+            logger.debug(f'dimensions: {w}x{h}')
 
-                fw_high = self.get_firmware_version(0)
-                fw_low = self.get_firmware_version(1)
-                logger.debug(f'firmware is {fw_high}-{fw_low}')
-                self.ec_command()
+            fw_high = self.get_firmware_version(0)
+            fw_low = self.get_firmware_version(1)
+            logger.debug(f'firmware is {fw_high}-{fw_low}')
+            self.ec_command()
             if self.read_offline_data() == 0:
                 logger.info('no data to retrieve')
         except WacomEEAGAINException:
             logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
 
-    def register_device_slate(self):
+    def register_device(self):
         self.register_connection()
         logger.info('Press the button now to confirm')
         self.emit('button-press-required')
@@ -585,7 +539,8 @@ class WacomDevice(GObject.Object):
         self.set_time()
         self.read_time()
         self.ec_command()
-        self.bb_command()
+        name = self.get_name()
+        logger.info(f'device name is {name}')
         w = self.get_dimensions('width')
         h = self.get_dimensions('height')
         if self.width != w or self.height != h:
@@ -594,7 +549,88 @@ class WacomDevice(GObject.Object):
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
 
-    def register_device_spark(self):
+
+class WacomProtocolSlate(WacomProtocol):
+    '''
+    Subclass to handle the communication oddities with the Wacom Slate-like
+    devices.
+
+    :param device: the BlueZDevice object that is this wacom device
+    '''
+    width = WACOM_SLATE_WIDTH
+    height = WACOM_SLATE_HEIGHT
+    type = TuhiConfig.Protocol.SLATE
+
+
+class WacomProtocolSpark(WacomProtocol):
+    '''
+    Subclass to handle the communication oddities with the Wacom Spark-like
+    devices.
+
+    :param device: the BlueZDevice object that is this wacom device
+    '''
+    width = WACOM_SLATE_WIDTH
+    height = WACOM_SLATE_HEIGHT
+    type = TuhiConfig.Protocol.SPARK
+
+    def is_data_available(self):
+        data = self.send_nordic_command_sync(command=0xc1,
+                                             expected_opcode=0xc2)
+        n = int.from_bytes(data[0:2], byteorder='big')
+        logger.debug(f'Drawings available: {n}')
+        return n > 0
+
+    def get_stroke_data(self):
+        data = self.send_nordic_command_sync(command=0xc5,
+                                             expected_opcode=[0xc7, 0xcd])
+        # FIXME: Sometimes the 0xc7 is missing on the spark? Not in any of
+        # the btsnoop logs but I only rarely get a c7 response here
+        count = 0
+        if data.opcode == 0xc7:
+            count = int.from_bytes(data[0:4], byteorder='little')
+            data = self.wait_nordic_data(0xcd, 5)
+            # logger.debug(f'cc returned {data} ')
+
+        str_timestamp = ''.join([f'{d:02x}' for d in data])
+        timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
+        return count, timestamp
+
+    def wait_for_end_read(self):
+        data = self.wait_nordic_data(0xc8, 5)
+        if data[0] != 0xed:
+            raise WacomException(f'unexpected answer: {data[0]:02x}')
+        crc = data[1:]
+        data = self.wait_nordic_data(0xc9, 5)
+        crc = data
+        crc.reverse()
+        crc = int(binascii.hexlify(bytes(crc)), 16)
+        pen_data = self.pen_data_buffer
+        self.pen_data_buffer = []
+        if crc != binascii.crc32(bytes(pen_data)):
+            logger.error("CRCs don't match")
+        return pen_data
+
+    def ack_transaction(self):
+        self.send_nordic_command_sync(command=0xca,
+                                      expected_opcode=None)
+
+    def retrieve_data(self):
+        try:
+            self.check_connection()
+            self.e3_command()
+            self.set_time()
+            battery, charging = self.get_battery_info()
+            if charging:
+                logger.debug(f'device is plugged in and charged at {battery}%')
+            else:
+                logger.debug(f'device is discharging: {battery}%')
+            self.emit('battery-status', battery, charging)
+            if self.read_offline_data() == 0:
+                logger.info('no data to retrieve')
+        except WacomEEAGAINException:
+            logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
+
+    def register_device(self):
         try:
             self.check_connection()
         except WacomWrongModeException:
@@ -614,34 +650,119 @@ class WacomDevice(GObject.Object):
                                       expected_opcode=0xb3)
         self.set_time()
         self.read_time()
-        self.bb_command()
+        name = self.get_name()
+        logger.info(f'device name is {name}')
         fw_high = self.get_firmware_version(0)
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
 
+
+class WacomDevice(GObject.Object):
+    '''
+    Class to communicate with the Wacom device. Communication is handled in
+    a separate thread.
+
+    :param device: the BlueZDevice object that is this wacom device
+    '''
+
+    __gsignals__ = {
+        'drawing':
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        'done':
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
+        'button-press-required':
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
+        # battery level in %, boolean for is-charging
+        "battery-status":
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_INT, GObject.TYPE_BOOLEAN)),
+    }
+
+    def __init__(self, device, config=None):
+        GObject.Object.__init__(self)
+        self._device = device
+        self.thread = None
+        self._is_running = False
+        self._config = None
+
+        try:
+            self._config = config.devices[device.address]
+        except KeyError:
+            self._uuid = None
+            self._wacom_protocol = None
+        else:
+            self._uuid = self._config['uuid']
+            self._init_protocol()
+
+    def _init_protocol(self):
+        protocol = TuhiConfig.Protocol.UNKNOWN
+        if self._config is not None and 'Protocol' in self._config:
+            protocol = TuhiConfig.Protocol.from_string(self._config['Protocol'])
+        else:
+            # we are registering a new device, or we might have an early
+            # config file from ab older tuhi version
+            if WacomProtocol.is_spark(self._device):
+                protocol = TuhiConfig.Protocol.SPARK
+            else:
+                protocol = TuhiConfig.Protocol.SLATE
+
+        if protocol == TuhiConfig.Protocol.SPARK:
+            self._wacom_protocol = WacomProtocolSpark(self._device, self._uuid)
+        elif protocol == TuhiConfig.Protocol.SLATE:
+            self._wacom_protocol = WacomProtocolSlate(self._device, self._uuid)
+        else:
+            log.error(f'Unknown Protocol {protocol}')
+            raise WacomCorruptDataException(f'Unknown Protocol {protocol}')
+
+        logger.debug(f'{self._device.name} is using {type(self._wacom_protocol)}')
+
+        self._wacom_protocol.connect('drawing', self._on_drawing_received)
+        self._wacom_protocol.connect('button-press-required', self._on_button_press_required)
+        self._wacom_protocol.connect('battery-status', self._on_battery_status)
+
+    def _on_drawing_received(self, protocol, drawing):
+        self.emit('drawing', drawing)
+
+    def _on_button_press_required(self, protocol):
+        self.emit('button-press-required')
+
+    def _on_battery_status(self, protocol, percent, is_charging):
+        self.emit('battery-status', percent, is_charging)
+
+    @GObject.Property
+    def uuid(self):
+        assert self._uuid is not None
+        return self._uuid
+
+    @GObject.Property
+    def protocol(self):
+        assert self._wacom_protocol is not None
+        return self._wacom_protocol.type
+        if WacomProtocol.is_spark(self._device):
+            return TuhiConfig.Protocol.SPARK
+        return TuhiConfig.Protocol.SLATE
+
     def register_device(self):
         self._uuid = uuid.uuid4().hex[:12]
-        logger.debug(f'{self.device.address}: registering device, assigned {self.uuid}')
-        if self.is_spark():
-            self.register_device_spark()
-        else:
-            self.register_device_slate()
+        logger.debug(f'{self._device.address}: registering device, assigned {self.uuid}')
+        self._init_protocol()
+        self._wacom_protocol.register_device()
         logger.info('registration completed')
         self.notify('uuid')
 
     def run(self):
         if self._is_running:
-            logger.error(f'{self.device.address}: already synching, ignoring this request')
+            logger.error(f'{self._device.address}: already synching, ignoring this request')
             return
 
-        logger.debug(f'{self.device.address}: starting')
+        logger.debug(f'{self._device.address}: starting')
         self._is_running = True
         exception = None
         try:
             if self._register_mode:
                 self.register_device()
             else:
-                self.retrieve_data()
+                assert self._wacom_protocol is not None
+                self._wacom_protocol.retrieve_data()
         except WacomException as e:
             logger.error(f'**** Exception: {e} ****')
             exception = e
