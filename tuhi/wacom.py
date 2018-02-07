@@ -694,10 +694,27 @@ class WacomDevice(GObject.Object):
             self._init_protocol()
 
     def _init_protocol(self):
-        if WacomProtocol.is_spark(self._device):
-            self._wacom_protocol = WacomProtocolSpark(self._device, self._uuid)
+        protocol = TuhiConfig.Protocol.UNKNOWN
+        if self._config is not None and 'Protocol' in self._config:
+            protocol = TuhiConfig.Protocol.from_string(self._config['Protocol'])
         else:
+            # we are registering a new device, or we might have an early
+            # config file from ab older tuhi version
+            if WacomProtocol.is_spark(self._device):
+                protocol = TuhiConfig.Protocol.SPARK
+            else:
+                protocol = TuhiConfig.Protocol.SLATE
+
+        if protocol == TuhiConfig.Protocol.SPARK:
+            self._wacom_protocol = WacomProtocolSpark(self._device, self._uuid)
+        elif protocol == TuhiConfig.Protocol.SLATE:
             self._wacom_protocol = WacomProtocolSlate(self._device, self._uuid)
+        else:
+            log.error(f'Unknown Protocol {protocol}')
+            raise WacomCorruptDataException(f'Unknown Protocol {protocol}')
+
+        logger.debug(f'{self._device.name} is using {type(self._wacom_protocol)}')
+
         self._wacom_protocol.connect('drawing', self._on_drawing_received)
         self._wacom_protocol.connect('button-press-required', self._on_button_press_required)
         self._wacom_protocol.connect('battery-status', self._on_battery_status)

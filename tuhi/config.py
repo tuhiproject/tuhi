@@ -38,6 +38,13 @@ class TuhiConfig(GObject.Object):
         SLATE = 2
         INTUOS_PRO = 3
 
+        @classmethod
+        def from_string(cls, e):
+            for attr in [a for a in dir(cls) if not a.startswith('__')]:
+                if e in ('Protocol.' + attr, attr):
+                    return getattr(cls, attr)
+            return TuhiConfig.Protocol.UNKNOWN
+
     def __init__(self):
         GObject.Object.__init__(self)
         try:
