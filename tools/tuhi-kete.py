@@ -571,7 +571,7 @@ class TuhiKeteShell(cmd.Cmd):
         except FileExistsError:
             pass
 
-        self._history_file = os.path.join(CONFIG_PATH, 'history')
+        self._history_file = os.path.join(CONFIG_PATH, 'histfile')
 
         try:
             readline.read_history_file(self._history_file)
