@@ -277,10 +277,10 @@ class WacomProtocol(GObject.Object):
         fw = ''.join([hex(d)[2:] for d in data[1:]])
         return fw.upper()
 
-    def bb_command(self):
+    def get_name(self):
         data = self.send_nordic_command_sync(command=0xbb,
                                              expected_opcode=0xbc)
-        logger.debug(f'bb returned {data}')
+        return bytes(data)
 
     def get_dimensions(self, arg):
         possible_args = {
@@ -516,7 +516,8 @@ class WacomProtocol(GObject.Object):
         self.set_time()
         self.read_time()
         self.ec_command()
-        self.bb_command()
+        name = self.get_name()
+        logger.info(f'device name is {name}')
         w = self.get_dimensions('width')
         h = self.get_dimensions('height')
         if self.width != w or self.height != h:
@@ -626,7 +627,8 @@ class WacomProtocolSpark(WacomProtocol):
                                       expected_opcode=0xb3)
         self.set_time()
         self.read_time()
-        self.bb_command()
+        name = self.get_name()
+        logger.info(f'device name is {name}')
         fw_high = self.get_firmware_version(0)
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
