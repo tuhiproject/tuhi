@@ -14,6 +14,7 @@
 
 import binascii
 import calendar
+import enum
 import logging
 import threading
 import time
@@ -21,7 +22,6 @@ import uuid
 import errno
 from gi.repository import GObject
 from .drawing import Drawing
-from .config import TuhiConfig
 
 logger = logging.getLogger('tuhi.wacom')
 
@@ -41,6 +41,21 @@ MYSTERIOUS_NOTIFICATION_CHRC_UUID = '3a340721-c572-11e5-86c5-0002a5d5c51b'
 
 WACOM_SLATE_WIDTH = 21600
 WACOM_SLATE_HEIGHT = 14800
+
+
+class Protocol(enum.Enum):
+    UNKNOWN = 'unknown'
+    SPARK = 'spark'
+    SLATE = 'slate'
+    INTUOS_PRO = 'intuos-pro'
+
+    @classmethod
+    def from_string(cls, string):
+        for e in cls:
+            if e.value == string:
+                return e
+
+        return cls.UNKNOWN
 
 
 def signed_char_to_int(v):
@@ -96,7 +111,7 @@ class WacomProtocol(GObject.Object):
 
     :param device: the BlueZDevice object that is this wacom device
     '''
-    type = TuhiConfig.Protocol.UNKNOWN
+    type = Protocol.UNKNOWN
 
     __gsignals__ = {
         'drawing':
@@ -536,7 +551,7 @@ class WacomProtocolSlate(WacomProtocol):
     '''
     width = WACOM_SLATE_WIDTH
     height = WACOM_SLATE_HEIGHT
-    type = TuhiConfig.Protocol.SLATE
+    type = Protocol.SLATE
 
 
 class WacomProtocolSpark(WacomProtocol):
@@ -548,7 +563,7 @@ class WacomProtocolSpark(WacomProtocol):
     '''
     width = WACOM_SLATE_WIDTH
     height = WACOM_SLATE_HEIGHT
-    type = TuhiConfig.Protocol.SPARK
+    type = Protocol.SPARK
 
     def is_data_available(self):
         data = self.send_nordic_command_sync(command=0xc1,
@@ -671,20 +686,20 @@ class WacomDevice(GObject.Object):
             self._init_protocol()
 
     def _init_protocol(self):
-        protocol = TuhiConfig.Protocol.UNKNOWN
+        protocol = Protocol.UNKNOWN
         if self._config is not None and 'Protocol' in self._config:
-            protocol = TuhiConfig.Protocol.from_string(self._config['Protocol'])
+            protocol = Protocol.from_string(self._config['Protocol'])
         else:
             # we are registering a new device, or we might have an early
             # config file from an older tuhi version
             if WacomProtocol.is_spark(self._device):
-                protocol = TuhiConfig.Protocol.SPARK
+                protocol = Protocol.SPARK
             else:
-                protocol = TuhiConfig.Protocol.SLATE
+                protocol = Protocol.SLATE
 
-        if protocol == TuhiConfig.Protocol.SPARK:
+        if protocol == Protocol.SPARK:
             self._wacom_protocol = WacomProtocolSpark(self._device, self._uuid)
-        elif protocol == TuhiConfig.Protocol.SLATE:
+        elif protocol == Protocol.SLATE:
             self._wacom_protocol = WacomProtocolSlate(self._device, self._uuid)
         else:
             logger.error(f'Unknown Protocol {protocol}')

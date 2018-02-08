@@ -16,10 +16,10 @@ from gi.repository import GObject
 import xdg.BaseDirectory
 import os
 import configparser
-import enum
 import re
 import logging
 from .drawing import Drawing
+from .wacom import Protocol
 
 logger = logging.getLogger('tuhi.config')
 
@@ -31,20 +31,6 @@ def is_btaddr(addr):
 
 
 class TuhiConfig(GObject.Object):
-
-    class Protocol(enum.Enum):
-        UNKNOWN = 'unknown'
-        SPARK = 'spark'
-        SLATE = 'slate'
-        INTUOS_PRO = 'intuos-pro'
-
-        @classmethod
-        def from_string(cls, string):
-            for e in cls:
-                if e.value == string:
-                    return e
-
-            return TuhiConfig.Protocol.UNKNOWN
 
     def __init__(self):
         GObject.Object.__init__(self)
@@ -84,13 +70,13 @@ class TuhiConfig(GObject.Object):
 
                 assert config['Device']['Address'] == entry.name
                 if 'Protocol' not in config['Device']:
-                    config['Device']['Protocol'] = TuhiConfig.Protocol.UNKNOWN.value
+                    config['Device']['Protocol'] = Protocol.UNKNOWN.value
                 self._devices[entry.name] = config['Device']
 
     def new_device(self, address, uuid, protocol):
         assert is_btaddr(address)
         assert len(uuid) == 12
-        assert protocol != TuhiConfig.Protocol.UNKNOWN
+        assert protocol != Protocol.UNKNOWN
 
         logger.debug(f'{address}: adding new config, UUID {uuid}')
         path = os.path.join(ROOT_PATH, address)
