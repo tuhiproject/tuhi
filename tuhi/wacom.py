@@ -214,15 +214,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                   self._on_pen_data_changed)
         device.connect_gatt_value(WACOM_OFFLINE_CHRC_PEN_DATA_UUID,
                                   self._on_pen_data_received)
-        device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
-                                  self._on_mysterious_data_received)
 
     @classmethod
     def is_spark(cls, device):
         return MYSTERIOUS_NOTIFICATION_CHRC_UUID not in device.characteristics
-
-    def _on_mysterious_data_received(self, name, value):
-        self.fw_logger.debug(f'mysterious: {binascii.hexlify(bytes(value))}')
 
     def _on_pen_data_changed(self, name, value):
         logger.debug(binascii.hexlify(bytes(value)))
@@ -342,16 +337,22 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def is_data_available(self):
         data = self.send_nordic_command_sync(command=0xc1,
                                              expected_opcode=0xc2)
-        n = int.from_bytes(data[0:2], byteorder='little')
+        n = int.from_bytes(data[0:2], byteorder='big')
         logger.debug(f'Drawings available: {n}')
         return n > 0
 
     def get_stroke_data(self):
-        data = self.send_nordic_command_sync(command=0xcc,
-                                             expected_opcode=0xcf)
-        # logger.debug(f'cc returned {data} ')
-        count = int.from_bytes(data[0:4], byteorder='little')
-        str_timestamp = ''.join([f'{d:02x}' for d in data[4:]])
+        data = self.send_nordic_command_sync(command=0xc5,
+                                             expected_opcode=[0xc7, 0xcd])
+        # FIXME: Sometimes the 0xc7 is missing on the spark? Not in any of
+        # the btsnoop logs but I only rarely get a c7 response here
+        count = 0
+        if data.opcode == 0xc7:
+            count = int.from_bytes(data[0:4], byteorder='little')
+            data = self.wait_nordic_data(0xcd, 5)
+            # logger.debug(f'cc returned {data} ')
+
+        str_timestamp = ''.join([f'{d:02x}' for d in data])
         timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
         return count, timestamp
 
@@ -366,17 +367,35 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         if data[0] != 0xed:
             raise WacomException(f'unexpected answer: {data[0]:02x}')
         crc = data[1:]
+        data = self.wait_nordic_data(0xc9, 5)
+        crc = data
         crc.reverse()
         crc = int(binascii.hexlify(bytes(crc)), 16)
         pen_data = self.pen_data_buffer
         self.pen_data_buffer = []
         if crc != binascii.crc32(bytes(pen_data)):
-            raise WacomCorruptDataException("CRCs don't match")
+            logger.error("CRCs don't match")
         return pen_data
+
+    def retrieve_data(self):
+        try:
+            self.check_connection()
+            self.e3_command()
+            self.set_time()
+            battery, charging = self.get_battery_info()
+            if charging:
+                logger.debug(f'device is plugged in and charged at {battery}%')
+            else:
+                logger.debug(f'device is discharging: {battery}%')
+            self.emit('battery-status', battery, charging)
+            if self.read_offline_data() == 0:
+                logger.info('no data to retrieve')
+        except WacomEEAGAINException:
+            logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
 
     def ack_transaction(self):
         self.send_nordic_command_sync(command=0xca,
-                                      expected_opcode=0xb3)
+                                      expected_opcode=None)
 
     def next_pen_data(self, data, offset):
         debug_data = []
@@ -503,128 +522,6 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             transaction_count += 1
         return transaction_count
 
-    def retrieve_data(self):
-        try:
-            self.check_connection()
-            self.set_time()
-            battery, charging = self.get_battery_info()
-            if charging:
-                logger.debug(f'device is plugged in and charged at {battery}%')
-            else:
-                logger.debug(f'device is discharging: {battery}%')
-            self.emit('battery-status', battery, charging)
-            self.width = w = self.get_dimensions('width')
-            self.height = h = self.get_dimensions('height')
-            logger.debug(f'dimensions: {w}x{h}')
-
-            fw_high = self.get_firmware_version(0)
-            fw_low = self.get_firmware_version(1)
-            logger.debug(f'firmware is {fw_high}-{fw_low}')
-            self.ec_command()
-            if self.read_offline_data() == 0:
-                logger.info('no data to retrieve')
-        except WacomEEAGAINException:
-            logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
-
-    def register_device(self):
-        self.register_connection()
-        logger.info('Press the button now to confirm')
-        self.emit('button-press-required')
-        self.wait_nordic_data(0xe4, 10)
-        self.set_time()
-        self.read_time()
-        self.ec_command()
-        name = self.get_name()
-        logger.info(f'device name is {name}')
-        w = self.get_dimensions('width')
-        h = self.get_dimensions('height')
-        if self.width != w or self.height != h:
-            logger.error(f'Uncompatible dimensions: {w}x{h}')
-        fw_high = self.get_firmware_version(0)
-        fw_low = self.get_firmware_version(1)
-        logger.info(f'firmware is {fw_high}-{fw_low}')
-
-
-class WacomProtocolSlate(WacomProtocolBase):
-    '''
-    Subclass to handle the communication oddities with the Wacom Slate-like
-    devices.
-
-    :param device: the BlueZDevice object that is this wacom device
-    '''
-    width = 21600
-    height = 14800
-    protocol = Protocol.SLATE
-
-
-class WacomProtocolSpark(WacomProtocolBase):
-    '''
-    Subclass to handle the communication oddities with the Wacom Spark-like
-    devices.
-
-    :param device: the BlueZDevice object that is this wacom device
-    '''
-    width = 21600
-    height = 14800
-    protocol = Protocol.SPARK
-
-    def is_data_available(self):
-        data = self.send_nordic_command_sync(command=0xc1,
-                                             expected_opcode=0xc2)
-        n = int.from_bytes(data[0:2], byteorder='big')
-        logger.debug(f'Drawings available: {n}')
-        return n > 0
-
-    def get_stroke_data(self):
-        data = self.send_nordic_command_sync(command=0xc5,
-                                             expected_opcode=[0xc7, 0xcd])
-        # FIXME: Sometimes the 0xc7 is missing on the spark? Not in any of
-        # the btsnoop logs but I only rarely get a c7 response here
-        count = 0
-        if data.opcode == 0xc7:
-            count = int.from_bytes(data[0:4], byteorder='little')
-            data = self.wait_nordic_data(0xcd, 5)
-            # logger.debug(f'cc returned {data} ')
-
-        str_timestamp = ''.join([f'{d:02x}' for d in data])
-        timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
-        return count, timestamp
-
-    def wait_for_end_read(self):
-        data = self.wait_nordic_data(0xc8, 5)
-        if data[0] != 0xed:
-            raise WacomException(f'unexpected answer: {data[0]:02x}')
-        crc = data[1:]
-        data = self.wait_nordic_data(0xc9, 5)
-        crc = data
-        crc.reverse()
-        crc = int(binascii.hexlify(bytes(crc)), 16)
-        pen_data = self.pen_data_buffer
-        self.pen_data_buffer = []
-        if crc != binascii.crc32(bytes(pen_data)):
-            logger.error("CRCs don't match")
-        return pen_data
-
-    def ack_transaction(self):
-        self.send_nordic_command_sync(command=0xca,
-                                      expected_opcode=None)
-
-    def retrieve_data(self):
-        try:
-            self.check_connection()
-            self.e3_command()
-            self.set_time()
-            battery, charging = self.get_battery_info()
-            if charging:
-                logger.debug(f'device is plugged in and charged at {battery}%')
-            else:
-                logger.debug(f'device is discharging: {battery}%')
-            self.emit('battery-status', battery, charging)
-            if self.read_offline_data() == 0:
-                logger.info('no data to retrieve')
-        except WacomEEAGAINException:
-            logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
-
     def register_device(self):
         try:
             self.check_connection()
@@ -650,6 +547,114 @@ class WacomProtocolSpark(WacomProtocolBase):
         fw_high = self.get_firmware_version(0)
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
+
+
+class WacomProtocolSpark(WacomProtocolBase):
+    '''
+    Subclass to handle the communication oddities with the Wacom Spark-like
+    devices.
+
+    :param device: the BlueZDevice object that is this wacom device
+    :param uuid: the UUID {to be} assigned to the device
+    '''
+    width = 21600
+    height = 14800
+    protocol = Protocol.SPARK
+
+
+class WacomProtocolSlate(WacomProtocolSpark):
+    '''
+    Subclass to handle the communication oddities with the Wacom Slate-like
+    devices.
+
+    :param device: the BlueZDevice object that is this wacom device
+    :param uuid: the UUID {to be} assigned to the device
+    '''
+    width = 21600
+    height = 14800
+    protocol = Protocol.SLATE
+
+    def __init__(self, device, uuid):
+        super().__init__(device)
+        device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
+                                  self._on_mysterious_data_received)
+
+    def _on_mysterious_data_received(self, name, value):
+        self.fw_logger.debug(f'mysterious: {binascii.hexlify(bytes(value))}')
+
+    def ack_transaction(self):
+        self.send_nordic_command_sync(command=0xca,
+                                      expected_opcode=0xb3)
+
+    def is_data_available(self):
+        data = self.send_nordic_command_sync(command=0xc1,
+                                             expected_opcode=0xc2)
+        n = int.from_bytes(data[0:2], byteorder='little')
+        logger.debug(f'Drawings available: {n}')
+        return n > 0
+
+    def get_stroke_data(self):
+        data = self.send_nordic_command_sync(command=0xcc,
+                                             expected_opcode=0xcf)
+        # logger.debug(f'cc returned {data} ')
+        count = int.from_bytes(data[0:4], byteorder='little')
+        str_timestamp = ''.join([f'{d:02x}' for d in data[4:]])
+        timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
+        return count, timestamp
+
+    def register_device(self):
+        self.register_connection()
+        logger.info('Press the button now to confirm')
+        self.emit('button-press-required')
+        self.wait_nordic_data(0xe4, 10)
+        self.set_time()
+        self.read_time()
+        self.ec_command()
+        name = self.get_name()
+        logger.info(f'device name is {name}')
+        w = self.get_dimensions('width')
+        h = self.get_dimensions('height')
+        if self.width != w or self.height != h:
+            logger.error(f'Uncompatible dimensions: {w}x{h}')
+        fw_high = self.get_firmware_version(0)
+        fw_low = self.get_firmware_version(1)
+        logger.info(f'firmware is {fw_high}-{fw_low}')
+
+    def retrieve_data(self):
+        try:
+            self.check_connection()
+            self.set_time()
+            battery, charging = self.get_battery_info()
+            if charging:
+                logger.debug(f'device is plugged in and charged at {battery}%')
+            else:
+                logger.debug(f'device is discharging: {battery}%')
+            self.emit('battery-status', battery, charging)
+            self.width = w = self.get_dimensions('width')
+            self.height = h = self.get_dimensions('height')
+            logger.debug(f'dimensions: {w}x{h}')
+
+            fw_high = self.get_firmware_version(0)
+            fw_low = self.get_firmware_version(1)
+            logger.debug(f'firmware is {fw_high}-{fw_low}')
+            self.ec_command()
+            if self.read_offline_data() == 0:
+                logger.info('no data to retrieve')
+        except WacomEEAGAINException:
+            logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
+
+    def wait_for_end_read(self):
+        data = self.wait_nordic_data(0xc8, 5)
+        if data[0] != 0xed:
+            raise WacomException(f'unexpected answer: {data[0]:02x}')
+        crc = data[1:]
+        crc.reverse()
+        crc = int(binascii.hexlify(bytes(crc)), 16)
+        pen_data = self.pen_data_buffer
+        self.pen_data_buffer = []
+        if crc != binascii.crc32(bytes(pen_data)):
+            raise WacomCorruptDataException("CRCs don't match")
+        return pen_data
 
 
 class WacomDevice(GObject.Object):
