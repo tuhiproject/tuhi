@@ -43,19 +43,12 @@ WACOM_SLATE_WIDTH = 21600
 WACOM_SLATE_HEIGHT = 14800
 
 
+@enum.unique
 class Protocol(enum.Enum):
     UNKNOWN = 'unknown'
     SPARK = 'spark'
     SLATE = 'slate'
     INTUOS_PRO = 'intuos-pro'
-
-    @classmethod
-    def from_string(cls, string):
-        for e in cls:
-            if e.value == string:
-                return e
-
-        return cls.UNKNOWN
 
 
 def signed_char_to_int(v):
@@ -688,7 +681,11 @@ class WacomDevice(GObject.Object):
     def _init_protocol(self):
         protocol = Protocol.UNKNOWN
         if self._config is not None and 'Protocol' in self._config:
-            protocol = Protocol.from_string(self._config['Protocol'])
+            try:
+                protocol = next(p for p in Protocol if p.value == self._config['Protocol'])
+            except StopIteration:
+                logger.error(f'Unknown protocol in configuration: {self._config["Protocol"]}')
+                raise WacomCorruptDataException(f'Unknown Protocol {protocol}')
         else:
             # we are registering a new device, or we might have an early
             # config file from an older tuhi version
@@ -702,6 +699,8 @@ class WacomDevice(GObject.Object):
         elif protocol == Protocol.SLATE:
             self._wacom_protocol = WacomProtocolSlate(self._device, self._uuid)
         else:
+            # FIXME: change to an assert once intuos-pro is implemented, we
+            # never get here
             logger.error(f'Unknown Protocol {protocol}')
             raise WacomCorruptDataException(f'Unknown Protocol {protocol}')
 
