@@ -134,7 +134,7 @@ class TuhiDevice(GObject.Object):
     def _on_bluez_device_connected(self, bluez_device):
         logger.debug(f'{bluez_device.address}: connected')
         if self._wacom_device is None:
-            self._wacom_device = WacomDevice(bluez_device, self._uuid)
+            self._wacom_device = WacomDevice(bluez_device, self.config)
             self._wacom_device.connect('drawing', self._on_drawing_received)
             self._wacom_device.connect('done', self._on_fetching_finished, bluez_device)
             self._wacom_device.connect('button-press-required', self._on_button_press_required)

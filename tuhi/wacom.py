@@ -118,7 +118,7 @@ class WacomDevice(GObject.Object):
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_INT, GObject.TYPE_BOOLEAN)),
     }
 
-    def __init__(self, device, uuid=None):
+    def __init__(self, device, config):
         GObject.Object.__init__(self)
         self.device = device
         self.nordic_answer = None
@@ -127,9 +127,22 @@ class WacomDevice(GObject.Object):
         self.width = WACOM_SLATE_WIDTH
         self.height = WACOM_SLATE_HEIGHT
         self.name = device.name
-        self._uuid = uuid
+        self._config = None
         self.fw_logger = logging.getLogger('tuhi.fw')
         self._is_running = False
+
+        try:
+            self._config = config.devices[device.address]
+        except KeyError:
+            self._uuid = None
+            self._wacom_protocol = None
+        else:
+            self._uuid = self._config['uuid']
+            try:
+                self._protocol = next(p for p in Protocol if p.value == self._config['Protocol'])
+            except StopIteration:
+                logger.error(f'Unknown protocol in configuration: {self._config["Protocol"]}')
+                raise WacomCorruptDataException(f'Unknown Protocol {self._config["Protocol"]}')
 
         device.connect_gatt_value(WACOM_CHRC_LIVE_PEN_DATA_UUID,
                                   self._on_pen_data_changed)
