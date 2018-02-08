@@ -683,7 +683,8 @@ class WacomDevice(GObject.Object):
             except StopIteration:
                 logger.error(f'Unknown protocol in configuration: {self._config["Protocol"]}')
                 raise WacomCorruptDataException(f'Unknown Protocol {protocol}')
-        else:
+
+        if protocol == Protocol.UNKNOWN:
             # we are registering a new device, or we might have an early
             # config file from an older tuhi version
             if WacomProtocol.is_spark(self._device):
