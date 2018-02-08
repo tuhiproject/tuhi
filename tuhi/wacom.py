@@ -39,9 +39,6 @@ WACOM_OFFLINE_CHRC_PEN_DATA_UUID = 'ffee0003-bbaa-9988-7766-554433221100'
 MYSTERIOUS_NOTIFICATION_SERVICE_UUID = '3a340720-c572-11e5-86c5-0002a5d5c51b'
 MYSTERIOUS_NOTIFICATION_CHRC_UUID = '3a340721-c572-11e5-86c5-0002a5d5c51b'
 
-WACOM_SLATE_WIDTH = 21600
-WACOM_SLATE_HEIGHT = 14800
-
 
 @enum.unique
 class Protocol(enum.Enum):
@@ -542,8 +539,8 @@ class WacomProtocolSlate(WacomProtocol):
 
     :param device: the BlueZDevice object that is this wacom device
     '''
-    width = WACOM_SLATE_WIDTH
-    height = WACOM_SLATE_HEIGHT
+    width = 21600
+    height = 14800
     type = Protocol.SLATE
 
 
@@ -554,8 +551,8 @@ class WacomProtocolSpark(WacomProtocol):
 
     :param device: the BlueZDevice object that is this wacom device
     '''
-    width = WACOM_SLATE_WIDTH
-    height = WACOM_SLATE_HEIGHT
+    width = 21600
+    height = 14800
     type = Protocol.SPARK
 
     def is_data_available(self):
