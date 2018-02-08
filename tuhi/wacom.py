@@ -262,8 +262,8 @@ class WacomDevice(GObject.Object):
 
     def set_time(self):
         # Device time is UTC
-        self.current_time = time.strftime('%y%m%d%H%M%S', time.gmtime())
-        args = [int(i) for i in binascii.unhexlify(self.current_time)]
+        current_time = time.strftime('%y%m%d%H%M%S', time.gmtime())
+        args = [int(i) for i in binascii.unhexlify(current_time)]
         self.send_nordic_command_sync(command=0xb6,
                                       expected_opcode=0xb3,
                                       arguments=args)
