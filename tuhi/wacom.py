@@ -677,7 +677,7 @@ class WacomDevice(GObject.Object):
 
     def _init_protocol(self):
         protocol = Protocol.UNKNOWN
-        if self._config is not None and 'Protocol' in self._config:
+        if self._config is not None:
             try:
                 protocol = next(p for p in Protocol if p.value == self._config['Protocol'])
             except StopIteration:
