@@ -516,10 +516,7 @@ class WacomProtocol(GObject.Object):
         self.register_connection()
         logger.info('Press the button now to confirm')
         self.emit('button-press-required')
-        data = self.wait_nordic_data([0xe4, 0xb3], 10)
-        if data.opcode == 0xb3:
-            # generic ACK
-            self.check_ack(data)
+        self.wait_nordic_data(0xe4, 10)
         self.set_time()
         self.read_time()
         self.ec_command()
