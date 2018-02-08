@@ -41,11 +41,6 @@ MYSTERIOUS_NOTIFICATION_CHRC_UUID = '3a340721-c572-11e5-86c5-0002a5d5c51b'
 WACOM_SLATE_WIDTH = 21600
 WACOM_SLATE_HEIGHT = 14800
 
-ORIENTATION_PORTRAIT = 'portrait'
-ORIENTATION_UPSIDEDOWN_PORTRAIT = 'tiartrop'
-ORIENTATION_LANDSCAPE = 'landscape'
-ORIENTATION_UPSIDEDOWN_LANDSCAPE = 'epacsdnal'
-
 
 def signed_char_to_int(v):
     return int.from_bytes([v], byteorder='little', signed=True)
@@ -119,7 +114,6 @@ class WacomDevice(GObject.Object):
         self.device = device
         self.nordic_answer = None
         self.pen_data_buffer = []
-        self.orientation = ORIENTATION_PORTRAIT
         self.thread = None
         self.width = WACOM_SLATE_WIDTH
         self.height = WACOM_SLATE_HEIGHT
@@ -174,19 +168,6 @@ class WacomDevice(GObject.Object):
                     x = int.from_bytes(data[0:2], byteorder='little')
                     y = int.from_bytes(data[2:4], byteorder='little')
                     pressure = int.from_bytes(data[4:6], byteorder='little')
-                    if self.orientation == ORIENTATION_PORTRAIT:
-                        t = x
-                        x = self.height - y
-                        y = t
-                    elif self.orientation == ORIENTATION_UPSIDEDOWN_PORTRAIT:
-                        t = x
-                        x = y
-                        y = self.width - t
-                    elif self.orientation == ORIENTATION_LANDSCAPE:
-                        pass
-                    elif self.orientation == ORIENTATION_UPSIDEDOWN_LANDSCAPE:
-                        x = self.width - x
-                        y = self.height - y
                     self.logger.info(f'New Pen Data: ({x},{y}), pressure: {pressure}')
                 data = data[6:]
 
@@ -559,10 +540,6 @@ class WacomDevice(GObject.Object):
             if not self.is_spark():
                 self.width = w = self.get_dimensions('width')
                 self.height = h = self.get_dimensions('height')
-                if self.orientation in [ORIENTATION_PORTRAIT,
-                                        ORIENTATION_UPSIDEDOWN_PORTRAIT]:
-                    w = self.height
-                    h = self.width
                 logger.debug(f'dimensions: {w}x{h}')
 
                 fw_high = self.get_firmware_version(0)
