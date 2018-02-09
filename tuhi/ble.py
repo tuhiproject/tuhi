@@ -136,8 +136,15 @@ class BlueZDevice(GObject.Object):
     @GObject.Property
     def vendor_id(self):
         md = self.interface.get_cached_property('ManufacturerData')
-        if md is not None:
-            return md.keys()[0]
+        if md is None:
+            return None
+
+        try:
+            return next(iter(dict(md)))
+        except StopIteration:
+            # dict is empty
+            pass
+
         return None
 
     @GObject.Property
