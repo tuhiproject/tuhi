@@ -246,7 +246,7 @@ class Tuhi(GObject.Object):
         if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return False
 
-        manufacturer_data = bluez_device.get_manufacturer_data(bluez_device.vendor_id)
+        manufacturer_data = bluez_device.manufacturer_data
         return manufacturer_data is not None and len(manufacturer_data) == 4
 
     def _on_bluez_discovery_started(self, manager):

@@ -152,10 +152,18 @@ class BlueZDevice(GObject.Object):
         return (self.interface.get_cached_property('Connected').unpack() and
                 self.interface.get_cached_property('ServicesResolved').unpack())
 
-    def get_manufacturer_data(self, vendor_id):
+    @GObject.Property
+    def manufacturer_data(self):
         md = self.interface.get_cached_property('ManufacturerData')
-        if md is not None and vendor_id in md.keys():
-            return md[vendor_id]
+        if md is None:
+            return None
+
+        try:
+            return next(iter(dict(md).values()))
+        except StopIteration:
+            # dict is empty
+            pass
+
         return None
 
     def resolve(self, om):
@@ -257,6 +265,8 @@ class BlueZDevice(GObject.Object):
                 self.emit('connected')
         if 'RSSI' in properties:
             self.emit('updated')
+        if 'ManufacturerData' in properties:
+            self.notify('manufacturer-data')
 
     def connect_gatt_value(self, uuid, callback):
         '''
