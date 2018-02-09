@@ -741,7 +741,7 @@ class WacomDevice(GObject.Object):
             logger.error(f'Unknown Protocol {protocol}')
             raise WacomCorruptDataException(f'Protocol "{protocol}" not implemented')
 
-        logger.debug(f'{self._device.name} is using {type(self._wacom_protocol)}')
+        logger.debug(f'{self._device.name} is using protocol {protocol}')
 
         self._wacom_protocol.connect('drawing', self._on_drawing_received)
         self._wacom_protocol.connect('battery-status', self._on_battery_status)
