@@ -245,10 +245,10 @@ class BlueZDevice(GObject.Object):
             else:
                 logger.info('Disconnected')
                 self.emit('disconnected')
-        elif 'ServicesResolved' in properties:
+        if 'ServicesResolved' in properties:
             if properties['ServicesResolved']:
                 self.emit('connected')
-        elif 'RSSI' in properties:
+        if 'RSSI' in properties:
             self.emit('updated')
 
     def connect_gatt_value(self, uuid, callback):
