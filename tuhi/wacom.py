@@ -601,7 +601,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
     protocol = Protocol.SLATE
 
     def __init__(self, device, uuid):
-        super().__init__(device)
+        super().__init__(device, uuid)
         device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
                                   self._on_mysterious_data_received)
 
