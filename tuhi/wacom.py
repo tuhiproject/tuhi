@@ -333,7 +333,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         data = self.send_nordic_command_sync(command=0xb6,
                                              expected_opcode=0xbd)
         ts = self.time_from_bytes(data)
-        logger.debug(f'b6 returned time: {ts}')
+        logger.debug(f'b6 returned time: UTC {time.strftime("%y%m%d%H%M%S", ts)}')
         # FIXME: check if data matches self.current_time
 
     def get_battery_info(self):
