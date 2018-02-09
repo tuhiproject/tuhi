@@ -314,10 +314,18 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         self.send_nordic_command_sync(command=0xe3,
                                       expected_opcode=0xb3)
 
-    def set_time(self):
+    def time_to_bytes(self):
         # Device time is UTC
         current_time = time.strftime('%y%m%d%H%M%S', time.gmtime())
-        args = [int(i) for i in binascii.unhexlify(current_time)]
+        return [int(i) for i in binascii.unhexlify(current_time)]
+
+    def time_from_bytes(self, data):
+        assert len(data) >= 6
+        str_timestamp = ''.join([f'{d:02x}' for d in data])
+        return time.strptime(str_timestamp, '%y%m%d%H%M%S')
+
+    def set_time(self):
+        args = self.time_to_bytes()
         self.send_nordic_command_sync(command=0xb6,
                                       expected_opcode=0xb3,
                                       arguments=args)
@@ -325,7 +333,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def read_time(self):
         data = self.send_nordic_command_sync(command=0xb6,
                                              expected_opcode=0xbd)
-        logger.debug(f'b6 returned {data}')
+        ts = self.time_from_bytes(data)
+        logger.debug(f'b6 returned time: {ts}')
         # FIXME: check if data matches self.current_time
 
     def get_battery_info(self):
@@ -553,7 +562,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         transaction_count = 0
         while self.is_data_available():
             count, timestamp = self.get_stroke_data()
-            logger.info(f'receiving {count} bytes drawn on {time.asctime(timestamp)}')
+            logger.info(f'receiving {count} bytes drawn on UTC {time.strftime("%y%m%d%H%M%S", timestamp)}')
             self.start_reading()
             pen_data = self.wait_for_end_read()
             str_pen = binascii.hexlify(bytes(pen_data))
@@ -631,8 +640,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
                                              expected_opcode=0xcf)
         # logger.debug(f'cc returned {data} ')
         count = int.from_bytes(data[0:4], byteorder='little')
-        str_timestamp = ''.join([f'{d:02x}' for d in data[4:]])
-        timestamp = time.strptime(str_timestamp, '%y%m%d%H%M%S')
+        timestamp = self.time_from_bytes(data[4:])
         return count, timestamp
 
     def register_device_finish(self):
