@@ -203,10 +203,14 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
     def is_spark(cls, device):
         return MYSTERIOUS_NOTIFICATION_CHRC_UUID not in device.characteristics
 
-    def register_connection(self, uuid):
+    def register_device(self, uuid):
+        protocol = Protocol.UNKNOWN
         args = [int(i) for i in binascii.unhexlify(uuid)]
 
         if self.is_spark(self.device):
+            # The spark replies with b3 01 01 when in pairing mode
+            # Usually that triggers a WacomWrongModeException but here it's
+            # expected
             try:
                 self.send_nordic_command_sync(command=0xe6,
                                               expected_opcode=0xb3,
@@ -214,18 +218,26 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
             except WacomWrongModeException:
                 # this is expected
                 pass
+
+            # The "press button now command" on the spark
             self.send_nordic_command(command=0xe3,
                                      arguments=[0x01])
-            return Protocol.SPARK
+            protocol = Protocol.SPARK
+        else:
+            # Slate requires a button press in response to e7 directly
+            self.send_nordic_command(command=0xe7, arguments=args)
 
-        self.send_nordic_command(command=0xe7, arguments=args)
-
-        return Protocol.SLATE
-
-    def register_device(self, uuid):
-        protocol = self.register_connection(uuid)
         logger.info('Press the button now to confirm')
         self.emit('button-press-required')
+
+        # Wait for the button confirmation event, or any error
+        data = self.wait_nordic_data([0xe4, 0xb3], 10)
+
+        if protocol == Protocol.UNKNOWN:
+            if data.opcode == 0xe4:
+                protocol = Protocol.SLATE
+            else:
+                raise WacomException(f'unexpected opcode to register reply: {data.opcode:02x}')
 
         return protocol
 
@@ -558,11 +570,6 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         return transaction_count
 
     def register_device_finish(self):
-        # Wait for the button confirmation event, or any error
-        data = self.wait_nordic_data([0xe4, 0xb3], 10)
-        if data.opcode == 0xb3:
-            # generic ACK
-            self.check_ack(data)
         self.send_nordic_command_sync(command=0xe5,
                                       arguments=None,
                                       expected_opcode=0xb3)
@@ -629,8 +636,6 @@ class WacomProtocolSlate(WacomProtocolSpark):
         return count, timestamp
 
     def register_device_finish(self):
-        # Wait for the button confirmation event, or any error
-        self.wait_nordic_data(0xe4, 10)
         self.set_time()
         self.read_time()
         self.ec_command()
