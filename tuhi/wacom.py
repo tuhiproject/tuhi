@@ -639,7 +639,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         w = self.get_dimensions('width')
         h = self.get_dimensions('height')
         if self.width != w or self.height != h:
-            logger.error(f'Uncompatible dimensions: {w}x{h}')
+            logger.error(f'incompatible dimensions: {w}x{h}')
         fw_high = self.get_firmware_version(0)
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
