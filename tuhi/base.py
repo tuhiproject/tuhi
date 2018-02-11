@@ -140,7 +140,6 @@ class TuhiDevice(GObject.Object):
             self._wacom_device.connect('battery-status', self._on_battery_status, bluez_device)
 
         self._wacom_device.start(not self.registered)
-        self.registering_mode = False
 
     def _on_bluez_device_disconnected(self, bluez_device):
         logger.debug(f'{bluez_device.address}: disconnected')
