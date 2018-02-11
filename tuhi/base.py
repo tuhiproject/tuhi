@@ -139,7 +139,10 @@ class TuhiDevice(GObject.Object):
             self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
             self._wacom_device.connect('battery-status', self._on_battery_status, bluez_device)
 
-        self._wacom_device.start(not self.registered)
+        if not self.registered:
+            self._wacom_device.start_register()
+        else:
+            self._wacom_device.start_listen()
 
     def _on_bluez_device_disconnected(self, bluez_device):
         logger.debug(f'{bluez_device.address}: disconnected')
