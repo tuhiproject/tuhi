@@ -231,8 +231,6 @@ class Tuhi(GObject.Object):
         self.server.connect('search-start-requested', self._on_start_search_requested)
         self.server.connect('search-stop-requested', self._on_stop_search_requested)
         self.bluez = BlueZDeviceManager()
-        self.bluez.connect('device-added', self._on_bluez_device_updated)
-        self.bluez.connect('device-updated', self._on_bluez_device_updated)
         self.bluez.connect('discovery-started', self._on_bluez_discovery_started)
         self.bluez.connect('discovery-stopped', self._on_bluez_discovery_stopped)
 
@@ -245,6 +243,11 @@ class Tuhi(GObject.Object):
 
     def _on_tuhi_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()
+        for dev in self.bluez.devices:
+            self._add_device(self.bluez, dev)
+
+        self.bluez.connect('device-added', self._on_bluez_device_updated)
+        self.bluez.connect('device-updated', self._on_bluez_device_updated)
 
     def _on_tuhi_bus_name_lost(self, dbus_server):
         self.mainloop.quit()
@@ -282,7 +285,7 @@ class Tuhi(GObject.Object):
         # restart discovery if some users are already in the listening mode
         self._on_listening_updated(None, None)
 
-    def _on_bluez_device_updated(self, manager, bluez_device, event=True):
+    def _add_device(self, manager, bluez_device, hotplugged=False):
         uuid = None
 
         # check if the device is already known by us
@@ -295,11 +298,11 @@ class Tuhi(GObject.Object):
         if uuid is None and bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return
 
-        # if event is set, the device has been 'hotplugged' in the bluez stack
-        # so ManufacturerData is reliable. Else, consider the device not in
-        # the register mode
+        # if the device has been 'hotplugged' in the bluez stack,
+        # ManufacturerData is reliable. Else, consider the device not in
+        # register mode
         register_mode = False
-        if event:
+        if hotplugged:
             register_mode = Tuhi._device_in_register_mode(bluez_device)
 
         if not register_mode:
@@ -322,6 +325,9 @@ class Tuhi(GObject.Object):
             logger.debug(f'{bluez_device.objpath}: call Register() on device')
         elif d.listening:
             d.listen()
+
+    def _on_bluez_device_updated(self, manager, bluez_device):
+        self._add_device(manager, bluez_device, True)
 
     def _on_listening_updated(self, tuhi_dbus_device, pspec):
         listen = self._search_stop_handler is not None
