@@ -47,6 +47,12 @@ class Protocol(enum.Enum):
     INTUOS_PRO = 'intuos-pro'
 
 
+@enum.unique
+class DeviceMode(enum.Enum):
+    REGISTER = 1
+    LISTEN = 2
+
+
 def signed_char_to_int(v):
     return int.from_bytes([v], byteorder='little', signed=True)
 
@@ -806,16 +812,18 @@ class WacomDevice(GObject.Object):
         logger.info('registration completed')
         self.notify('uuid')
 
-    def run(self):
+    def _run(self, *args, **kwargs):
         if self._is_running:
             logger.error(f'{self._device.address}: already synching, ignoring this request')
             return
+
+        mode = args[0]
 
         logger.debug(f'{self._device.address}: starting')
         self._is_running = True
         exception = None
         try:
-            if self._register_mode:
+            if mode == DeviceMode.REGISTER:
                 self.register_device()
             else:
                 assert self._wacom_protocol is not None
@@ -824,11 +832,13 @@ class WacomDevice(GObject.Object):
             logger.error(f'**** Exception: {e} ****')
             exception = e
         finally:
-            self._register_mode = False
             self._is_running = False
             self.emit('done', exception)
 
-    def start(self, register_mode):
-        self._register_mode = register_mode
-        self.thread = threading.Thread(target=self.run)
+    def start_listen(self):
+        self.thread = threading.Thread(target=self._run, args=(DeviceMode.LISTEN,))
+        self.thread.start()
+
+    def start_register(self):
+        self.thread = threading.Thread(target=self._run, args=(DeviceMode.REGISTER,))
         self.thread.start()
