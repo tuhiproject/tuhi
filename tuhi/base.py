@@ -20,7 +20,7 @@ from gi.repository import GObject, GLib
 
 from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
-from tuhi.wacom import WacomDevice
+from tuhi.wacom import WacomDevice, DeviceMode
 from tuhi.config import TuhiConfig
 
 logging.basicConfig(format='%(levelname)s: %(name)s: %(message)s',
@@ -62,9 +62,8 @@ class TuhiDevice(GObject.Object):
         self._battery_percent = 0
         self._last_battery_update_time = 0
         self._battery_timer_source = None
+        self._signals = {}
 
-        bluez_device.connect('connected', self._on_bluez_device_connected)
-        bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
         self._bluez_device = bluez_device
 
         self._tuhi_dbus_device = None
@@ -126,11 +125,19 @@ class TuhiDevice(GObject.Object):
     def battery_state(self, value):
         self._battery_state = value
 
-    def connect_device(self):
+    def _connect_device(self, mode):
+        self._signals['connected'] = self._bluez_device.connect('connected', self._on_bluez_device_connected, mode)
+        self._signals['disconnected'] = self._bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
         self._bluez_device.connect_device()
 
-    def _on_bluez_device_connected(self, bluez_device):
-        logger.debug(f'{bluez_device.address}: connected')
+    def register(self):
+        self._connect_device(DeviceMode.REGISTER)
+
+    def listen(self):
+        self._connect_device(DeviceMode.LISTEN)
+
+    def _on_bluez_device_connected(self, bluez_device, mode):
+        logger.debug(f'{bluez_device.address}: connected for {mode}')
         if self._wacom_device is None:
             self._wacom_device = WacomDevice(bluez_device, self.config)
             self._wacom_device.connect('drawing', self._on_drawing_received)
@@ -139,19 +146,30 @@ class TuhiDevice(GObject.Object):
             self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
             self._wacom_device.connect('battery-status', self._on_battery_status, bluez_device)
 
-        if not self.registered:
+        if mode == DeviceMode.REGISTER:
             self._wacom_device.start_register()
         else:
             self._wacom_device.start_listen()
 
+        try:
+            bluez_device.disconnect(self._signals['connected'])
+            del self._signals['connected']
+        except KeyError:
+            pass
+
     def _on_bluez_device_disconnected(self, bluez_device):
         logger.debug(f'{bluez_device.address}: disconnected')
+        try:
+            bluez_device.disconnect(self._signals['disconnected'])
+            del self._signals['disconnected']
+        except KeyError:
+            pass
 
     def _on_register_requested(self, dbus_device):
         if self.registered:
             return
 
-        self.connect_device()
+        self.register()
 
     def _on_drawing_received(self, device, drawing):
         logger.debug('Drawing received')
@@ -303,7 +321,7 @@ class Tuhi(GObject.Object):
             d.registered = False
             logger.debug(f'{bluez_device.objpath}: call Register() on device')
         elif d.listening:
-            d.connect_device()
+            d.listen()
 
     def _on_listening_updated(self, tuhi_dbus_device, pspec):
         listen = self._search_stop_handler is not None
