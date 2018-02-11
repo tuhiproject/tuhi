@@ -25,7 +25,6 @@ from .drawing import Drawing
 
 logger = logging.getLogger('tuhi.wacom')
 
-WACOM_COMPANY_ID = 0x4755
 NORDIC_UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
 NORDIC_UART_CHRC_TX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 NORDIC_UART_CHRC_RX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
