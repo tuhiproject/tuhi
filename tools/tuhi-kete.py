@@ -408,6 +408,7 @@ class Searcher(Worker):
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
             logger.info('Search cancelled')
+            self.stop()
 
     def _on_unregistered_device(self, manager, device):
         logger.info(f'Unregistered device: {device}')
@@ -454,6 +455,7 @@ class Listener(Worker):
             return
 
         logger.info(f'{device}: Listening stopped')
+        self.stop()
 
     def _on_drawings_available(self, device, pspec):
         self._log_drawings_available(device)
