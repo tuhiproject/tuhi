@@ -162,6 +162,8 @@ class WacomProtocolLowLevelComm(GObject.Object):
             raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
         if data[0] == 0x01:
             raise WacomWrongModeException(f'wrong device mode')
+        if data[0] == 0x05:
+            raise WacomCorruptDataException(f'invalid opcode')
 
     def send_nordic_command_sync(self,
                                  command,
