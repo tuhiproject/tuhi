@@ -51,13 +51,13 @@ class TuhiDevice(GObject.Object):
 
     BATTERY_UPDATE_MIN_INTERVAL = 300
 
-    def __init__(self, bluez_device, config, uuid=None, registered=True):
+    def __init__(self, bluez_device, config, uuid=None, mode=DeviceMode.LISTEN):
         GObject.Object.__init__(self)
         self.config = config
         self._wacom_device = None
         # We need either uuid or registered as false
-        assert uuid is not None or registered is False
-        self.registered = registered
+        assert uuid is not None or mode == DeviceMode.REGISTER
+        self._mode = mode
         self._battery_state = TuhiDevice.BatteryState.UNKNOWN
         self._battery_percent = 0
         self._last_battery_update_time = 0
@@ -69,12 +69,18 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device = None
 
     @GObject.Property
-    def registered(self):
-        return self._registered
+    def mode(self):
+        return self._mode
 
-    @registered.setter
-    def registered(self, registered):
-        self._registered = registered
+    @mode.setter
+    def mode(self, mode):
+        if self._mode != mode:
+            self._mode = mode
+            self.notify('registered')
+
+    @GObject.Property
+    def registered(self):
+        return self.mode == DeviceMode.LISTEN
 
     @GObject.Property
     def name(self):
@@ -166,6 +172,10 @@ class TuhiDevice(GObject.Object):
             pass
 
     def _on_register_requested(self, dbus_device):
+        # FIXME: this needs to throw an exception/return the value
+        if self.mode == DeviceMode.LISTEN:
+            return
+
         self.register()
 
     def _on_drawing_received(self, device, drawing):
@@ -184,7 +194,10 @@ class TuhiDevice(GObject.Object):
 
     def _on_uuid_updated(self, wacom_device, pspec, bluez_device):
         self.config.new_device(bluez_device.address, wacom_device.uuid, wacom_device.protocol)
-        self.registered = True
+        # FIXME: we have registered and that *should* set us to listen. But
+        # the ManufacturerData doesn't update until (some time into) the
+        # next connection request.
+        self.mode = DeviceMode.LISTEN
 
     def _on_listening_updated(self, dbus_device, pspec):
         self.notify('listening')
@@ -309,8 +322,7 @@ class Tuhi(GObject.Object):
 
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
-                d = TuhiDevice(bluez_device, self.config, uuid=uuid,
-                               registered=(mode == DeviceMode.REGISTER))
+                d = TuhiDevice(bluez_device, self.config, uuid, mode)
                 d.dbus_device = self.server.create_device(d)
                 d.connect('notify::listening', self._on_listening_updated)
                 self.devices[bluez_device.address] = d
@@ -318,7 +330,7 @@ class Tuhi(GObject.Object):
         d = self.devices[bluez_device.address]
 
         if mode == DeviceMode.REGISTER:
-            d.registered = False
+            d.mode = mode
             logger.debug(f'{bluez_device.objpath}: call Register() on device')
         elif d.listening:
             d.listen()
