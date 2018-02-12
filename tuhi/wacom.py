@@ -766,17 +766,17 @@ class WacomDevice(GObject.Object):
 
         logger.debug(f'{self._device.name} is using protocol {protocol}')
 
-        self._wacom_protocol.connect('drawing', self._on_drawing_received)
-        self._wacom_protocol.connect('battery-status', self._on_battery_status)
+        self._wacom_protocol.connect(
+            'drawing',
+            lambda protocol, drawing, self: self.emit('drawing', drawing),
+            self)
+        self._wacom_protocol.connect(
+            'battery-status',
+            lambda prot, percent, is_charging, self: self.emit('battery-status', percent, is_charging),
+            self)
 
     def _on_drawing_received(self, protocol, drawing):
         self.emit('drawing', drawing)
-
-    def _on_button_press_required(self, protocol):
-        self.emit('button-press-required')
-
-    def _on_battery_status(self, protocol, percent, is_charging):
-        self.emit('battery-status', percent, is_charging)
 
     @GObject.Property
     def uuid(self):
@@ -793,7 +793,9 @@ class WacomDevice(GObject.Object):
         logger.debug(f'{self._device.address}: registering device, assigned {self.uuid}')
 
         wp = WacomRegisterHelper(self._device)
-        s = wp.connect('button-press-required', self._on_button_press_required)
+        s = wp.connect('button-press-required',
+                       lambda protocol, self: self.emit('button-press-required'),
+                       self)
         protocol = wp.register_device(self._uuid)
         wp.disconnect(s)
         del wp
