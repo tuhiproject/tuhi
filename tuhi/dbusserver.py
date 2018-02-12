@@ -523,6 +523,9 @@ class TuhiDBusServer(_TuhiDBus):
                                               for d in self._devices if d.registered])
         self.properties_changed({'Devices': objpaths})
 
+        if not device.registered and self._is_searching:
+            self._emit_unregistered_signal(device)
+
     def _emit_unregistered_signal(self, device):
         arg = GLib.Variant.new_object_path(device.objpath)
         self.signal('UnregisteredDevice', arg, dest=self._searching_client[0])
