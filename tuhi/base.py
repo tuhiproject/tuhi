@@ -166,9 +166,6 @@ class TuhiDevice(GObject.Object):
             pass
 
     def _on_register_requested(self, dbus_device):
-        if self.registered:
-            return
-
         self.register()
 
     def _on_drawing_received(self, device, drawing):
