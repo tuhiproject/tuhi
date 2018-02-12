@@ -347,15 +347,24 @@ class TuhiKeteManager(_DBusObject):
                     pass
             self.notify('devices')
 
+    def _handle_unregistered_device(self, objpath):
+        for addr, dev in self._devices.items():
+            if dev.objpath == objpath:
+                self.emit('unregistered-device', dev)
+                return
+
+        device = TuhiKeteDevice(self, objpath)
+        self._unregistered_devices[objpath] = device
+
+        logger.debug(f'New unregistered device: {device}')
+        self.emit('unregistered-device', device)
+
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'SearchStopped':
             self.notify('searching')
         elif signal == 'UnregisteredDevice':
             objpath = parameters[0]
-            device = TuhiKeteDevice(self, objpath)
-            self._unregistered_devices[objpath] = device
-            logger.debug(f'Found unregistered device: {device}')
-            self.emit('unregistered-device', device)
+            self._handle_unregistered_device(objpath)
 
     def __getitem__(self, btaddr):
         return self._devices[btaddr]
@@ -393,9 +402,6 @@ class Searcher(Worker):
 
         self.manager.start_search()
         logger.debug('Started searching')
-
-        for d in self.manager.devices:
-            self._on_unregistered_device(self.manager, d)
 
     def stop(self):
         if self.manager.searching:
