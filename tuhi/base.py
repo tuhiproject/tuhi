@@ -301,11 +301,10 @@ class Tuhi(GObject.Object):
         # if the device has been 'hotplugged' in the bluez stack,
         # ManufacturerData is reliable. Else, consider the device not in
         # register mode
-        register_mode = False
-        if hotplugged:
-            register_mode = Tuhi._device_in_register_mode(bluez_device)
-
-        if not register_mode:
+        if hotplugged and Tuhi._device_in_register_mode(bluez_device):
+            mode = DeviceMode.REGISTER
+        else:
+            mode = DeviceMode.LISTEN
             if uuid is None:
                 logger.info(f'{bluez_device.address}: device without config, must be registered first')
                 return
@@ -313,14 +312,15 @@ class Tuhi(GObject.Object):
 
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
-                d = TuhiDevice(bluez_device, self.config, uuid=uuid, registered=not register_mode)
+                d = TuhiDevice(bluez_device, self.config, uuid=uuid,
+                               registered=(mode == DeviceMode.REGISTER))
                 d.dbus_device = self.server.create_device(d)
                 d.connect('notify::listening', self._on_listening_updated)
                 self.devices[bluez_device.address] = d
 
         d = self.devices[bluez_device.address]
 
-        if register_mode:
+        if mode == DeviceMode.REGISTER:
             d.registered = False
             logger.debug(f'{bluez_device.objpath}: call Register() on device')
         elif d.listening:
