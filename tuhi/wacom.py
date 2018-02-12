@@ -194,8 +194,9 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
     right class.
     '''
     __gsignals__ = {
-        'button-press-required':
-            (GObject.SignalFlags.RUN_FIRST, None, ()),
+        # Signal sent when the device requires the user to press the
+        # physical button
+        'button-press-required': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     @classmethod
@@ -253,6 +254,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     protocol = Protocol.UNKNOWN
 
     __gsignals__ = {
+        # Signal sent for each single drawing that becomes available. The
+        # drawing is the signal's argument
         'drawing':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         # battery level in %, boolean for is-charging
@@ -702,10 +705,16 @@ class WacomDevice(GObject.Object):
     '''
 
     __gsignals__ = {
+        # Signal sent for each single drawing that becomes available. The
+        # drawing is the signal's argument
         'drawing':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        # Signal sent when a device connection (register or listen) is
+        # complete. Carries the exception object or None on success
         'done':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
+        # Signal sent when the device requires the user to press the
+        # physical button'''
         'button-press-required':
             (GObject.SignalFlags.RUN_FIRST, None, ()),
         # battery level in %, boolean for is-charging
