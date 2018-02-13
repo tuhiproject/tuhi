@@ -381,6 +381,24 @@ class Worker(GObject.Object):
     def __init__(self, manager, args=None):
         GObject.GObject.__init__(self)
         self.manager = manager
+        self._connected_signals = {}
+
+    def oject_connect(self, obj, signal, callback):
+        if signal in self._connected_signals:
+            # FIXME: this should be an exception
+            logger.error(f'signal {signal} is already set, ignoring')
+            return
+
+        s = obj.connect(signal, callback)
+        self._connected_signals[signal] = (obj, s)
+
+    def manager_connect(self, signal, callback):
+        self.oject_connect(self.manager, signal, callback)
+
+    def cleanup(self):
+        for obj, signal in self._connected_signals.values():
+            obj.disconnect(signal)
+        self._connected_signals = {}
 
     def run(self):
         pass
@@ -392,8 +410,8 @@ class Worker(GObject.Object):
 class Searcher(Worker):
     def __init__(self, manager, args):
         super(Searcher, self).__init__(manager)
-        self.s1 = self.manager.connect('notify::searching', self._on_notify_search)
-        self.s2 = self.manager.connect('unregistered-device', self._on_unregistered_device)
+        self.manager_connect('notify::searching', self._on_notify_search)
+        self.manager_connect('unregistered-device', self._on_unregistered_device)
 
     def run(self):
         if self.manager.searching:
@@ -408,8 +426,7 @@ class Searcher(Worker):
             logger.debug('Stopping search')
             self.manager.stop_search()
 
-        self.manager.disconnect(self.s1)
-        self.manager.disconnect(self.s2)
+        self.cleanup()
 
     def _on_notify_search(self, manager, pspec):
         if not manager.searching:
@@ -434,6 +451,9 @@ class Listener(Worker):
             # FIXME: this should be an exception
             return
 
+    def device_connect(self, signal, callback):
+        self.oject_connect(self.device, signal, callback)
+
     def run(self):
         if self.device is None:
             return
@@ -446,15 +466,15 @@ class Listener(Worker):
             return
 
         logger.debug(f'{self.device}: starting listening')
-        self.s1 = self.device.connect('notify::listening', self._on_device_listening)
-        self.s2 = self.device.connect('notify::drawings-available', self._on_drawings_available)
+        self.device_connect('notify::listening', self._on_device_listening)
+        self.device_connect('notify::drawings-available', self._on_drawings_available)
         self.device.start_listening()
 
     def stop(self):
         logger.debug(f'{self.device}: stopping listening')
         self.device.stop_listening()
-        self.device.disconnect(self.s1)
-        self.device.disconnect(self.s2)
+
+        self.cleanup()
 
     def _on_device_listening(self, device, pspec):
         if self.device.listening:
