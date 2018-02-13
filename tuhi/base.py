@@ -20,7 +20,7 @@ from gi.repository import GObject, GLib
 
 from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
-from tuhi.wacom import WacomDevice
+from tuhi.wacom import WacomDevice, DeviceMode
 from tuhi.config import TuhiConfig
 
 logging.basicConfig(format='%(levelname)s: %(name)s: %(message)s',
@@ -51,31 +51,36 @@ class TuhiDevice(GObject.Object):
 
     BATTERY_UPDATE_MIN_INTERVAL = 300
 
-    def __init__(self, bluez_device, config, uuid=None, registered=True):
+    def __init__(self, bluez_device, config, uuid=None, mode=DeviceMode.LISTEN):
         GObject.Object.__init__(self)
         self.config = config
         self._wacom_device = None
         # We need either uuid or registered as false
-        assert uuid is not None or registered is False
-        self.registered = registered
+        assert uuid is not None or mode == DeviceMode.REGISTER
+        self._mode = mode
         self._battery_state = TuhiDevice.BatteryState.UNKNOWN
         self._battery_percent = 0
         self._last_battery_update_time = 0
         self._battery_timer_source = None
+        self._signals = {}
 
-        bluez_device.connect('connected', self._on_bluez_device_connected)
-        bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
         self._bluez_device = bluez_device
 
         self._tuhi_dbus_device = None
 
     @GObject.Property
-    def registered(self):
-        return self._registered
+    def mode(self):
+        return self._mode
 
-    @registered.setter
-    def registered(self, registered):
-        self._registered = registered
+    @mode.setter
+    def mode(self, mode):
+        if self._mode != mode:
+            self._mode = mode
+            self.notify('registered')
+
+    @GObject.Property
+    def registered(self):
+        return self.mode == DeviceMode.LISTEN
 
     @GObject.Property
     def name(self):
@@ -126,11 +131,19 @@ class TuhiDevice(GObject.Object):
     def battery_state(self, value):
         self._battery_state = value
 
-    def connect_device(self):
+    def _connect_device(self, mode):
+        self._signals['connected'] = self._bluez_device.connect('connected', self._on_bluez_device_connected, mode)
+        self._signals['disconnected'] = self._bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
         self._bluez_device.connect_device()
 
-    def _on_bluez_device_connected(self, bluez_device):
-        logger.debug(f'{bluez_device.address}: connected')
+    def register(self):
+        self._connect_device(DeviceMode.REGISTER)
+
+    def listen(self):
+        self._connect_device(DeviceMode.LISTEN)
+
+    def _on_bluez_device_connected(self, bluez_device, mode):
+        logger.debug(f'{bluez_device.address}: connected for {mode}')
         if self._wacom_device is None:
             self._wacom_device = WacomDevice(bluez_device, self.config)
             self._wacom_device.connect('drawing', self._on_drawing_received)
@@ -139,16 +152,31 @@ class TuhiDevice(GObject.Object):
             self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
             self._wacom_device.connect('battery-status', self._on_battery_status, bluez_device)
 
-        self._wacom_device.start(not self.registered)
+        if mode == DeviceMode.REGISTER:
+            self._wacom_device.start_register()
+        else:
+            self._wacom_device.start_listen()
+
+        try:
+            bluez_device.disconnect(self._signals['connected'])
+            del self._signals['connected']
+        except KeyError:
+            pass
 
     def _on_bluez_device_disconnected(self, bluez_device):
         logger.debug(f'{bluez_device.address}: disconnected')
+        try:
+            bluez_device.disconnect(self._signals['disconnected'])
+            del self._signals['disconnected']
+        except KeyError:
+            pass
 
     def _on_register_requested(self, dbus_device):
-        if self.registered:
+        # FIXME: this needs to throw an exception/return the value
+        if self.mode == DeviceMode.LISTEN:
             return
 
-        self.connect_device()
+        self.register()
 
     def _on_drawing_received(self, device, drawing):
         logger.debug('Drawing received')
@@ -166,7 +194,10 @@ class TuhiDevice(GObject.Object):
 
     def _on_uuid_updated(self, wacom_device, pspec, bluez_device):
         self.config.new_device(bluez_device.address, wacom_device.uuid, wacom_device.protocol)
-        self.registered = True
+        # FIXME: we have registered and that *should* set us to listen. But
+        # the ManufacturerData doesn't update until (some time into) the
+        # next connection request.
+        self.mode = DeviceMode.LISTEN
 
     def _on_listening_updated(self, dbus_device, pspec):
         self.notify('listening')
@@ -210,8 +241,6 @@ class Tuhi(GObject.Object):
         self.server.connect('search-start-requested', self._on_start_search_requested)
         self.server.connect('search-stop-requested', self._on_stop_search_requested)
         self.bluez = BlueZDeviceManager()
-        self.bluez.connect('device-added', self._on_bluez_device_updated)
-        self.bluez.connect('device-updated', self._on_bluez_device_updated)
         self.bluez.connect('discovery-started', self._on_bluez_discovery_started)
         self.bluez.connect('discovery-stopped', self._on_bluez_discovery_stopped)
 
@@ -224,6 +253,11 @@ class Tuhi(GObject.Object):
 
     def _on_tuhi_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()
+        for dev in self.bluez.devices:
+            self._add_device(self.bluez, dev)
+
+        self.bluez.connect('device-added', self._on_bluez_device_updated)
+        self.bluez.connect('device-updated', self._on_bluez_device_updated)
 
     def _on_tuhi_bus_name_lost(self, dbus_server):
         self.mainloop.quit()
@@ -261,7 +295,7 @@ class Tuhi(GObject.Object):
         # restart discovery if some users are already in the listening mode
         self._on_listening_updated(None, None)
 
-    def _on_bluez_device_updated(self, manager, bluez_device, event=True):
+    def _add_device(self, manager, bluez_device, hotplugged=False):
         uuid = None
 
         # check if the device is already known by us
@@ -274,14 +308,13 @@ class Tuhi(GObject.Object):
         if uuid is None and bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return
 
-        # if event is set, the device has been 'hotplugged' in the bluez stack
-        # so ManufacturerData is reliable. Else, consider the device not in
-        # the register mode
-        register_mode = False
-        if event:
-            register_mode = Tuhi._device_in_register_mode(bluez_device)
-
-        if not register_mode:
+        # if the device has been 'hotplugged' in the bluez stack,
+        # ManufacturerData is reliable. Else, consider the device not in
+        # register mode
+        if hotplugged and Tuhi._device_in_register_mode(bluez_device):
+            mode = DeviceMode.REGISTER
+        else:
+            mode = DeviceMode.LISTEN
             if uuid is None:
                 logger.info(f'{bluez_device.address}: device without config, must be registered first')
                 return
@@ -289,18 +322,21 @@ class Tuhi(GObject.Object):
 
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
-                d = TuhiDevice(bluez_device, self.config, uuid=uuid, registered=not register_mode)
+                d = TuhiDevice(bluez_device, self.config, uuid, mode)
                 d.dbus_device = self.server.create_device(d)
                 d.connect('notify::listening', self._on_listening_updated)
                 self.devices[bluez_device.address] = d
 
         d = self.devices[bluez_device.address]
 
-        if register_mode:
-            d.registered = False
+        if mode == DeviceMode.REGISTER:
+            d.mode = mode
             logger.debug(f'{bluez_device.objpath}: call Register() on device')
         elif d.listening:
-            d.connect_device()
+            d.listen()
+
+    def _on_bluez_device_updated(self, manager, bluez_device):
+        self._add_device(manager, bluez_device, True)
 
     def _on_listening_updated(self, tuhi_dbus_device, pspec):
         listen = self._search_stop_handler is not None

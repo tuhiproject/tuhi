@@ -47,6 +47,12 @@ class Protocol(enum.Enum):
     INTUOS_PRO = 'intuos-pro'
 
 
+@enum.unique
+class DeviceMode(enum.Enum):
+    REGISTER = 1
+    LISTEN = 2
+
+
 def signed_char_to_int(v):
     return int.from_bytes([v], byteorder='little', signed=True)
 
@@ -162,6 +168,8 @@ class WacomProtocolLowLevelComm(GObject.Object):
             raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
         if data[0] == 0x01:
             raise WacomWrongModeException(f'wrong device mode')
+        if data[0] == 0x05:
+            raise WacomCorruptDataException(f'invalid opcode')
 
     def send_nordic_command_sync(self,
                                  command,
@@ -764,17 +772,17 @@ class WacomDevice(GObject.Object):
 
         logger.debug(f'{self._device.name} is using protocol {protocol}')
 
-        self._wacom_protocol.connect('drawing', self._on_drawing_received)
-        self._wacom_protocol.connect('battery-status', self._on_battery_status)
+        self._wacom_protocol.connect(
+            'drawing',
+            lambda protocol, drawing, self: self.emit('drawing', drawing),
+            self)
+        self._wacom_protocol.connect(
+            'battery-status',
+            lambda prot, percent, is_charging, self: self.emit('battery-status', percent, is_charging),
+            self)
 
     def _on_drawing_received(self, protocol, drawing):
         self.emit('drawing', drawing)
-
-    def _on_button_press_required(self, protocol):
-        self.emit('button-press-required')
-
-    def _on_battery_status(self, protocol, percent, is_charging):
-        self.emit('battery-status', percent, is_charging)
 
     @GObject.Property
     def uuid(self):
@@ -791,7 +799,9 @@ class WacomDevice(GObject.Object):
         logger.debug(f'{self._device.address}: registering device, assigned {self.uuid}')
 
         wp = WacomRegisterHelper(self._device)
-        s = wp.connect('button-press-required', self._on_button_press_required)
+        s = wp.connect('button-press-required',
+                       lambda protocol, self: self.emit('button-press-required'),
+                       self)
         protocol = wp.register_device(self._uuid)
         wp.disconnect(s)
         del wp
@@ -802,16 +812,18 @@ class WacomDevice(GObject.Object):
         logger.info('registration completed')
         self.notify('uuid')
 
-    def run(self):
+    def _run(self, *args, **kwargs):
         if self._is_running:
             logger.error(f'{self._device.address}: already synching, ignoring this request')
             return
+
+        mode = args[0]
 
         logger.debug(f'{self._device.address}: starting')
         self._is_running = True
         exception = None
         try:
-            if self._register_mode:
+            if mode == DeviceMode.REGISTER:
                 self.register_device()
             else:
                 assert self._wacom_protocol is not None
@@ -820,11 +832,13 @@ class WacomDevice(GObject.Object):
             logger.error(f'**** Exception: {e} ****')
             exception = e
         finally:
-            self._register_mode = False
             self._is_running = False
             self.emit('done', exception)
 
-    def start(self, register_mode):
-        self._register_mode = register_mode
-        self.thread = threading.Thread(target=self.run)
+    def start_listen(self):
+        self.thread = threading.Thread(target=self._run, args=(DeviceMode.LISTEN,))
+        self.thread.start()
+
+    def start_register(self):
+        self.thread = threading.Thread(target=self._run, args=(DeviceMode.REGISTER,))
         self.thread.start()

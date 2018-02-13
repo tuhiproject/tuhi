@@ -291,7 +291,7 @@ class BlueZDeviceManager(GObject.Object):
     '''
     __gsignals__ = {
         'device-added':
-            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_BOOLEAN)),
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         'device-updated':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         'discovery-started':
@@ -326,7 +326,7 @@ class BlueZDeviceManager(GObject.Object):
         # object path length and process them in order, this way we're
         # guaranteed that the objects we need already exist.
         for obj in self._om.get_objects():
-            self._process_object(obj, event=False)
+            self._process_object(obj)
 
     def _discovery_timeout_expired(self):
         self.stop_discovery()
@@ -428,7 +428,7 @@ class BlueZDeviceManager(GObject.Object):
         if obj.get_interface(ORG_BLUEZ_ADAPTER1) is not None:
             self._process_adapter(obj)
         elif obj.get_interface(ORG_BLUEZ_DEVICE1) is not None:
-            self._process_device(obj, event)
+            self._process_device(obj)
         elif obj.get_interface(ORG_BLUEZ_GATTCHARACTERISTIC1) is not None:
             return True
 
@@ -438,11 +438,11 @@ class BlueZDeviceManager(GObject.Object):
         objpath = obj.get_object_path()
         logger.debug(f'Adapter: {objpath}')
 
-    def _process_device(self, obj, event=True):
+    def _process_device(self, obj):
         dev = BlueZDevice(self._om, obj)
         self.devices.append(dev)
         dev.connect('updated', self._on_device_updated)
-        self.emit('device-added', dev, event)
+        self.emit('device-added', dev)
 
     def _process_characteristic(self, obj):
         objpath = obj.get_object_path()
