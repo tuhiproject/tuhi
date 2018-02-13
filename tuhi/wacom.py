@@ -22,6 +22,7 @@ import uuid
 import errno
 from gi.repository import GObject
 from .drawing import Drawing
+from .uhid import UHIDDevice
 
 logger = logging.getLogger('tuhi.wacom')
 
@@ -52,6 +53,43 @@ class DeviceMode(enum.Enum):
     REGISTER = 1
     LISTEN = 2
     LIVE = 3
+
+
+wacom_live_rdesc_template = [
+    0x05, 0x0d,                    # Usage Page (Digitizers)             0
+    0x09, 0x02,                    # Usage (Pen)                         2
+    0xa1, 0x01,                    # Collection (Application)            4
+    0x85, 0x01,                    # .Report ID (1)                      6
+    0x09, 0x20,                    # .Usage (Stylus)                     8
+    0xa1, 0x00,                    # .Collection (Physical)              10
+    0x09, 0x32,                    # ..Usage (In Range)                  12
+    0x15, 0x00,                    # ..Logical Minimum (0)               14
+    0x25, 0x01,                    # ..Logical Maximum (1)               16
+    0x95, 0x01,                    # ..Report Count (1)                  18
+    0x75, 0x01,                    # ..Report Size (1)                   20
+    0x81, 0x02,                    # ..Input (Data,Var,Abs)              22
+    0x95, 0x07,                    # ..Report Count (7)                  24
+    0x81, 0x03,                    # ..Input (Cnst,Var,Abs)              26
+    0x05, 0x01,                    # ..Usage Page (Generic Desktop)      43
+    0x09, 0x30,                    # ..Usage (X)                         45
+    0x75, 0x10,                    # ..Report Size (16)                  47
+    0x95, 0x01,                    # ..Report Count (1)                  49
+    0x55, 0x0e,                    # ..Unit Exponent (-2)                51
+    0x65, 0x11,                    # ..Unit (Centimeter,SILinear)        53
+    0x46, 0xec, 0x09,              # ..Physical Maximum (2540)           55
+    0x26, 0x80, 0x25,              # ..Logical Maximum (9600)            58
+    0x81, 0x02,                    # ..Input (Data,Var,Abs)              61
+    0x09, 0x31,                    # ..Usage (Y)                         63
+    0x46, 0x9d, 0x06,              # ..Physical Maximum (1693)           65
+    0x26, 0x20, 0x1c,              # ..Logical Maximum (7200)            68
+    0x81, 0x02,                    # ..Input (Data,Var,Abs)              71
+    0x05, 0x0d,                    # ..Usage Page (Digitizers)           73
+    0x09, 0x30,                    # ..Usage (Tip Pressure)              75
+    0x26, 0x00, 0x01,              # ..Logical Maximum (256)             77
+    0x81, 0x02,                    # ..Input (Data,Var,Abs)              80
+    0xc0,                          # .End Collection                     82
+    0xc0,                          # End Collection                      83
+]
 
 
 def signed_char_to_int(v):
@@ -277,6 +315,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         self._uuid = uuid
         self._timestamp = 0
         self.pen_data_buffer = []
+        self._uhid_device = None
 
         device.connect_gatt_value(WACOM_CHRC_LIVE_PEN_DATA_UUID,
                                   self._on_pen_data_changed)
@@ -307,11 +346,19 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             while data:
                 if bytes(data) == b'\xff\xff\xff\xff\xff\xff':
                     logger.debug(f'Pen left proximity')
+
+                    if self._uhid_device is not None:
+                        self._uhid_device.call_input_event([1, 0, 0, 0, 0, 0, 0, 0])
+
                 else:
                     x = int.from_bytes(data[0:2], byteorder='little')
                     y = int.from_bytes(data[2:4], byteorder='little')
                     pressure = int.from_bytes(data[4:6], byteorder='little')
                     logger.debug(f'New Pen Data: ({x},{y}), pressure: {pressure}')
+
+                    if self._uhid_device is not None:
+                        self._uhid_device.call_input_event([1, 1, *data[:6]])
+
                 data = data[6:]
                 self._timestamp += 5
 
@@ -389,10 +436,18 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                       expected_opcode=0xb3,
                                       arguments=args)
 
-    def start_live(self, uhid):
+    def start_live(self, fd):
         self.send_nordic_command_sync(command=0xb1,
                                       expected_opcode=0xb3)
-        logger.debug(f'Starting wacom live mode on fd: {uhid}')
+        logger.debug(f'Starting wacom live mode on fd: {fd}')
+
+        rdesc = wacom_live_rdesc_template
+        uhid_device = UHIDDevice(fd)
+        uhid_device.rdesc = rdesc
+        uhid_device.name = self.device.name
+        uhid_device.info = (5, 0x056a, 0x0001)
+        uhid_device.create_kernel_device()
+        self._uhid_device = uhid_device
 
     def stop_live(self):
         args = [0x02]
