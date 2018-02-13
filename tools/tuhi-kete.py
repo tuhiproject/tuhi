@@ -346,6 +346,8 @@ class TuhiKeteManager(_DBusObject):
                     # in unregistered devices
                     pass
             self.notify('devices')
+        if 'Searching' in changed_props:
+            self.notify('searching')
 
     def _handle_unregistered_device(self, objpath):
         for addr, dev in self._devices.items():
@@ -418,8 +420,8 @@ class Searcher(Worker):
             logger.error('Another client is already searching')
             return
 
+        logger.debug(f'Starting searching')
         self.manager.start_search()
-        logger.debug('Started searching')
 
     def stop(self):
         if self.manager.searching:
@@ -432,6 +434,8 @@ class Searcher(Worker):
         if not manager.searching:
             logger.info('Search cancelled')
             self.stop()
+        else:
+            logger.info('Search started')
 
     def _on_unregistered_device(self, manager, device):
         logger.info(f'Unregistered device: {device}')
@@ -471,8 +475,9 @@ class Listener(Worker):
         self.device.start_listening()
 
     def stop(self):
-        logger.debug(f'{self.device}: stopping listening')
-        self.device.stop_listening()
+        if self.device.listening:
+            logger.debug(f'{self.device}: stopping listening')
+            self.device.stop_listening()
 
         self.cleanup()
 
