@@ -586,6 +586,16 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             is_rel = True
         return v, dv, is_rel
 
+    def parse_pen_data_prefix(self, data):
+        expected_prefix = b'\x62\x38\x62\x74'
+        prefix = data[:4]
+        # not sure if we really need this check
+        if bytes(prefix) != expected_prefix:
+            logger.debug(f'Expected pen data prefix {expected_prefix} but got {prefix}')
+            return False
+
+        return True
+
     def parse_pen_data(self, data, timestamp):
         '''
         :param timestamp: a tuple with 9 entries, corresponding to the
@@ -599,6 +609,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         drawings = []
         drawing = None
         stroke = None
+
+        if not self.parse_pen_data_prefix(data):
+            return []
+
         while offset < len(data):
             bitmask, opcode, raw_args, args, offset = self.next_pen_data(data, offset)
             if opcode == 0x3800:
@@ -652,13 +666,9 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             pen_data = self.wait_for_end_read()
             str_pen = binascii.hexlify(bytes(pen_data))
             logger.info(f'received {str_pen}')
-            prefix = pen_data[:4]
-            # not sure if we really need this check
-            # note: \x38\x62\x74 translates to '8bt'
-            if bytes(prefix) == b'\x62\x38\x62\x74':
-                drawings = self.parse_pen_data(pen_data, timestamp)
-                for drawing in drawings:
-                    self.emit('drawing', drawing)
+            drawings = self.parse_pen_data(pen_data, timestamp)
+            for drawing in drawings:
+                self.emit('drawing', drawing)
             self.ack_transaction()
             transaction_count += 1
         return transaction_count
