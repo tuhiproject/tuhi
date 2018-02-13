@@ -184,6 +184,7 @@ class TuhiKeteDevice(_DBusObject):
                              objpath)
         self.manager = manager
         self.is_registering = False
+        self.live = False
         self._bluez_device = BlueZDevice(self.property('BlueZDevice'))
         self._bluez_device.connect('notify::connected', self._on_connected)
 
@@ -243,6 +244,14 @@ class TuhiKeteDevice(_DBusObject):
                     e.code != Gio.IOErrorEnum.EXISTS or
                     Gio.dbus_error_get_remote_error(e) != 'org.freedesktop.DBus.Error.ServiceUnknown'):
                 raise e
+
+    def start_live(self, fd):
+        self.proxy.StartLive('(h)', fd)
+        self.live = True
+
+    def stop_live(self):
+        self.proxy.StopLive()
+        self.live = False
 
     def json(self, index):
         return self.proxy.GetJSONData('(u)', index)
@@ -575,6 +584,38 @@ class Fetcher(Worker):
 
         svg.add(g)
         svg.save()
+
+
+class LiveChanger(Worker):
+    def __init__(self, manager, args):
+        super(LiveChanger, self).__init__(manager)
+
+        self.device = None
+        for d in manager.devices:
+            if d.address == args.address:
+                self.device = d
+                break
+        else:
+            logger.error(f'{args.address}: device not found')
+            # FIXME: this should be an exception
+            return
+
+    def run(self):
+        if self.device is None:
+            return
+
+        logger.debug(f'{self.device}: starting live mode')
+        self.device.start_live(0)
+
+    def stop(self):
+        logger.debug(f'{self.device}: stopping live mode')
+        try:
+            self.device.stop_live()
+        except GLib.Error as e:
+            if (e.domain != 'g-dbus-error-quark' or
+                    e.code != Gio.IOErrorEnum.EXISTS or
+                    Gio.dbus_error_get_remote_error(e) != 'org.freedesktop.DBus.Error.ServiceUnknown'):
+                raise e
 
 
 class TuhiKeteShellLogHandler(logging.StreamHandler):
@@ -1054,6 +1095,66 @@ class TuhiKeteShell(cmd.Cmd):
                     t = time.localtime(d)
                     t = time.strftime('%Y-%m-%d at %H:%M', t)
                     print(f'\t\t* {d}: drawn on the {t}')
+
+    def complete_enable_live(self, text, line, begidx, endidx):
+        # mark the end of the line so we can match on the number of fields
+        if line.endswith(' '):
+            line += 'm'
+        fields = line.split()
+
+        completion = []
+        if len(fields) == 2:
+            for device in self._manager.devices:
+                if device.address.startswith(text.upper()):
+                    completion.append(device.address)
+        elif len(fields) == 3:
+            for v in ('on', 'off'):
+                if v.startswith(text.lower()):
+                    completion.append(v)
+        return completion
+
+    def do_enable_live(self, args):
+        desc = '''Enable or disable live mode on a particular device'''
+        parser = argparse.ArgumentParser(prog='enable_live',
+                                         description=desc,
+                                         add_help=False)
+        parser.add_argument('-h', action='help', help=argparse.SUPPRESS)
+        parser.add_argument('address', metavar='12:34:56:AB:CD:EF',
+                            type=TuhiKeteDevice.is_device_address,
+                            default=None, nargs='?',
+                            help='the address of the device to listen to')
+        parser.add_argument('mode', choices=['on', 'off'], nargs='?',
+                            const='on', default='on')
+
+        try:
+            parsed_args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        address = parsed_args.address
+        mode = parsed_args.mode
+
+        for d in self._manager.devices:
+            if d.address == address:
+                if mode == 'on' and d.live:
+                    print(f'Live mode already enabled on {address}')
+                    return
+                elif mode == 'off' and not d.live:
+                    print(f'Live mode not started on  {address}')
+                    return
+                break
+        else:
+            print(f'Device {address} not found')
+            return
+
+        if mode == 'off':
+            for worker in [w for w in self._workers if isinstance(w, LiveChanger)]:
+                if worker.device.address == address:
+                    self.terminate_worker(worker)
+                    break
+            return
+
+        self.start_worker(LiveChanger, parsed_args)
 
 
 def parse(args):
