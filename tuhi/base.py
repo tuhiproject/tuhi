@@ -104,6 +104,7 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device = device
         self._tuhi_dbus_device.connect('register-requested', self._on_register_requested)
         self._tuhi_dbus_device.connect('notify::listening', self._on_listening_updated)
+        self._tuhi_dbus_device.connect('notify::live', self._on_live_updated)
 
         drawings = self.config.load_drawings(self.address)
         if drawings:
@@ -114,6 +115,10 @@ class TuhiDevice(GObject.Object):
     @GObject.Property
     def listening(self):
         return self._tuhi_dbus_device.listening
+
+    @GObject.Property
+    def live(self):
+        return self._tuhi_dbus_device.live
 
     @GObject.Property
     def battery_percent(self):
@@ -154,6 +159,8 @@ class TuhiDevice(GObject.Object):
 
         if mode == DeviceMode.REGISTER:
             self._wacom_device.start_register()
+        elif mode == DeviceMode.LIVE:
+            self._wacom_device.start_live(self._tuhi_dbus_device.uhid_fd)
         else:
             self._wacom_device.start_listen()
 
@@ -184,6 +191,8 @@ class TuhiDevice(GObject.Object):
         self.config.store_drawing(self.address, drawing)
 
     def _on_fetching_finished(self, device, exception, bluez_device):
+        if self.live:
+            return
         bluez_device.disconnect_device()
         if exception is not None:
             logger.info(exception)
@@ -201,6 +210,13 @@ class TuhiDevice(GObject.Object):
 
     def _on_listening_updated(self, dbus_device, pspec):
         self.notify('listening')
+
+    def _on_live_updated(self, dbus_device, pspec):
+        if self.live:
+            self._connect_device(DeviceMode.LIVE)
+        else:
+            if self._wacom_device is not None:
+                self._wacom_device.stop_live()
 
     def _on_battery_status(self, wacom_device, percent, is_charging, bluez_device):
         if is_charging:
