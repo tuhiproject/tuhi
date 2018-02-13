@@ -588,6 +588,15 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             transaction_count += 1
         return transaction_count
 
+    def set_name(self, name):
+        # On the Spark, the name needs a trailing linebreak, otherwise the
+        # firmware gets confused.
+        args = [ord(c) for c in name] + [0x0a]
+        data = self.send_nordic_command_sync(command=0xbb,
+                                             arguments=args,
+                                             expected_opcode=0xb3)
+        return bytes(data)
+
     def register_device_finish(self):
         self.send_nordic_command_sync(command=0xe5,
                                       arguments=None,
