@@ -246,8 +246,17 @@ class TuhiKeteDevice(_DBusObject):
                 raise e
 
     def start_live(self, fd):
-        self.proxy.StartLive('(h)', fd)
-        self.live = True
+        fd_list = Gio.UnixFDList.new()
+        fd_list.append(fd)
+
+        res, fds = self.proxy.call_with_unix_fd_list_sync('org.freedesktop.tuhi1.Device.StartLive',
+                                                          GLib.Variant('(h)', (fd,)),
+                                                          Gio.DBusCallFlags.NO_AUTO_START,
+                                                          -1,
+                                                          fd_list,
+                                                          None)
+        if res[0] == 0:
+            self.live = True
 
     def stop_live(self):
         self.proxy.StopLive()
@@ -605,7 +614,7 @@ class LiveChanger(Worker):
             return
 
         logger.debug(f'{self.device}: starting live mode')
-        self.device.start_live(0)
+        self.device.start_live(-1)
 
     def stop(self):
         logger.debug(f'{self.device}: stopping live mode')

@@ -78,8 +78,8 @@ INTROSPECTION_XML = '''
     </method>
 
     <method name='StartLive'>
-      <arg name='uhid' type='h' />
-      <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
+      <arg name='uhid_fd' type='h' />
+      <arg name='result' type='i' direction='out'/>
     </method>
 
     <method name='StopLive'>
@@ -267,8 +267,7 @@ class TuhiDBusDevice(_TuhiDBus):
             self._stop_listening(connection, sender)
             invocation.return_value()
         elif methodname == 'StartLive':
-            self._start_live(connection, sender, args)
-            invocation.return_value()
+            self._start_live(connection, sender, args, invocation)
         elif methodname == 'StopLive':
             self._stop_live(connection, sender)
             invocation.return_value()
@@ -375,7 +374,7 @@ class TuhiDBusDevice(_TuhiDBus):
         self.listening = False
         self.notify('listening')
 
-    def _start_live(self, connection, sender, args):
+    def _start_live(self, connection, sender, args, invocation):
         if self.live:
             logger.debug(f'{self} - already in live mode')
 
@@ -397,8 +396,23 @@ class TuhiDBusDevice(_TuhiDBus):
         self._live_client = (sender, s)
         logger.debug(f'Live mode started on {self.name} for {sender}')
 
+        message = invocation.get_message()
+        fds_list = message.get_unix_fd_list()
+
+        if fds_list is None or fds_list.get_length() != 1:
+            logger.error(f'uhid fds not provided')
+            result = GLib.Variant.new_int32(-errno.EINVAL)
+            invocation.return_value(GLib.Variant.new_tuple(result))
+            return
+
+        fds_list = fds_list.steal_fds()
+
+        self._uhid_fd = fds_list[0]
+
         self.live = True
-        self._uhid_fd = args[0]
+
+        result = GLib.Variant.new_int32(0)
+        invocation.return_value(GLib.Variant.new_tuple(result))
 
     def _stop_live(self, connection, sender, errno=0):
         if not self.live or sender != self._live_client[0]:
