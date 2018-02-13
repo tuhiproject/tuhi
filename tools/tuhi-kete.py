@@ -217,7 +217,13 @@ class TuhiKeteDevice(_DBusObject):
         self.proxy.StartListening()
 
     def stop_listening(self):
-        self.proxy.StopListening()
+        try:
+            self.proxy.StopListening()
+        except GLib.Error as e:
+            if (e.domain != 'g-dbus-error-quark' or
+                    e.code != Gio.IOErrorEnum.EXISTS or
+                    Gio.dbus_error_get_remote_error(e) != 'org.freedesktop.DBus.Error.ServiceUnknown'):
+                raise e
 
     def json(self, index):
         return self.proxy.GetJSONData('(u)', index)
@@ -439,15 +445,9 @@ class Listener(Worker):
 
     def stop(self):
         logger.debug(f'{self.device}: stopping listening')
-        try:
-            self.device.stop_listening()
-            self.device.disconnect(self.s1)
-            self.device.disconnect(self.s2)
-        except GLib.Error as e:
-            if (e.domain != 'g-dbus-error-quark' or
-                    e.code != Gio.IOErrorEnum.EXISTS or
-                    Gio.dbus_error_get_remote_error(e) != 'org.freedesktop.DBus.Error.ServiceUnknown'):
-                raise e
+        self.device.stop_listening()
+        self.device.disconnect(self.s1)
+        self.device.disconnect(self.s2)
 
     def _on_device_listening(self, device, pspec):
         if self.device.listening:
