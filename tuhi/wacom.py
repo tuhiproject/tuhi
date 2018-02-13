@@ -546,8 +546,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         bitmask = data[offset]
         opcode = 0
         offset += 1
-        debug_data.append(f'{bitmask:02x} ({bitmask:08b})')
-        debug_data.append('|')
+        debug_data.append(f'{bitmask:02x} ({bitmask:08b}) |')
         args_length = bin(bitmask).count('1')
         args = data[offset:offset + args_length]
         formatted_args = []
