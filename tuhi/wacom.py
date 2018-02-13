@@ -51,6 +51,7 @@ class Protocol(enum.Enum):
 class DeviceMode(enum.Enum):
     REGISTER = 1
     LISTEN = 2
+    LIVE = 3
 
 
 def signed_char_to_int(v):
@@ -274,6 +275,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def __init__(self, device, uuid):
         super().__init__(device)
         self._uuid = uuid
+        self._timestamp = 0
         self.pen_data_buffer = []
 
         device.connect_gatt_value(WACOM_CHRC_LIVE_PEN_DATA_UUID,
@@ -287,12 +289,14 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         if value[0] == 0x10:
             pressure = int.from_bytes(value[2:4], byteorder='little')
             buttons = int(value[10])
-            logger.info(f'New Pen Data: pressure: {pressure}, button: {buttons}')
+            logger.debug(f'New Pen Data: pressure: {pressure}, button: {buttons}')
         elif value[0] == 0xa2:
             # entering proximity event
             length = value[1]
-            pen_id = binascii.hexlify(bytes(value[2:]))
-            logger.info(f'Pen {pen_id} entered proximity')
+            # timestamp is now in ms
+            timestamp = int.from_bytes(value[4:], byteorder='little') * 5
+            self._timestamp = timestamp
+            logger.debug(f'Pen entered proximity, timestamp: {timestamp}')
         elif value[0] == 0xa1:
             # data event
             length = value[1]
@@ -302,13 +306,14 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             data = value[2:]
             while data:
                 if bytes(data) == b'\xff\xff\xff\xff\xff\xff':
-                    logger.info(f'Pen left proximity')
+                    logger.debug(f'Pen left proximity')
                 else:
                     x = int.from_bytes(data[0:2], byteorder='little')
                     y = int.from_bytes(data[2:4], byteorder='little')
                     pressure = int.from_bytes(data[4:6], byteorder='little')
-                    self.logger.info(f'New Pen Data: ({x},{y}), pressure: {pressure}')
+                    logger.debug(f'New Pen Data: ({x},{y}), pressure: {pressure}')
                 data = data[6:]
+                self._timestamp += 5
 
     def _on_pen_data_received(self, name, data):
         self.fw_logger.debug(f'RX Pen    <-- {list2hex(data)}')
@@ -384,9 +389,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                       expected_opcode=0xb3,
                                       arguments=args)
 
-    def start_live(self):
+    def start_live(self, uhid):
         self.send_nordic_command_sync(command=0xb1,
                                       expected_opcode=0xb3)
+        logger.debug(f'Starting wacom live mode on fd: {uhid}')
 
     def stop_live(self):
         args = [0x02]
@@ -609,6 +615,16 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
 
+    def live_mode(self, mode, uhid):
+        try:
+            if mode:
+                self.check_connection()
+                self.start_live(uhid)
+            else:
+                self.stop_live()
+        except WacomEEAGAINException:
+            logger.warning("no data, please make sure the LED is blue and the button is pressed to switch it back to green")
+
 
 class WacomProtocolSpark(WacomProtocolBase):
     '''
@@ -829,7 +845,10 @@ class WacomDevice(GObject.Object):
         self._is_running = True
         exception = None
         try:
-            if mode == DeviceMode.REGISTER:
+            if mode == DeviceMode.LIVE:
+                assert self._wacom_protocol is not None
+                self._wacom_protocol.live_mode(args[1], args[2])
+            elif mode == DeviceMode.REGISTER:
                 self.register_device()
             else:
                 assert self._wacom_protocol is not None
@@ -843,6 +862,14 @@ class WacomDevice(GObject.Object):
 
     def start_listen(self):
         self.thread = threading.Thread(target=self._run, args=(DeviceMode.LISTEN,))
+        self.thread.start()
+
+    def start_live(self, uhid_fd):
+        self.thread = threading.Thread(target=self._run, args=(DeviceMode.LIVE, True, uhid_fd))
+        self.thread.start()
+
+    def stop_live(self):
+        self.thread = threading.Thread(target=self._run, args=(DeviceMode.LIVE, False, -1))
         self.thread.start()
 
     def start_register(self):

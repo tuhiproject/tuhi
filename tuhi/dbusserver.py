@@ -52,6 +52,9 @@ INTROSPECTION_XML = '''
     <property type='b' name='Listening' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
+    <property type='b' name='Live' access='read'>
+      <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
+    </property>
     <property type='u' name='BatteryPercent' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
     </property>
@@ -74,6 +77,15 @@ INTROSPECTION_XML = '''
       <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
     </method>
 
+    <method name='StartLive'>
+      <arg name='uhid' type='h' />
+      <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
+    </method>
+
+    <method name='StopLive'>
+      <annotation name='org.freedesktop.DBus.Method.NoReply' value='true'/>
+    </method>
+
     <method name='GetJSONData'>
       <arg name='index' type='u' direction='in'/>
       <arg name='json' type='s' direction='out'/>
@@ -82,6 +94,10 @@ INTROSPECTION_XML = '''
     <signal name='ButtonPressRequired' />
 
     <signal name='ListeningStopped'>
+       <arg name='status' type='i' />
+    </signal>
+
+    <signal name='LiveStopped'>
        <arg name='status' type='i' />
     </signal>
   </interface>
@@ -150,6 +166,9 @@ class TuhiDBusDevice(_TuhiDBus):
         self.registered = device.registered
         self._listening = False
         self._listening_client = None
+        self._live = False
+        self._uhid_fd = None
+        self._live_client = None
         self._dbusid = self._register_object(connection)
         self._battery_percent = 0
         self._battery_state = device.battery_state
@@ -169,6 +188,22 @@ class TuhiDBusDevice(_TuhiDBus):
 
         self._listening = value
         self.properties_changed({'Listening': GLib.Variant.new_boolean(value)})
+
+    @GObject.Property
+    def live(self):
+        return self._live
+
+    @live.setter
+    def live(self, value):
+        if self._live == value:
+            return
+
+        self._live = value
+        self.properties_changed({'Live': GLib.Variant.new_boolean(value)})
+
+    @GObject.Property
+    def uhid_fd(self):
+        return self._uhid_fd
 
     @GObject.Property
     def registered(self):
@@ -231,6 +266,12 @@ class TuhiDBusDevice(_TuhiDBus):
         elif methodname == 'StopListening':
             self._stop_listening(connection, sender)
             invocation.return_value()
+        elif methodname == 'StartLive':
+            self._start_live(connection, sender, args)
+            invocation.return_value()
+        elif methodname == 'StopLive':
+            self._stop_live(connection, sender)
+            invocation.return_value()
         elif methodname == 'GetJSONData':
             json = GLib.Variant.new_string(self._json_data(args))
             invocation.return_value(GLib.Variant.new_tuple(json))
@@ -252,6 +293,8 @@ class TuhiDBusDevice(_TuhiDBus):
             return ts
         elif propname == 'Listening':
             return GLib.Variant.new_boolean(self.listening)
+        elif propname == 'Live':
+            return GLib.Variant.new_boolean(self.live)
         elif propname == 'BatteryPercent':
             return GLib.Variant.new_uint32(self.battery_percent)
         elif propname == 'BatteryState':
@@ -315,6 +358,7 @@ class TuhiDBusDevice(_TuhiDBus):
             return
 
         self._stop_listening(connection, user_data)
+        self._stop_live(connection, user_data)
 
     def _stop_listening(self, connection, sender, errno=0):
         if not self.listening or sender != self._listening_client[0]:
@@ -330,6 +374,43 @@ class TuhiDBusDevice(_TuhiDBus):
         self.signal('ListeningStopped', status, dest=sender)
         self.listening = False
         self.notify('listening')
+
+    def _start_live(self, connection, sender, args):
+        if self.live:
+            logger.debug(f'{self} - already in live mode')
+
+            # silently ignore it for the current client but send EAGAIN to
+            # other clients
+            if sender != self._listening_client[0]:
+                status = GLib.Variant.new_int32(-errno.EAGAIN)
+                self.signal('LiveStopped', status, dest=sender)
+            return
+
+        s = connection.signal_subscribe(sender='org.freedesktop.DBus',
+                                        interface_name='org.freedesktop.DBus',
+                                        member='NameOwnerChanged',
+                                        object_path='/org/freedesktop/DBus',
+                                        arg0=None,
+                                        flags=Gio.DBusSignalFlags.NONE,
+                                        callback=self._on_name_owner_changed_signal_cb,
+                                        user_data=sender)
+        self._live_client = (sender, s)
+        logger.debug(f'Live mode started on {self.name} for {sender}')
+
+        self.live = True
+        self._uhid_fd = args[0]
+
+    def _stop_live(self, connection, sender, errno=0):
+        if not self.live or sender != self._live_client[0]:
+            return
+
+        connection.signal_unsubscribe(self._live_client[1])
+        self._live_client = None
+        logger.debug(f'Live mode stopped on {self.name} for {sender}')
+
+        status = GLib.Variant.new_int32(errno)
+        self.signal('LiveStopped', status, dest=sender)
+        self.live = False
 
     def _json_data(self, args):
         index = args[0]
