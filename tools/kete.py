@@ -164,6 +164,17 @@ class _DBusSystemObject(_DBusObject):
 class BlueZDevice(_DBusSystemObject):
     def __init__(self, objpath):
         super().__init__('org.bluez', ORG_BLUEZ_DEVICE1, objpath)
+        self.proxy.connect('g-properties-changed', self._on_properties_changed)
+
+    @GObject.Property
+    def connected(self):
+        return self.proxy.get_cached_property('Connected').unpack()
+
+    def _on_properties_changed(self, obj, properties, invalidated_properties):
+        properties = properties.unpack()
+
+        if 'Connected' in properties:
+            self.notify('connected')
 
 
 class TuhiKeteDevice(_DBusObject):
@@ -174,6 +185,7 @@ class TuhiKeteDevice(_DBusObject):
         self.manager = manager
         self.is_registering = False
         self._bluez_device = BlueZDevice(self.property('BlueZDevice'))
+        self._bluez_device.connect('notify::connected', self._on_connected)
 
     @classmethod
     def is_device_address(cls, string):
@@ -204,6 +216,13 @@ class TuhiKeteDevice(_DBusObject):
     @GObject.Property
     def battery_state(self):
         return self.property('BatteryState')
+
+    @GObject.Property
+    def connected(self):
+        return self._bluez_device.connected
+
+    def _on_connected(self, bluez_device, pspec):
+        self.notify('connected')
 
     def register(self):
         logger.debug(f'{self}: Register')
