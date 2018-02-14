@@ -610,16 +610,13 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         dx, dy, dp = 0, 0, 0
 
         timestamp = int(calendar.timegm(timestamp))
-        drawings = []
-        drawing = None
         stroke = None
 
         success, offset = self.parse_pen_data_prefix(data)
         if not success:
-            return []
+            return None
 
         drawing = Drawing(self.device.name, (self.width, self.height), timestamp)
-        drawings.append(drawing)
 
         while offset < len(data):
             bitmask, opcode, raw_args, args, offset = self.next_pen_data(data, offset)
@@ -655,7 +652,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             else:
                 stroke.new_abs((x, y), p)
 
-        return drawings
+        return drawing
 
     def read_offline_data(self):
         self.b1_command()
@@ -667,8 +664,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             pen_data = self.wait_for_end_read()
             str_pen = binascii.hexlify(bytes(pen_data))
             logger.info(f'received {str_pen}')
-            drawings = self.parse_pen_data(pen_data, timestamp)
-            for drawing in drawings:
+            drawing = self.parse_pen_data(pen_data, timestamp)
+            if drawing:
                 self.emit('drawing', drawing)
             self.ack_transaction()
             transaction_count += 1
