@@ -510,10 +510,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         data = self.wait_nordic_data(0xc8, 5)
         if data[0] != 0xed:
             raise WacomException(f'unexpected answer: {data[0]:02x}')
-        crc = data[1:]
         data = self.wait_nordic_data(0xc9, 5)
         crc = data
-        crc.reverse()
         crc = int(binascii.hexlify(bytes(crc)), 16)
         pen_data = self.pen_data_buffer
         self.pen_data_buffer = []
