@@ -589,19 +589,19 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def parse_pen_data_prefix(self, data):
         expected_prefix = b'\x62\x38\x62\x74'
         prefix = data[:4]
+        offset = len(prefix)
         # not sure if we really need this check
         if bytes(prefix) != expected_prefix:
             logger.debug(f'Expected pen data prefix {expected_prefix} but got {prefix}')
-            return False
+            return False, 0
 
-        return True
+        return True, offset
 
     def parse_pen_data(self, data, timestamp):
         '''
         :param timestamp: a tuple with 9 entries, corresponding to the
         local time
         '''
-        offset = 0
         x, y, p = 0, 0, 0
         dx, dy, dp = 0, 0, 0
 
@@ -610,17 +610,16 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         drawing = None
         stroke = None
 
-        if not self.parse_pen_data_prefix(data):
+        success, offset = self.parse_pen_data_prefix(data)
+        if not success:
             return []
+
+        drawing = Drawing(self.device.name, (self.width, self.height), timestamp)
+        drawings.append(drawing)
 
         while offset < len(data):
             bitmask, opcode, raw_args, args, offset = self.next_pen_data(data, offset)
-            if opcode == 0x3800:
-                logger.info(f'beginning of sequence')
-                drawing = Drawing(self.device.name, (self.width, self.height), timestamp)
-                drawings.append(drawing)
-                continue
-            elif opcode == 0xeeff:
+            if opcode == 0xeeff:
                 # some sort of headers
                 time_offset = int.from_bytes(raw_args[4:], byteorder='little')
                 logger.info(f'time offset since boot: {time_offset * 0.005} secs')
