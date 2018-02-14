@@ -219,6 +219,14 @@ org.freedesktop.tuhi1.Device
 
       Read-only
 
+  Property: Live(b)
+      Indicates whether the device is currently in Live mode. When in live
+      mode, the device does not store drawings internally for a later sync
+      but instead fowards the events immediately, similar to a traditional
+      graphics tablet. See StartLive() for more details.
+
+      Read-only
+
   Method: Register() -> (i)
       Register the device. If the device is already registered, calls to
       this method immediately return success.
@@ -255,6 +263,38 @@ org.freedesktop.tuhi1.Device
       signal arriving, the property DrawingsAvailable may still be updated
       and it's the responsibility of the client to fetch the JSON data.
 
+  Method: StartLive(fd: h) -> (i)
+      Starts live mode on this device. This disables offline storage of
+      drawing data on the device and instead switches the device to a mode
+      where it immediately reports the pen data, similar to a traditional
+      graphics tablet.
+
+      The LiveStopped signal is sent when live mode terminates, either on
+      either on success or with an error. A client should handle this signal
+      to be notified of any errors.
+
+      When live mode enables, the Live property is updated accordingly.
+
+      If a client that successfully initated a listening process calls
+      StartListening() again, that call is ignored and no signal is
+      generated for that call.
+
+      The fd argument is a file descriptor that will be used to forward
+      events to. The format is the one used by the Linux kernel's UHID
+      device, see linux/uhid.h for details.
+
+  Method: StopLive() - >()
+      Stop live mode on this device. If called after StartLive(), this
+      method triggers the LiveStopped signal.  That signal indicates
+      success or an error.
+
+      If this method is called before StartLive() or after the LiveStopped
+      signal, it is ignored and no signal is generated.
+
+      Note that between calling StopLive() and the LiveStopped signal
+      arriving, the device may still send events. It's the responsibility of
+      the client to handle events until the LiveStopped signal arrives.
+
   Method: GetJSONData(timestamp: t) -> (s)
       Returns a JSON file with the drawings specified by the timestamp
       argument.  Drawings are zero-indexed and the requested index must be
@@ -285,6 +325,33 @@ org.freedesktop.tuhi1.Device
       listening mode and registration/listening was requested. In
       this case, the client should indicate to the user that the device
       needs to be registered first or switched to listening mode.
+
+      If the error is -EACCES, the device is not registered with the daemon
+      or incorrectly registered. This may happen when the device was
+      registered with another host since the last connection.
+
+      The following other errnos may be sent by the daemon:
+      -EPROTO: the daemon has encountered a protocol error with the device.
+      -ETIME: timeout while communicating with the device.
+
+      These errnos indicate a bug in the daemon, and the client should
+      display a message to that effect.
+
+  Signal: LiveStopped(i)
+      Sent when live mode is stopped. An argument of 0 indicates a
+      successful termination, i.e. in response to the client calling
+      StopLive(). Otherwise, the argument is a negative errno
+      indicating the type of error.
+
+      If the errno is -EAGAIN, the daemon has already enabled live mode on
+      device on behalf of another client. In this case, this client should
+      wait for the Live property to change and StartLive() once the property
+      is set to False.
+
+      If the error is -EBADE, the device is not ready for live mode, most
+      likely because it is in registration mode. In this case, the client
+      should indicate to the user that the device needs to be registered
+      first.
 
       If the error is -EACCES, the device is not registered with the daemon
       or incorrectly registered. This may happen when the device was
