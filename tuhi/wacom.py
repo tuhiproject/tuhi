@@ -618,6 +618,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
         drawing = Drawing(self.device.name, (self.width, self.height), timestamp)
 
+        have_abs = 0x00  # bitmask 3-bits: pyx
+
         while offset < len(data):
             bitmask, opcode, raw_args, args, offset = self.next_pen_data(data, offset)
 
@@ -650,11 +652,27 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
             if bitmask & 0b00111100 == 0:
                 continue
+
+            if not xrel:
+                have_abs |= 0x1
+            if not yrel:
+                have_abs |= 0x2
+            if not prel:
+                have_abs |= 0x4
+
             if xrel or yrel or prel:
+                if not stroke.points:
+                    if have_abs == 0x7:
+                        logger.info('Forcing first point to be absolute')
+                        stroke.new_abs((x, y), p)
+                    else:
+                        logger.warning('First point in stroke is relative, skipping')
+                    continue
                 stroke.new_rel((dx, dy), dp)
             else:
                 stroke.new_abs((x, y), p)
 
+        drawing.seal()
         return drawing
 
     def read_offline_data(self):

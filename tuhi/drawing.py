@@ -86,6 +86,10 @@ class Drawing(GObject.Object):
         self.strokes = []
         self._current_stroke = -1
 
+    def seal(self):
+        # Drop empty strokes
+        self.strokes = [s for s in self.strokes if s.points]
+
     # The way we're building drawings, we don't need to change the current
     # stroke at runtime, so this is read-ony
     @GObject.Property
