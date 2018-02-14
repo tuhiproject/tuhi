@@ -597,6 +597,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
         return True, offset
 
+    def parse_next_stroke_prefix(self, opcode, raw_args):
+        # This doesn't exist on the Spark
+        return False
+
     def parse_pen_data(self, data, timestamp):
         '''
         :param timestamp: a tuple with 9 entries, corresponding to the
@@ -619,10 +623,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
         while offset < len(data):
             bitmask, opcode, raw_args, args, offset = self.next_pen_data(data, offset)
-            if opcode == 0xeeff:
-                # some sort of headers
-                time_offset = int.from_bytes(raw_args[4:], byteorder='little')
-                logger.info(f'time offset since boot: {time_offset * 0.005} secs')
+
+            if self.parse_next_stroke_prefix(opcode, raw_args):
                 stroke = drawing.new_stroke()
                 continue
             if bytes(args) == b'\xff\xff\xff\xff\xff\xff\xff\xff':
@@ -805,6 +807,15 @@ class WacomProtocolSlate(WacomProtocolSpark):
         if crc != binascii.crc32(bytes(pen_data)):
             raise WacomCorruptDataException("CRCs don't match")
         return pen_data
+
+    def parse_next_stroke_prefix(self, opcode, raw_args):
+        if opcode != 0xeeff:
+            return False
+
+        # some sort of headers
+        time_offset = int.from_bytes(raw_args[4:], byteorder='little')
+        logger.info(f'time offset since boot: {time_offset * 0.005} secs')
+        return True
 
 
 class WacomDevice(GObject.Object):
