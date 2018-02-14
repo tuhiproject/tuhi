@@ -457,9 +457,9 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         rdesc = wacom_live_rdesc_template[:]
         for i, v in enumerate(rdesc):
             if v == 'width':
-                rdesc[i] = [0x26, list(int.to_bytes(w, 2, 'little', signed=True))]
+                rdesc[i] = [0x26, list(int.to_bytes(w, 4, 'little', signed=True))]
             elif v == 'height':
-                rdesc[i] = [0x26, list(int.to_bytes(h, 2, 'little', signed=True))]
+                rdesc[i] = [0x26, list(int.to_bytes(h, 4, 'little', signed=True))]
 
         uhid_device = UHIDDevice(fd)
         uhid_device.rdesc = list(flatten(rdesc))
