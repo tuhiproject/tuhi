@@ -643,7 +643,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             y += dy
             p += dp
 
-            logger.info(f'point at {x},{y} ({dx:+}, {dy:+}) with pressure {p} ({dp:+})')
+            xr = '*' if xrel else ''
+            yr = '*' if yrel else ''
+            pr = '*' if prel else ''
+            logger.info(f'point at {x},{y} ({dx:+}{xr}, {dy:+}{yr}) with pressure {p} ({dp:+}{pr})')
 
             if bitmask & 0b00111100 == 0:
                 continue
