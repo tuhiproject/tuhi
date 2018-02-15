@@ -86,7 +86,7 @@ wacom_live_rdesc_template = [
     0x81, 0x02,                    # ..Input (Data,Var,Abs)              71
     0x05, 0x0d,                    # ..Usage Page (Digitizers)           73
     0x09, 0x30,                    # ..Usage (Tip Pressure)              75
-    0x26, 0xff, 0x07,              # ..Logical Maximum (2047)            77
+    0x26, 'pressure',              # ..Logical Maximum (TBD)             77
     0x81, 0x02,                    # ..Input (Data,Var,Abs)              80
     0xc0,                          # .End Collection                     82
     0xc0,                          # End Collection                      83
@@ -631,6 +631,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                 rdesc[i] = list(int.to_bytes(w, 4, 'little', signed=True))
             elif v == 'height':
                 rdesc[i] = list(int.to_bytes(h, 4, 'little', signed=True))
+            elif v == 'pressure':
+                rdesc[i] = list(int.to_bytes(self.pressure, 2, 'little', signed=True))
 
         uhid_device = UHIDDevice(fd)
         uhid_device.rdesc = list(flatten(rdesc))
@@ -872,6 +874,7 @@ class WacomProtocolSpark(WacomProtocolBase):
     '''
     width = 21600
     height = 14800
+    pressure = 2047
     protocol = Protocol.SPARK
     packet_handlers = [WacomPacketHandlerEndOfStroke,
                        WacomPacketHandlerEndOfSequence]
@@ -887,6 +890,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
     '''
     width = 21600
     height = 14800
+    pressure = 2047
     protocol = Protocol.SLATE
     packet_handlers = [WacomPacketHandlerStrokePrefixSlate]
 
@@ -979,6 +983,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     '''
     width = 44800
     height = 29600
+    pressure = 4095
     protocol = Protocol.INTUOS_PRO
     packet_handlers = [WacomPacketHandlerStrokePrefixIntuosPro,
                        WacomPacketHandlerStrokeTimestampIntuosPro,
