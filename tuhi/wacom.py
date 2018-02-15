@@ -314,6 +314,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
         self.device = device
         self.nordic_answer = []
         self.fw_logger = logging.getLogger('tuhi.fw')
+        self.nordic_event = threading.Semaphore(value=0)
 
         device.connect_gatt_value(NORDIC_UART_CHRC_RX_UUID,
                                   self._on_nordic_data_received)
@@ -321,6 +322,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
     def _on_nordic_data_received(self, name, value):
         self.fw_logger.debug(f'RX Nordic <-- {list2hex(value)}')
         self.nordic_answer += value
+        self.nordic_event.release()
 
     def send_nordic_command(self, command, arguments):
         chrc = self.device.characteristics[NORDIC_UART_CHRC_TX_UUID]
@@ -329,9 +331,6 @@ class WacomProtocolLowLevelComm(GObject.Object):
         chrc.write_value(data)
 
     def check_nordic_incoming(self):
-        if not self.nordic_answer:
-            raise WacomTimeoutException(f'{self.device.name}: Timeout while reading data')
-
         answer = self.nordic_answer
         length = answer[1]
         args = answer[2:]
@@ -340,10 +339,10 @@ class WacomProtocolLowLevelComm(GObject.Object):
         self.nordic_answer = self.nordic_answer[length + 2:]  # opcode + len
         return NordicData(answer)
 
-    def wait_nordic_data(self, expected_opcode, timeout):
-        t = time.time()
-        while not self.nordic_answer and time.time() - t < timeout:
-            time.sleep(0.1)
+    def wait_nordic_data(self, expected_opcode, timeout=None):
+        if not self.nordic_event.acquire(timeout=timeout):
+            # timeout
+            raise WacomTimeoutException(f'{self.device.name}: Timeout while reading data')
 
         data = self.check_nordic_incoming()
 
