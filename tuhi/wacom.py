@@ -408,7 +408,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                              expected_opcode=0xbd)
         ts = self.time_from_bytes(data)
         logger.debug(f'b6 returned time: UTC {time.strftime("%y%m%d%H%M%S", ts)}')
-        # FIXME: check if data matches self.current_time
+
+        tdelta = time.mktime(time.gmtime()) - time.mktime(ts)
+        if abs(tdelta) > 300:
+            logger.error(f'device time is out by more than 5 minutes')
 
     def get_battery_info(self):
         data = self.send_nordic_command_sync(command=0xb9,
