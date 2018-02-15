@@ -58,7 +58,7 @@ class DeviceMode(enum.Enum):
 
 wacom_live_rdesc_template = [
     0x05, 0x0d,                    # Usage Page (Digitizers)             0
-    0x09, 0x02,                    # Usage (Pen)                         2
+    0x09, 0x01,                    # Usage (Digitizer)                   2
     0xa1, 0x01,                    # Collection (Application)            4
     0x85, 0x01,                    # .Report ID (1)                      6
     0x09, 0x20,                    # .Usage (Stylus)                     8
