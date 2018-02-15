@@ -75,14 +75,14 @@ wacom_live_rdesc_template = [
     0x09, 0x30,                    # ..Usage (X)                         45
     0x75, 0x10,                    # ..Report Size (16)                  47
     0x95, 0x01,                    # ..Report Count (1)                  49
-    0x55, 0x0e,                    # ..Unit Exponent (-2)                51
+    0x55, 0x0d,                    # ..Unit Exponent (-3)                51
     0x65, 0x11,                    # ..Unit (Centimeter,SILinear)        53
-    0x46, 0xec, 0x09,              # ..Physical Maximum (2540)           55
-    'width',                       # ..Logical Maximum (TBD)             58
+    0x47, 'width',                 # ..Physical Maximum (TBD)            55
+    0x27, 'width',                 # ..Logical Maximum (TBD)             58
     0x81, 0x02,                    # ..Input (Data,Var,Abs)              61
     0x09, 0x31,                    # ..Usage (Y)                         63
-    0x46, 0x9d, 0x06,              # ..Physical Maximum (1693)           65
-    'height',                      # ..Logical Maximum (TBD)             68
+    0x47, 'height',                # ..Physical Maximum (TBD)            65
+    0x27, 'height',                # ..Logical Maximum (TBD)             68
     0x81, 0x02,                    # ..Input (Data,Var,Abs)              71
     0x05, 0x0d,                    # ..Usage Page (Digitizers)           73
     0x09, 0x30,                    # ..Usage (Tip Pressure)              75
@@ -628,9 +628,9 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         rdesc = wacom_live_rdesc_template[:]
         for i, v in enumerate(rdesc):
             if v == 'width':
-                rdesc[i] = [0x27, list(int.to_bytes(w, 4, 'little', signed=True))]
+                rdesc[i] = list(int.to_bytes(w, 4, 'little', signed=True))
             elif v == 'height':
-                rdesc[i] = [0x27, list(int.to_bytes(h, 4, 'little', signed=True))]
+                rdesc[i] = list(int.to_bytes(h, 4, 'little', signed=True))
 
         uhid_device = UHIDDevice(fd)
         uhid_device.rdesc = list(flatten(rdesc))
