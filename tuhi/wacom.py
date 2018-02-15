@@ -619,20 +619,15 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                       arguments=args)
 
     def start_live(self, fd):
-        w = self.get_dimensions('width')
-        h = self.get_dimensions('height')
         self.send_nordic_command_sync(command=0xb1,
                                       expected_opcode=0xb3)
         logger.debug(f'Starting wacom live mode on fd: {fd}')
 
         rdesc = wacom_live_rdesc_template[:]
         for i, v in enumerate(rdesc):
-            if v == 'width':
-                rdesc[i] = list(int.to_bytes(w, 4, 'little', signed=True))
-            elif v == 'height':
-                rdesc[i] = list(int.to_bytes(h, 4, 'little', signed=True))
-            elif v == 'pressure':
-                rdesc[i] = list(int.to_bytes(self.pressure, 2, 'little', signed=True))
+            if isinstance(v, str):
+                v = getattr(self, v)
+                rdesc[i] = list(int.to_bytes(v, 4, 'little', signed=True))
 
         uhid_device = UHIDDevice(fd)
         uhid_device.rdesc = list(flatten(rdesc))
