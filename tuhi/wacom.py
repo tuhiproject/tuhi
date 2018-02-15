@@ -71,25 +71,30 @@ wacom_live_rdesc_template = [
     0x81, 0x02,                    # ..Input (Data,Var,Abs)              22
     0x95, 0x07,                    # ..Report Count (7)                  24
     0x81, 0x03,                    # ..Input (Cnst,Var,Abs)              26
-    0x05, 0x01,                    # ..Usage Page (Generic Desktop)      43
-    0x09, 0x30,                    # ..Usage (X)                         45
-    0x75, 0x10,                    # ..Report Size (16)                  47
-    0x95, 0x01,                    # ..Report Count (1)                  49
-    0x55, 0x0d,                    # ..Unit Exponent (-3)                51
-    0x65, 0x11,                    # ..Unit (Centimeter,SILinear)        53
-    0x47, 'width',                 # ..Physical Maximum (TBD)            55
-    0x27, 'width',                 # ..Logical Maximum (TBD)             58
-    0x81, 0x02,                    # ..Input (Data,Var,Abs)              61
-    0x09, 0x31,                    # ..Usage (Y)                         63
-    0x47, 'height',                # ..Physical Maximum (TBD)            65
-    0x27, 'height',                # ..Logical Maximum (TBD)             68
-    0x81, 0x02,                    # ..Input (Data,Var,Abs)              71
-    0x05, 0x0d,                    # ..Usage Page (Digitizers)           73
-    0x09, 0x30,                    # ..Usage (Tip Pressure)              75
-    0x26, 'pressure',              # ..Logical Maximum (TBD)             77
-    0x81, 0x02,                    # ..Input (Data,Var,Abs)              80
-    0xc0,                          # .End Collection                     82
-    0xc0,                          # End Collection                      83
+    0x05, 0x01,                    # ..Usage Page (Generic Desktop)      28
+    0x09, 0x30,                    # ..Usage (X)                         30
+    0x75, 0x10,                    # ..Report Size (16)                  32
+    0x95, 0x01,                    # ..Report Count (1)                  34
+    0x55, 0x0d,                    # ..Unit Exponent (-3)                36
+    0x65, 0x11,                    # ..Unit (Centimeter,SILinear)        38
+    0x37, 'x_min',                 # ..Physical Minimum (TBD)            40
+    0x47, 'x_max',                 # ..Physical Maximum (TBD)            45
+    0x17, 'x_min',                 # ..Logical Minimum (TBD)             50
+    0x27, 'x_max',                 # ..Logical Maximum (TBD)             55
+    0x81, 0x02,                    # ..Input (Data,Var,Abs)              60
+    0x09, 0x31,                    # ..Usage (Y)                         62
+    0x37, 'y_min',                 # ..Physical Minimum (TBD)            64
+    0x47, 'y_max',                 # ..Physical Maximum (TBD)            69
+    0x17, 'y_min',                 # ..Logical Minimum (TBD)             74
+    0x27, 'y_max',                 # ..Logical Maximum (TBD)             79
+    0x81, 0x02,                    # ..Input (Data,Var,Abs)              84
+    0x05, 0x0d,                    # ..Usage Page (Digitizers)           86
+    0x15, 0x00,                    # ..Logical Minimum (0)               88
+    0x09, 0x30,                    # ..Usage (Tip Pressure)              90
+    0x27, 'pressure',              # ..Logical Maximum (TBD)             92
+    0x81, 0x02,                    # ..Input (Data,Var,Abs)              97
+    0xc0,                          # .End Collection                     99
+    0xc0,                          # End Collection                      100
 ]
 
 
@@ -868,7 +873,13 @@ class WacomProtocolSpark(WacomProtocolBase):
     :param uuid: the UUID {to be} assigned to the device
     '''
     width = 21600
+    x_min = 2500
+    x_max = 20600
+
     height = 14800
+    y_min = 800
+    y_max = 14300
+
     pressure = 2047
     protocol = Protocol.SPARK
     packet_handlers = [WacomPacketHandlerEndOfStroke,
@@ -884,7 +895,13 @@ class WacomProtocolSlate(WacomProtocolSpark):
     :param uuid: the UUID {to be} assigned to the device
     '''
     width = 21600
+    x_min = 2500
+    x_max = 20600
+
     height = 14800
+    y_min = 500
+    y_max = 14300
+
     pressure = 2047
     protocol = Protocol.SLATE
     packet_handlers = [WacomPacketHandlerStrokePrefixSlate]
@@ -977,7 +994,13 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     :param uuid: the UUID {to be} assigned to the device
     '''
     width = 44800
+    x_min = 0
+    x_max = 44800
+
     height = 29600
+    y_min = 0
+    y_max = 29600
+
     pressure = 4095
     protocol = Protocol.INTUOS_PRO
     packet_handlers = [WacomPacketHandlerStrokePrefixIntuosPro,
