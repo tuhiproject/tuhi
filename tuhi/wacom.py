@@ -245,6 +245,30 @@ class WacomPacketHandlerEndOfStroke(WacomPacketHandler):
         return True
 
 
+class WacomPacketHandlerStrokePrefixSlate(WacomPacketHandler):
+    def process(self, packet, drawing):
+        if packet.opcode != 0xeeff:
+            return False
+
+        # some sort of headers
+        time_offset = int.from_bytes(packet.bytes[4:], byteorder='little')
+        logger.info(f'time offset since boot: {time_offset * 0.005} secs')
+        drawing.new_stroke()
+        return True
+
+
+class WacomPacketHandlerStrokePrefixIntuosPro(WacomPacketHandler):
+    def process(self, packet, drawing):
+        if packet.opcode != 0x03fa:
+            return False
+
+        t = WacomProtocolIntuosPro.time_from_bytes(packet.bytes[2:])
+        t = time.strftime("%y%m%d%H%M%S", t)
+        logger.info(f'stroke time: {t}')
+        drawing.new_stroke()
+        return True
+
+
 class WacomProtocolLowLevelComm(GObject.Object):
     '''
     Internal class to handle the communication with the Wacom device.
@@ -509,6 +533,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         current_time = time.strftime('%y%m%d%H%M%S', time.gmtime())
         return [int(i) for i in binascii.unhexlify(current_time)]
 
+    @classmethod
     def time_from_bytes(self, data):
         assert len(data) >= 6
         str_timestamp = ''.join([f'{d:02x}' for d in data])
@@ -688,10 +713,6 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
         return True, offset
 
-    def parse_next_stroke_prefix(self, opcode, raw_args):
-        # This doesn't exist on the Spark
-        return False
-
     def parse_pen_data(self, data, timestamp):
         '''
         :param timestamp: a tuple with 9 entries, corresponding to the
@@ -722,10 +743,6 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                     has_handler = True
                     break
             if has_handler:
-                continue
-
-            if self.parse_next_stroke_prefix(packet.opcode, packet.bytes):
-                stroke = drawing.new_stroke()
                 continue
 
             stroke = drawing.current_stroke
@@ -845,10 +862,11 @@ class WacomProtocolSlate(WacomProtocolSpark):
     width = 21600
     height = 14800
     protocol = Protocol.SLATE
-    packet_handlers = []
+    packet_handlers = [WacomPacketHandlerStrokePrefixSlate]
 
     def __init__(self, device, uuid):
         super().__init__(device, uuid)
+
         device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
                                   self._on_mysterious_data_received)
 
@@ -924,15 +942,6 @@ class WacomProtocolSlate(WacomProtocolSpark):
             raise WacomCorruptDataException("CRCs don't match")
         return pen_data
 
-    def parse_next_stroke_prefix(self, opcode, raw_args):
-        if opcode != 0xeeff:
-            return False
-
-        # some sort of headers
-        time_offset = int.from_bytes(raw_args[4:], byteorder='little')
-        logger.info(f'time offset since boot: {time_offset * 0.005} secs')
-        return True
-
 
 class WacomProtocolIntuosPro(WacomProtocolSlate):
     '''
@@ -945,7 +954,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     width = 44800
     height = 29600
     protocol = Protocol.INTUOS_PRO
-    packet_handlers = []
+    packet_handlers = [WacomPacketHandlerStrokePrefixIntuosPro]
 
     def __init__(self, device, uuid):
         super().__init__(device, uuid)
@@ -954,6 +963,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
         t = int(time.time())
         return list(t.to_bytes(length=4, byteorder='little')) + [0x00, 0x00]
 
+    @classmethod
     def time_from_bytes(self, data):
         seconds = int.from_bytes(data[0:4], byteorder='little')
         return time.gmtime(seconds)
@@ -1043,15 +1053,6 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
         logger.debug(f'Drawing timestamp: {t}, {nstrokes} strokes, other timestamp {ot}')
 
         return True, offset
-
-    def parse_next_stroke_prefix(self, opcode, raw_args):
-        if opcode != 0x03fa:
-            return False
-
-        t = self.time_from_bytes(raw_args[2:])
-        t = time.strftime("%y%m%d%H%M%S", t)
-        logger.info(f'stroke time: {t}')
-        return True
 
 
 class WacomDevice(GObject.Object):
