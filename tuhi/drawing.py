@@ -41,8 +41,18 @@ class Stroke(GObject.Object):
         self.points = []
         self._position = (0, 0)
         self._pressure = 0
+        self._is_sealed = False
+
+    @GObject.property
+    def sealed(self):
+        return self._is_sealed
+
+    def seal(self):
+        self._is_sealed = True
 
     def new_rel(self, position=None, pressure=None):
+        assert not self._is_sealed
+
         p = Point(self)
         if position is not None:
             x, y = self._position
@@ -55,6 +65,8 @@ class Stroke(GObject.Object):
         self.points.append(p)
 
     def new_abs(self, position=None, pressure=None):
+        assert not self._is_sealed
+
         p = Point(self)
         if position is not None:
             self._position = position
@@ -88,18 +100,27 @@ class Drawing(GObject.Object):
 
     def seal(self):
         # Drop empty strokes
+        for s in self.strokes:
+            s.seal()
         self.strokes = [s for s in self.strokes if s.points]
 
     # The way we're building drawings, we don't need to change the current
     # stroke at runtime, so this is read-ony
     @GObject.Property
     def current_stroke(self):
-        return self.strokes[self._current_stroke]
+        if self._current_stroke < 0:
+            return None
+
+        s = self.strokes[self._current_stroke]
+        return s if not s.sealed else None
 
     def new_stroke(self):
         '''
         Create a new stroke and make it the current stroke
         '''
+        if self.current_stroke is not None:
+            self.current_stroke.seal()
+
         s = Stroke(self)
         self.strokes.append(s)
         self._current_stroke += 1

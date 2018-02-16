@@ -636,9 +636,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                 continue
             if bytes(args) == b'\x00\x00\xff\xff\xff\xff\xff\xff':
                 logger.info(f'end of stroke')
-                stroke = None
+                stroke.seal()
                 continue
 
+            stroke = drawing.current_stroke
             if stroke is None:
                 stroke = drawing.new_stroke()
 
