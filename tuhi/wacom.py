@@ -269,6 +269,32 @@ class WacomPacketHandlerStrokePrefixIntuosPro(WacomPacketHandler):
         return True
 
 
+class WacomPacketHandlerStrokeTimestampIntuosPro(WacomPacketHandler):
+    def process(self, packet, drawing):
+        if packet.opcode != 0xc3fa:
+            return False
+
+        # First stroke timestamp, note this is less than the drawing's
+        # timestamp
+        # ff fa c3 <6-byte-timestamp>
+        t = WacomProtocolIntuosPro.time_from_bytes(packet.bytes[2:])
+        t = time.strftime("%y%m%d%H%M%S", t)
+        logger.info(f'stroke time: {t}')
+        return True
+
+
+class WacomPacketHandlerUnknownFixedStrokeDataIntuosPro(WacomPacketHandler):
+    def process(self, packet, drawing):
+        if packet.opcode != 0x870a:
+            return False
+
+        # Unclear what this header is
+        expected_bytes = b'\xff\x0a\x87\x75\x80\x28\x42\x00\x10'
+        if bytes(packet.bytes) != expected_bytes:
+            logger.debug(f'Missing header, got {packet.bytes}')
+        return True
+
+
 class WacomProtocolLowLevelComm(GObject.Object):
     '''
     Internal class to handle the communication with the Wacom device.
@@ -954,7 +980,9 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     width = 44800
     height = 29600
     protocol = Protocol.INTUOS_PRO
-    packet_handlers = [WacomPacketHandlerStrokePrefixIntuosPro]
+    packet_handlers = [WacomPacketHandlerStrokePrefixIntuosPro,
+                       WacomPacketHandlerStrokeTimestampIntuosPro,
+                       WacomPacketHandlerUnknownFixedStrokeDataIntuosPro]
 
     def __init__(self, device, uuid):
         super().__init__(device, uuid)
@@ -1023,34 +1051,14 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
         nstrokes = int.from_bytes(data[offset:offset + 2], byteorder='little')
         offset += 2
 
+        logger.debug(f'Drawing timestamp: {t}, {nstrokes} strokes')
+
         # Can't have enough zeroes. They'll come in handy one day
         expected_header = b'\x00\x00\x00\x00'
         data_header = data[offset:offset + len(expected_header)]
         if bytes(data_header) != expected_header:
             logger.debug(f'Missing zeroes, got {data_header}')
         offset += 4
-
-        # First stroke timestamp, note this is less than the above timestamp
-        # ff fa c3 <6-byte-timestamp>
-        expected_header = b'\xff\xfa\xc3'
-        data_header = data[offset:offset + len(expected_header)]
-        if bytes(data_header) != expected_header:
-            logger.debug(f'Missing first stroke timestamp, got {data_header}')
-        offset += len(expected_header)
-
-        ot = self.time_from_bytes(data[offset:])
-        offset += 6
-
-        # Unclear what this is
-        expected_header = b'\xff\x0a\x87\x75\x80\x28\x42\x00\x10'
-        data_header = data[offset:offset + len(expected_header)]
-        if bytes(data_header) != expected_header:
-            logger.debug(f'Missing header 2, got {data_header}')
-        offset += len(expected_header)
-
-        t = time.strftime("%y%m%d%H%M%S", t)
-        ot = time.strftime("%y%m%d%H%M%S", ot)
-        logger.debug(f'Drawing timestamp: {t}, {nstrokes} strokes, other timestamp {ot}')
 
         return True, offset
 
