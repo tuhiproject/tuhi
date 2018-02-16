@@ -100,10 +100,10 @@ class Drawing(GObject.Object):
         '''
         Create a new stroke and make it the current stroke
         '''
-        l = Stroke(self)
-        self.strokes.append(l)
+        s = Stroke(self)
+        self.strokes.append(s)
         self._current_stroke += 1
-        return l
+        return s
 
     def to_json(self):
         json_data = {
