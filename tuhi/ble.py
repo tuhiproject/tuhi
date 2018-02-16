@@ -400,7 +400,7 @@ class BlueZDeviceManager(GObject.Object):
 
     def _on_device_updated(self, device):
         '''Callback for Device's properties-changed'''
-        logger.debug(f'Object updated: {device.name}')
+        # logger.debug(f'Object updated: {device.name}')
 
         self.emit('device-updated', device)
 
