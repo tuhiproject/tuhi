@@ -15,6 +15,7 @@
 import binascii
 import calendar
 import enum
+import inspect
 import logging
 import threading
 import time
@@ -220,6 +221,30 @@ class WacomPacket(GObject.Object):
         return " ".join(debug_data)
 
 
+class WacomPacketHandler(GObject.Object):
+    def process(self, packet, drawing):
+        raise NotImplementedError('This method must be implemented in the subclass')
+
+
+class WacomPacketHandlerEndOfSequence(WacomPacketHandler):
+    def process(self, packet, drawing):
+        if bytes(packet.args) != b'\xff\xff\xff\xff\xff\xff\xff\xff':
+            return False
+
+        logger.info(f'end of sequence')
+        return True
+
+
+class WacomPacketHandlerEndOfStroke(WacomPacketHandler):
+    def process(self, packet, drawing):
+        if bytes(packet.args) != b'\x00\x00\xff\xff\xff\xff\xff\xff':
+            return False
+
+        logger.info(f'end of stroke')
+        drawing.current_stroke.seal()
+        return True
+
+
 class WacomProtocolLowLevelComm(GObject.Object):
     '''
     Internal class to handle the communication with the Wacom device.
@@ -404,6 +429,26 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                   self._on_pen_data_changed)
         device.connect_gatt_value(WACOM_OFFLINE_CHRC_PEN_DATA_UUID,
                                   self._on_pen_data_received)
+
+        # Instantiate all packet_handlers from our current object and its
+        # parent classes
+        self.packet_handlers = []
+        parents = inspect.getmro(self.__class__)
+        child = None
+        for cls in parents:
+            if cls.__name__ == 'WacomProtocolBase':
+                break
+
+            if (child is not None and
+                    child.packet_handlers and
+                    child.packet_handlers == cls.packet_handlers):
+                raise NotImplementedError(f'Subclass {child} must override packet_handlers')
+
+            for handler in cls.packet_handlers:
+                h = handler()
+                self.packet_handlers.append(h)
+
+            child = cls
 
     def _on_pen_data_changed(self, name, value):
         logger.debug(binascii.hexlify(bytes(value)))
@@ -671,15 +716,16 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             logger.debug(f'packet: {packet}')
             offset += packet.length
 
+            has_handler = False
+            for handler in self.packet_handlers:
+                if handler.process(packet, drawing):
+                    has_handler = True
+                    break
+            if has_handler:
+                continue
+
             if self.parse_next_stroke_prefix(packet.opcode, packet.bytes):
                 stroke = drawing.new_stroke()
-                continue
-            if bytes(packet.args) == b'\xff\xff\xff\xff\xff\xff\xff\xff':
-                logger.info(f'end of sequence')
-                continue
-            if bytes(packet.args) == b'\x00\x00\xff\xff\xff\xff\xff\xff':
-                logger.info(f'end of stroke')
-                stroke.seal()
                 continue
 
             stroke = drawing.current_stroke
@@ -784,6 +830,8 @@ class WacomProtocolSpark(WacomProtocolBase):
     width = 21600
     height = 14800
     protocol = Protocol.SPARK
+    packet_handlers = [WacomPacketHandlerEndOfStroke,
+                       WacomPacketHandlerEndOfSequence]
 
 
 class WacomProtocolSlate(WacomProtocolSpark):
@@ -797,6 +845,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
     width = 21600
     height = 14800
     protocol = Protocol.SLATE
+    packet_handlers = []
 
     def __init__(self, device, uuid):
         super().__init__(device, uuid)
@@ -896,6 +945,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     width = 44800
     height = 29600
     protocol = Protocol.INTUOS_PRO
+    packet_handlers = []
 
     def __init__(self, device, uuid):
         super().__init__(device, uuid)
