@@ -270,8 +270,8 @@ class TuhiKeteDevice(_DBusObject):
         self.proxy.StopLive()
         self.live = False
 
-    def json(self, index):
-        return self.proxy.GetJSONData('(u)', index)
+    def json(self, timestamp):
+        return self.proxy.GetJSONData('(u)', timestamp)
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'ButtonPressRequired':
@@ -545,7 +545,7 @@ class Fetcher(Worker):
     def __init__(self, manager, args):
         super(Fetcher, self).__init__(manager)
         self.device = None
-        self.indices = None
+        self.timestamps = None
         address = args.address
         index = args.index
 
@@ -562,19 +562,19 @@ class Fetcher(Worker):
                 index = int(index)
                 if index not in self.device.drawings_available:
                     raise ValueError()
-                self.indices = [index]
+                self.timestamps = [index]
             except ValueError:
                 logger.error(f'Invalid index {index}')
                 return
         else:
-            self.indices = self.device.drawings_available
+            self.timestamps = self.device.drawings_available
 
     def run(self):
-        if self.device is None or self.indices is None:
+        if self.device is None or self.timestamps is None:
             return
 
-        for idx in self.indices:
-            jsondata = self.device.json(idx)
+        for ts in self.timestamps:
+            jsondata = self.device.json(ts)
             data = json.loads(jsondata)
             t = time.localtime(data['timestamp'])
             t = time.strftime('%Y-%m-%d-%H-%M', t)
