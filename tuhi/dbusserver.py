@@ -87,7 +87,7 @@ INTROSPECTION_XML = '''
     </method>
 
     <method name='GetJSONData'>
-      <arg name='index' type='u' direction='in'/>
+      <arg name='timestamp' type='t' direction='in'/>
       <arg name='json' type='s' direction='out'/>
     </method>
 

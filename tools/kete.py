@@ -271,7 +271,7 @@ class TuhiKeteDevice(_DBusObject):
         self.live = False
 
     def json(self, timestamp):
-        return self.proxy.GetJSONData('(u)', timestamp)
+        return self.proxy.GetJSONData('(t)', timestamp)
 
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'ButtonPressRequired':
