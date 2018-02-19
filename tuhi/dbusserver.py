@@ -15,6 +15,7 @@ import logging
 import errno
 
 from gi.repository import GObject, Gio, GLib
+from .drawing import Drawing
 
 logger = logging.getLogger('tuhi.dbus')
 
@@ -27,6 +28,10 @@ INTROSPECTION_XML = '''
 
     <property type='ao' name='Searching' access='read'>
       <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='true'/>
+    </property>
+
+    <property type='au' name='JSONDataVersions' access='read'>
+      <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const'/>
     </property>
 
     <method name='StartSearch'>
@@ -87,6 +92,7 @@ INTROSPECTION_XML = '''
     </method>
 
     <method name='GetJSONData'>
+      <arg name='file_version' type='u' direction='in'/>
       <arg name='timestamp' type='t' direction='in'/>
       <arg name='json' type='s' direction='out'/>
     </method>
@@ -427,7 +433,12 @@ class TuhiDBusDevice(_TuhiDBus):
         self.live = False
 
     def _json_data(self, args):
-        index = args[0]
+        file_format = args[0]
+        if file_format != Drawing.JSON_FILE_FORMAT_VERSION:
+            logger.info(f'Unsupported file format requested: {file_format}')
+            return ''
+
+        index = args[1]
         try:
             drawing = self.drawings[index]
         except KeyError:
@@ -533,6 +544,9 @@ class TuhiDBusServer(_TuhiDBus):
             return GLib.Variant.new_objv([d.objpath for d in self._devices if d.registered])
         elif propname == 'Searching':
             return GLib.Variant.new_boolean(self.is_searching)
+        elif propname == 'JSONDataVersions':
+            return GLib.Variant.new_array(GLib.VariantType('u'),
+                                          [GLib.Variant.new_uint32(Drawing.JSON_FILE_FORMAT_VERSION)])
 
         return None
 

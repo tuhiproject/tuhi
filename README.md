@@ -94,6 +94,12 @@ org.freedesktop.tuhi1.Manager
 
       Read-only
 
+  Property: JSONDataVersions (au)
+      Specifies the JSON file format versions the server supports. The
+      client must request one of these versions in Device.GetJSONData().
+
+      Read-only, constant
+
   Method: StartSearch() -> ()
       Start searching for available devices ready for registering
       for an unspecified timeout. When the timeout expires or an error
@@ -295,14 +301,17 @@ org.freedesktop.tuhi1.Device
       arriving, the device may still send events. It's the responsibility of
       the client to handle events until the LiveStopped signal arrives.
 
-  Method: GetJSONData(timestamp: t) -> (s)
+  Method: GetJSONData(file-version: u, timestamp: t) -> (s)
       Returns a JSON file with the drawings specified by the timestamp
       argument. The requested timestamp must be one of the entries in the
-      DrawingsAvailable property value. See section JSON FILE
+      DrawingsAvailable property value. The file-version argument specifies
+      the file format version the client requests. See section JSON FILE
       FORMAT for the format of the returned data.
 
       Returns a string representing the JSON data from the last drawings or
-      the empty string if the timestamp is not available.
+      the empty string if the timestamp is not available or the file format
+      version is outside the server-supported range advertised in
+      Manager.JSONDataVersions.
 
   Signal: ButtonPressRequired()
       Sent when the user is expected to press the physical button on the
@@ -367,6 +376,12 @@ org.freedesktop.tuhi1.Device
 
 JSON File Format
 ----------------
+
+The current file format version is 1. A server may only support a subset of
+historical file formats, this subset is advertized as list of versions in
+the **org.freedesktop.tuhi1.Manager.JSONDataVersions** property. Likewise, a
+client may only support a subset of the possible formats. A client should
+always pick the highest format supported by both the client and the server.
 
 Below is the example file format (with comments, not present in the real
 files). The JSON objects are "drawing" (the root object), "strokes",
