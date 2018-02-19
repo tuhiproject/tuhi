@@ -297,12 +297,12 @@ org.freedesktop.tuhi1.Device
 
   Method: GetJSONData(timestamp: t) -> (s)
       Returns a JSON file with the drawings specified by the timestamp
-      argument.  Drawings are zero-indexed and the requested index must be
-      less than the DrawingsAvailable property value. See section JSON FILE
+      argument. The requested timestamp must be one of the entries in the
+      DrawingsAvailable property value. See section JSON FILE
       FORMAT for the format of the returned data.
 
       Returns a string representing the JSON data from the last drawings or
-      the empty string if no data is available or the timestamp is invalid.
+      the empty string if the timestamp is not available.
 
   Signal: ButtonPressRequired()
       Sent when the user is expected to press the physical button on the
