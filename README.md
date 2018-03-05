@@ -15,6 +15,7 @@ Devices tested and known to be supported:
 
 * Bamboo Spark
 * Bamboo Slate
+* Intuos Pro Paper
 
 Registering devices
 -------------------
