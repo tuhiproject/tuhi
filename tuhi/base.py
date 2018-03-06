@@ -16,7 +16,16 @@ import enum
 import logging
 import sys
 import time
-from gi.repository import GObject, GLib
+try:
+    from gi.repository import GObject, GLib
+except Exception as e:
+    print(f'************ Importing gi.repository failed **********')
+    print(f'* This is an issue with the gi module, not with tuhi *')
+    print(f'******************************************************')
+    print(f'The full exception is below:')
+    print(f'')
+    raise e
+
 
 from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
