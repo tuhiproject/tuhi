@@ -34,7 +34,7 @@ def main(args=sys.argv):
     tuhi_process.start()
 
     # import after spawning the process, or the 2 processes will fight for GLib
-    import tuhi_kete
+    import kete
     from gi.repository import Gio, GLib
 
     # connect to the session
@@ -43,7 +43,7 @@ def main(args=sys.argv):
     except GLib.Error as e:
         if (e.domain == 'g-io-error-quark' and
                 e.code == Gio.IOErrorEnum.DBUS_ERROR):
-            raise tuhi_kete.DBusError(e.message)
+            raise kete.DBusError(e.message)
         else:
             raise e
 
@@ -51,25 +51,25 @@ def main(args=sys.argv):
     try:
         proxy = Gio.DBusProxy.new_sync(connection,
                                        Gio.DBusProxyFlags.NONE, None,
-                                       tuhi_kete.TUHI_DBUS_NAME,
-                                       tuhi_kete.ROOT_PATH,
-                                       tuhi_kete.ORG_FREEDESKTOP_TUHI1_MANAGER,
+                                       kete.TUHI_DBUS_NAME,
+                                       kete.ROOT_PATH,
+                                       kete.ORG_FREEDESKTOP_TUHI1_MANAGER,
                                        None)
     except GLib.Error as e:
         if (e.domain == 'g-io-error-quark' and
                 e.code == Gio.IOErrorEnum.DBUS_ERROR):
-            raise tuhi_kete.DBusError(e.message)
+            raise kete.DBusError(e.message)
         else:
             raise e
 
     started = proxy.get_name_owner() is not None
 
     if not started:
-        print(f'No-one is handling {tuhi_kete.TUHI_DBUS_NAME}, attempting to start a daemon')
+        print(f'No-one is handling {kete.TUHI_DBUS_NAME}, attempting to start a daemon')
 
     queue.put(not started)
 
-    tuhi_kete.main(args)
+    kete.main(args)
 
 
 if __name__ == '__main__':
