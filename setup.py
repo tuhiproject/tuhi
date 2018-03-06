@@ -23,7 +23,7 @@ setup(name='tuhi',
       python_requires='>=3.6',
       install_requires=[
           'svgwrite',
-          'xdg',
+          'pyxdg',
           'pygobject',
       ]
       )
