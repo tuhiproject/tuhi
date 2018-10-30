@@ -585,6 +585,7 @@ class Fetcher(Worker):
 
     def json_to_svg(self, js, filename):
         dimensions = js['dimensions']
+        dimensions = [x/10 for x in dimensions]
         if dimensions == [0, 0]:
             dimensions = 100, 100
         svg = svgwrite.Drawing(filename=filename, size=dimensions)
@@ -593,13 +594,14 @@ class Fetcher(Worker):
             svgpoints = []
             mode = 'M'
             for p in s['points']:
-                x, y = p['position']
+                position = p['position']
+                x, y = [x/10 for x in position]
                 svgpoints.append((mode, x, y))
                 mode = 'L'
             path = svgwrite.path.Path(d=svgpoints,
-                                      style='fill:none;stroke:black;stroke-width:5')
+                                      style='fill:none;stroke:black;stroke-width:1')
             g.add(path)
-
+                        
         svg.add(g)
         svg.save()
 
