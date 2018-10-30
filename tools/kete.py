@@ -599,7 +599,7 @@ class Fetcher(Worker):
                 svgpoints.append((mode, x, y))
                 mode = 'L'
             path = svgwrite.path.Path(d=svgpoints,
-                                      style='fill:none;stroke:black;stroke-width:1')
+                                      style='fill:none;stroke:black;stroke-width:3')
             g.add(path)
                         
         svg.add(g)
