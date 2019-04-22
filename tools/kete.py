@@ -32,7 +32,6 @@ import configparser
 
 CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
 
-
 class ColorFormatter(logging.Formatter):
     BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, LIGHT_GRAY = range(30, 38)
     DARK_GRAY, LIGHT_RED, LIGHT_GREEN, LIGHT_YELLOW, LIGHT_BLUE, LIGHT_MAGENTA, LIGHT_CYAN, WHITE = range(90, 98)
@@ -555,6 +554,7 @@ class Fetcher(Worker):
             config[address] = {}
 
         self.orientation = config[address].get('Orientation', 'Landscape')
+        self.handle_pressure = config[address].getboolean('HandlePressure', False)
 
         for d in manager.devices:
             if d.address == address:
@@ -604,10 +604,12 @@ class Fetcher(Worker):
             svg = svgwrite.Drawing(filename=filename, size=(width, height))
 
         g = svgwrite.container.Group(id='layer0')
-        for s in js['strokes']:
-            svgpoints = []
-            mode = 'M'
+        for stroke_num, s in enumerate(js['strokes']):
+
+            points_with_sk_width = []
+
             for p in s['points']:
+
                 x, y = p['position']
                 # Normalize coordinates too
                 x, y = x/100, y/100
@@ -619,15 +621,34 @@ class Fetcher(Worker):
                 elif self.orientation == 'Reverse-Landscape':
                     x, y = width - x, height - y
 
-                svgpoints.append((mode, x, y))
-                mode = 'L'
-            path = svgwrite.path.Path(
-                d=svgpoints,
-                stroke_width=0.2,
-                stroke='black',
-                fill='none'
-            )
-            g.add(path)
+                delta = (p['pressure'] - 1000.0)/ 1000.0
+                stoke_width = 0.4 + 0.20 * delta
+                points_with_sk_width.append((x, y, stoke_width))
+
+            if self.handle_pressure:
+                lines = svgwrite.container.Group(id=f'strokes_{stroke_num}', stroke='black')
+                for i, (x, y, stoke_width) in enumerate(points_with_sk_width):
+                    if i != 0:
+                        xp, yp, stoke_width_p = points_with_sk_width[i - 1]
+                        lines.add(
+                            svg.line(
+                                start=(xp, yp),
+                                end=(x, y),
+                                stroke_width=stoke_width,
+                                style='fill:none'
+                            )
+                        )
+            else:
+                lines = svgwrite.path.Path(
+                    d="M",
+                    stroke='black',
+                    stroke_width=0.2,
+                    style='fill:none'
+                )
+                for x, y, stoke_width in points_with_sk_width:
+                    lines.push(x, y)
+
+            g.add(lines)
 
         svg.add(g)
         svg.save()
@@ -737,13 +758,13 @@ class TuhiKeteShell(cmd.Cmd):
 
         self._config_file = os.path.join(CONFIG_PATH, 'settings.ini')
         self._config = configparser.ConfigParser()
-
         if os.path.exists(self._config_file):
             self._config.read(self._config_file)
         else:
             # Populate config file with a configuration example
             self._config['11:22:33:44:55:66'] = {
-                'Orientation': 'Landscape'
+                'Orientation': 'Landscape',
+                'HandlePressure': False
             }
             with open(self._config_file, 'w') as f:
                 self._config.write(f)
