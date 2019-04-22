@@ -27,6 +27,7 @@ import threading
 import time
 import svgwrite
 import xdg.BaseDirectory
+import configparser
 
 
 CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
@@ -543,12 +544,17 @@ class Listener(Worker):
 
 
 class Fetcher(Worker):
-    def __init__(self, manager, args):
+    def __init__(self, manager, args, config):
         super(Fetcher, self).__init__(manager)
         self.device = None
         self.timestamps = None
         address = args.address
         index = args.index
+
+        if not address in config:
+            config[address] = {}
+
+        self.orientation = config[address].get('Orientation', 'Landscape')
 
         for d in manager.devices:
             if d.address == address:
@@ -591,7 +597,12 @@ class Fetcher(Worker):
             # Original diemnsions are too big for SVG Standard
             # so we nomalize them
             width, height = dimensions[0]/100, dimensions[1]/100
-        svg = svgwrite.Drawing(filename=filename, size=(width, height))
+
+        if self.orientation in ['Portrait', 'Reverse-Portrait']:
+            svg = svgwrite.Drawing(filename=filename, size=(height, width))
+        else:
+            svg = svgwrite.Drawing(filename=filename, size=(width, height))
+
         g = svgwrite.container.Group(id='layer0')
         for s in js['strokes']:
             svgpoints = []
@@ -600,6 +611,14 @@ class Fetcher(Worker):
                 x, y = p['position']
                 # Normalize coordinates too
                 x, y = x/100, y/100
+
+                if self.orientation == 'Reverse-Portrait':
+                    x, y = y, width - x
+                elif self.orientation == 'Portrait':
+                    x, y = height - y, x
+                elif self.orientation == 'Reverse-Landscape':
+                    x, y = width - x, height - y
+
                 svgpoints.append((mode, x, y))
                 mode = 'L'
             path = svgwrite.path.Path(
@@ -715,6 +734,19 @@ class TuhiKeteShell(cmd.Cmd):
             os.mkdir(CONFIG_PATH)
         except FileExistsError:
             pass
+
+        self._config_file = os.path.join(CONFIG_PATH, 'settings.ini')
+        self._config = configparser.ConfigParser()
+
+        if os.path.exists(self._config_file):
+            self._config.read(self._config_file)
+        else:
+            # Populate config file with a configuration example
+            self._config['11:22:33:44:55:66'] = {
+                'Orientation': 'Landscape'
+            }
+            with open(self._config_file, 'w') as f:
+                self._config.write(f)
 
         self._history_file = os.path.join(CONFIG_PATH, 'histfile')
 
@@ -984,7 +1016,7 @@ class TuhiKeteShell(cmd.Cmd):
 
         # we do not call start_worker() as we don't need to retain the
         # worker
-        worker = Fetcher(self._manager, parsed_args)
+        worker = Fetcher(self._manager, parsed_args, self._config)
         worker.run()
 
     def help_search(self):
