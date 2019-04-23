@@ -32,6 +32,7 @@ import configparser
 
 CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
 
+
 class ColorFormatter(logging.Formatter):
     BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, LIGHT_GRAY = range(30, 38)
     DARK_GRAY, LIGHT_RED, LIGHT_GREEN, LIGHT_YELLOW, LIGHT_BLUE, LIGHT_MAGENTA, LIGHT_CYAN, WHITE = range(90, 98)
@@ -550,7 +551,7 @@ class Fetcher(Worker):
         address = args.address
         index = args.index
 
-        if not address in config:
+        if address not in config:
             config[address] = {}
 
         self.orientation = config[address].get('Orientation', 'Landscape')
@@ -596,7 +597,7 @@ class Fetcher(Worker):
         else:
             # Original diemnsions are too big for SVG Standard
             # so we nomalize them
-            width, height = dimensions[0]/100, dimensions[1]/100
+            width, height = dimensions[0] / 100, dimensions[1] / 100
 
         if self.orientation in ['Portrait', 'Reverse-Portrait']:
             svg = svgwrite.Drawing(filename=filename, size=(height, width))
@@ -612,7 +613,7 @@ class Fetcher(Worker):
 
                 x, y = p['position']
                 # Normalize coordinates too
-                x, y = x/100, y/100
+                x, y = x / 100, y / 100
 
                 if self.orientation == 'Reverse-Portrait':
                     x, y = y, width - x
@@ -621,7 +622,7 @@ class Fetcher(Worker):
                 elif self.orientation == 'Reverse-Landscape':
                     x, y = width - x, height - y
 
-                delta = (p['pressure'] - 1000.0)/ 1000.0
+                delta = (p['pressure'] - 1000.0) / 1000.0
                 stoke_width = 0.4 + 0.20 * delta
                 points_with_sk_width.append((x, y, stoke_width))
 
@@ -868,7 +869,7 @@ HandlePressure = true
     def run(self, init=None):
         try:
             self.cmdloop(init)
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             print('^C')
             self.run('')
 
