@@ -762,12 +762,26 @@ class TuhiKeteShell(cmd.Cmd):
             self._config.read(self._config_file)
         else:
             # Populate config file with a configuration example
-            self._config['11:22:33:44:55:66'] = {
-                'Orientation': 'Landscape',
-                'HandlePressure': False
-            }
             with open(self._config_file, 'w') as f:
-                self._config.write(f)
+                f.write('''# configuration file for kete
+
+# the file follows a standard .ini format:
+# each device should have its own section like the following
+# [Bluetooth Address]
+# in each section, possible keys are:
+# - Orientation (possible values: Portrait, Landscape,
+#                                 Reverse-Portrait, Reverse-Landscape
+#               defaults to Landscape)
+# - HandlePressure (possible values: true, false
+#                   defaults to false)
+
+
+# Example:
+[11:22:33:44:55:66]
+Orientation = Reverse-Portrait
+HandlePressure = true
+
+''')
 
         self._history_file = os.path.join(CONFIG_PATH, 'histfile')
 
