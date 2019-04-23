@@ -134,7 +134,7 @@ class Drawing(GObject.Object):
             'timestamp': self.timestamp,
             'strokes': [s.to_dict() for s in self.strokes]
         }
-        return json.dumps(json_data)
+        return json.dumps(json_data, indent=2)
 
     @classmethod
     def from_json(cls, path):
