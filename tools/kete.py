@@ -623,19 +623,19 @@ class Fetcher(Worker):
                     x, y = width - x, height - y
 
                 delta = (p['pressure'] - 1000.0) / 1000.0
-                stoke_width = 0.4 + 0.20 * delta
-                points_with_sk_width.append((x, y, stoke_width))
+                stroke_width = 0.4 + 0.20 * delta
+                points_with_sk_width.append((x, y, stroke_width))
 
             if self.handle_pressure:
                 lines = svgwrite.container.Group(id=f'strokes_{stroke_num}', stroke='black')
-                for i, (x, y, stoke_width) in enumerate(points_with_sk_width):
+                for i, (x, y, stroke_width) in enumerate(points_with_sk_width):
                     if i != 0:
-                        xp, yp, stoke_width_p = points_with_sk_width[i - 1]
+                        xp, yp, stroke_width_p = points_with_sk_width[i - 1]
                         lines.add(
                             svg.line(
                                 start=(xp, yp),
                                 end=(x, y),
-                                stroke_width=stoke_width,
+                                stroke_width=stroke_width,
                                 style='fill:none'
                             )
                         )
@@ -646,7 +646,7 @@ class Fetcher(Worker):
                     stroke_width=0.2,
                     style='fill:none'
                 )
-                for x, y, stoke_width in points_with_sk_width:
+                for x, y, stroke_width in points_with_sk_width:
                     lines.push(x, y)
 
             g.add(lines)
