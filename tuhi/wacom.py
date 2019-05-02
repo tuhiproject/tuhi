@@ -908,6 +908,17 @@ class WacomProtocolSlate(WacomProtocolSpark):
         device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
                                   self._on_mysterious_data_received)
 
+    def live_mode(self, mode, uhid):
+        # Slate tablet has two models A5 and A4
+        # Here, we read real tablet dimensions before 
+        # starting live mode
+        self.width = self.get_dimensions('width')
+        self.height = self.get_dimensions('height')
+        self.x_max = self.width - 1000
+        self.y_max = self.height - 500
+
+        return super().live_mode(mode, uhid)
+
     def _on_mysterious_data_received(self, name, value):
         self.fw_logger.debug(f'mysterious: {binascii.hexlify(bytes(value))}')
 
