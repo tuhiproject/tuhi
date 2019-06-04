@@ -45,6 +45,11 @@ by "hi $foo, I want to connect".
 The word "register" was chosen because "pairing" is already in use by
 Bluetooth.
 
+Packages
+--------
+
+Arch Linux: [tuhi-git](https://aur.archlinux.org/packages/tuhi-git/)
+
 Installation
 ------------
 
