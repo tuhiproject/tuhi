@@ -282,8 +282,8 @@ org.freedesktop.tuhi1.Device
       graphics tablet.
 
       The LiveStopped signal is sent when live mode terminates, either on
-      either on success or with an error. A client should handle this signal
-      to be notified of any errors.
+      success or with an error. A client should handle this signal to be
+      notified of any errors.
 
       When live mode enables, the Live property is updated accordingly.
 
