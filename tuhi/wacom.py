@@ -369,6 +369,8 @@ class WacomProtocolLowLevelComm(GObject.Object):
             raise WacomCorruptDataException(f'invalid opcode')
         elif data[0] == 0x07:
             raise WacomNotRegisteredException(f'wrong device, please re-register')
+        elif data[0] != 0x00:
+            raise WacomException(f'unknown error: {data[0]:02x}')
 
     def send_nordic_command_sync(self,
                                  command,
