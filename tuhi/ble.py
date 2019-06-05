@@ -11,6 +11,7 @@
 #  GNU General Public License for more details.
 
 import logging
+from functools import partial
 from gi.repository import GObject, Gio, GLib
 
 logger = logging.getLogger('tuhi.ble')
@@ -284,6 +285,54 @@ class BlueZDevice(GObject.Object):
         return f'Device {self.name}:{self.objpath}'
 
 
+class BlueZObjectManager:
+    '''
+    Namespace to encapsulate our modification to the object manager.
+    '''
+    @classmethod
+    def instance(cls):
+        proxy = Gio.DBusObjectManagerClient.new_for_bus_sync(
+            Gio.BusType.SYSTEM,
+            Gio.DBusObjectManagerClientFlags.NONE,
+            'org.bluez',
+            '/',
+            None,
+            None,
+            None)
+
+        # Replace the object managers get_objects() with our pimped one.
+        proxy.get_objects_unsorted = proxy.get_objects
+        proxy.get_objects = partial(cls.get_objects, proxy)
+
+        return proxy
+
+    def get_objects(self, interface=None, base_path=None):
+        '''
+        Get objects sorted by their object path.
+
+        Optional arguments can be used to filter the returned object list.
+
+        :param interface: filter objects by interface, default is None
+        :param base_path: filter objects by object path, default is None
+                          (the objects path has to start with `base_path`)
+        '''
+        def base_path_filter(obj):
+            return obj.get_object_path().startswith(base_path)
+
+        def interface_filter(obj):
+            return obj.get_interface(interface) is not None
+
+        objs = self.get_objects_unsorted()
+
+        if base_path is not None:
+            objs = filter(base_path_filter, objs)
+
+        if interface is not None:
+            objs = filter(interface_filter, objs)
+
+        return sorted(objs, key=lambda obj: obj.get_object_path())
+
+
 class BlueZDeviceManager(GObject.Object):
     '''
     Manager object that connects to org.bluez's root object and handles the
@@ -311,20 +360,10 @@ class BlueZDeviceManager(GObject.Object):
         resolved as they come in. The device-added signal is emitted for
         each device.
         '''
-        self._om = Gio.DBusObjectManagerClient.new_for_bus_sync(
-            Gio.BusType.SYSTEM,
-            Gio.DBusObjectManagerClientFlags.NONE,
-            'org.bluez',
-            '/',
-            None,
-            None,
-            None)
+        self._om = BlueZObjectManager.instance()
         self._om.connect('object-added', self._on_om_object_added)
         self._om.connect('object-removed', self._on_om_object_removed)
 
-        # We rely on nested object paths, so let's sort the objects by
-        # object path length and process them in order, this way we're
-        # guaranteed that the objects we need already exist.
         for obj in self._om.get_objects():
             self._process_object(obj)
 
@@ -346,10 +385,8 @@ class BlueZDeviceManager(GObject.Object):
 
         self._discovery = True
 
-        for obj in self._om.get_objects():
+        for obj in self._om.get_objects(interface=ORG_BLUEZ_ADAPTER1):
             i = obj.get_interface(ORG_BLUEZ_ADAPTER1)
-            if i is None:
-                continue
 
             # remove the duplicate data filter so we get notifications as they come in
             i.SetDiscoveryFilter('(a{sv})', {'DuplicateData': GLib.Variant.new_boolean(False)})
@@ -381,11 +418,8 @@ class BlueZDeviceManager(GObject.Object):
 
         self._discovery = False
 
-        for obj in self._om.get_objects():
+        for obj in self._om.get_objects(interface=ORG_BLUEZ_ADAPTER1):
             i = obj.get_interface(ORG_BLUEZ_ADAPTER1)
-            if i is None:
-                continue
-
             objpath = obj.get_object_path()
             try:
                 i.StopDiscovery()
