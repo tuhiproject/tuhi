@@ -361,14 +361,14 @@ class WacomProtocolLowLevelComm(GObject.Object):
         if len(data) != 1:
             str_b = binascii.hexlify(bytes(data))
             raise WacomException(f'unexpected data: {str_b}')
-        if data[0] == 0x07:
-            raise WacomNotRegisteredException(f'wrong device, please re-register')
-        if data[0] == 0x02:
-            raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
         if data[0] == 0x01:
             raise WacomWrongModeException(f'wrong device mode')
-        if data[0] == 0x05:
+        elif data[0] == 0x02:
+            raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
+        elif data[0] == 0x05:
             raise WacomCorruptDataException(f'invalid opcode')
+        elif data[0] == 0x07:
+            raise WacomNotRegisteredException(f'wrong device, please re-register')
 
     def send_nordic_command_sync(self,
                                  command,
