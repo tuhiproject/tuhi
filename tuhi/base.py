@@ -32,8 +32,9 @@ from tuhi.ble import BlueZDeviceManager
 from tuhi.wacom import WacomDevice, DeviceMode
 from tuhi.config import TuhiConfig
 
-logging.basicConfig(format='%(levelname)s: %(name)s: %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
+                    level=logging.INFO,
+                    datefmt='%H:%M:%S')
 logger = logging.getLogger('tuhi')
 
 WACOM_COMPANY_IDS = [0x4755, 0x4157]
