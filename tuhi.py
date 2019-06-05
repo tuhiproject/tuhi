@@ -12,6 +12,7 @@
 #
 
 import tuhi.base
+import sys
 
 if __name__ == "__main__":
-    tuhi.base.main()
+    tuhi.base.main(sys.argv + ['--verbose'])
