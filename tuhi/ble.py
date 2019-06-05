@@ -229,7 +229,7 @@ class BlueZDevice(GObject.Object):
                 result.code == Gio.IOErrorEnum.DBUS_ERROR and
                 Gio.dbus_error_get_remote_error(result) == 'org.bluez.Error.Failed' and
                 'Operation already in progress' in result.message):
-                    logger.debug(f'{self.address}: Already connecting')
+            logger.debug(f'{self.address}: Already connecting')
         elif isinstance(result, Exception):
             logger.error(f'Connection failed: {result}')
 

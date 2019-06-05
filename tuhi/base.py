@@ -347,10 +347,10 @@ class Tuhi(GObject.Object):
 
         # create the device if unknown from us
         if bluez_device.address not in self.devices:
-                d = TuhiDevice(bluez_device, self.config, uuid, mode)
-                d.dbus_device = self.server.create_device(d)
-                d.connect('notify::listening', self._on_listening_updated)
-                self.devices[bluez_device.address] = d
+            d = TuhiDevice(bluez_device, self.config, uuid, mode)
+            d.dbus_device = self.server.create_device(d)
+            d.connect('notify::listening', self._on_listening_updated)
+            self.devices[bluez_device.address] = d
 
         d = self.devices[bluez_device.address]
 
@@ -397,6 +397,4 @@ def main(args=sys.argv):
     try:
         Tuhi().run()
     except KeyboardInterrupt:
-        pass
-    finally:
         pass
