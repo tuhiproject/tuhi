@@ -81,9 +81,7 @@ class BlueZDevice(GObject.Object):
     Abstraction for a org.bluez.Device1 object
 
     The device initializes itself based on the given object manager and
-    object, specifically: it resolves its services and gatt characteristics.
-    The device resolves itself where possible, if one of its
-    services/characteristics comes in late, call resolve().
+    object, specifically: it resolves its gatt characteristics.
 
     To connect to the real device, call connect_to_device(). The 'connected'
     and 'disconnected' signals are emitted when the connection is
@@ -108,13 +106,14 @@ class BlueZDevice(GObject.Object):
         GObject.Object.__init__(self)
         self.objpath = obj.get_object_path()
         self.obj = obj
+        self.om = om
         self.interface = obj.get_interface(ORG_BLUEZ_DEVICE1)
         assert(self.interface is not None)
 
         logger.debug(f'Device {self.objpath} - {self.address} - {self.name}')
 
         self.characteristics = {}
-        self.resolve(om)
+        self._resolve_gatt_characteristics()
         self.interface.connect('g-properties-changed', self._on_properties_changed)
         if self.connected:
             self.emit('connected')
@@ -167,48 +166,21 @@ class BlueZDevice(GObject.Object):
 
         return None
 
-    def resolve(self, om):
+    def _resolve_gatt_characteristics(self):
         '''
-        Resolve the GattServices and GattCharacteristics. This function does
-        not need to be called for existing objects but if a device comes in
-        at runtime not all services may have been resolved by the time the
-        org.bluez.Device1 shows up.
+        Resolve the GattCharacteristics.
         '''
-        objects = om.get_objects()
-        self._resolve_gatt_services(objects)
-
-    def _resolve_gatt_services(self, objects):
-        self.gatt_services = []
-        for obj in objects:
-            i = obj.get_interface(ORG_BLUEZ_GATTSERVICE1)
-            if i is None:
-                continue
-
-            device = i.get_cached_property('Device').get_string()
-            if device != self.objpath:
-                continue
-
-            logger.debug(f'GattService1: {obj.get_object_path()} for device {device}')
-            self.gatt_services.append(obj)
-            self._resolve_gatt_characteristics(obj, objects)
-
-    def _resolve_gatt_characteristics(self, service_obj, objects):
-        for obj in objects:
+        objs = self.om.get_objects(interface=ORG_BLUEZ_GATTCHARACTERISTIC1,
+                                   base_path=self.objpath)
+        for obj in objs:
             i = obj.get_interface(ORG_BLUEZ_GATTCHARACTERISTIC1)
-            if i is None:
+            uuid = i.get_cached_property('UUID').unpack()
+
+            if uuid in self.characteristics:
                 continue
 
-            service = i.get_cached_property('Service').get_string()
-            if service != service_obj.get_object_path():
-                continue
-
-            chrc = BlueZCharacteristic(obj)
-            if chrc.uuid in self.characteristics:
-                continue
-
-            logger.debug(f'GattCharacteristic: {chrc.uuid} for service {service}')
-
-            self.characteristics[chrc.uuid] = chrc
+            self.characteristics[uuid] = BlueZCharacteristic(obj)
+            logger.debug(f'GattCharacteristic: {uuid}')
 
     def connect_device(self):
         '''
@@ -263,6 +235,7 @@ class BlueZDevice(GObject.Object):
                 self.emit('disconnected')
         if 'ServicesResolved' in properties:
             if properties['ServicesResolved']:
+                self._resolve_gatt_characteristics()
                 self.emit('connected')
         if 'RSSI' in properties:
             self.emit('updated')
@@ -442,14 +415,7 @@ class BlueZDeviceManager(GObject.Object):
         '''Callback for ObjectManager's object-added'''
         objpath = obj.get_object_path()
         logger.debug(f'Object added: {objpath}')
-        needs_resolve = self._process_object(obj, event=True)
-
-        # we had at least one characteristic added, need to resolve the
-        # devices.
-        # FIXME: this isn't the most efficient way...
-        if needs_resolve:
-            for d in self.devices:
-                d.resolve(om)
+        self._process_object(obj, event=True)
 
     def _on_om_object_removed(self, om, obj):
         '''Callback for ObjectManager's object-removed'''
@@ -464,9 +430,7 @@ class BlueZDeviceManager(GObject.Object):
         elif obj.get_interface(ORG_BLUEZ_DEVICE1) is not None:
             self._process_device(obj)
         elif obj.get_interface(ORG_BLUEZ_GATTCHARACTERISTIC1) is not None:
-            return True
-
-        return False
+            self._process_characteristic(obj)
 
     def _process_adapter(self, obj):
         objpath = obj.get_object_path()
