@@ -115,10 +115,11 @@ class BlueZDevice(GObject.Object):
         GObject.Object.__init__(self)
         self.obj = obj
         self.om = om
+        self.logger = logger.getChild(self.address)
 
         assert(self.interface is not None)
 
-        logger.debug(f'Device {self.objpath} - {self.address} - {self.name}')
+        self.logger.debug(f'Device {self.objpath} - {self.name}')
 
         self.characteristics = {}
         self._resolve_gatt_characteristics()
@@ -196,7 +197,7 @@ class BlueZDevice(GObject.Object):
                 continue
 
             self.characteristics[uuid] = BlueZCharacteristic(obj)
-            logger.debug(f'GattCharacteristic: {uuid}')
+            self.logger.debug(f'GattCharacteristic: {uuid}')
 
     def connect_device(self):
         '''
@@ -205,11 +206,11 @@ class BlueZDevice(GObject.Object):
         '''
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if self.connected:
-            logger.info(f'{self.address}: Device is already connected')
+            self.logger.info(f'Device is already connected')
             self.emit('connected')
             return
 
-        logger.info(f'{self.address}: Connecting')
+        self.logger.info(f'Connecting')
         i.Connect(result_handler=self._on_connect_result)
 
     def _on_connect_result(self, obj, result, user_data):
@@ -218,9 +219,9 @@ class BlueZDevice(GObject.Object):
                 result.code == Gio.IOErrorEnum.DBUS_ERROR and
                 Gio.dbus_error_get_remote_error(result) == 'org.bluez.Error.Failed' and
                 'Operation already in progress' in result.message):
-            logger.debug(f'{self.address}: Already connecting')
+            self.logger.debug(f'Already connecting')
         elif isinstance(result, Exception):
-            logger.error(f'Connection failed: {result}')
+            self.logger.error(f'Connection failed: {result}')
 
     def disconnect_device(self):
         '''
@@ -229,25 +230,25 @@ class BlueZDevice(GObject.Object):
         '''
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if not i.get_cached_property('Connected').get_boolean():
-            logger.info(f'{self.address}: Device is already disconnected')
+            self.logger.info(f'Device is already disconnected')
             self.emit('disconnected')
             return
 
-        logger.info(f'{self.address}: Disconnecting')
+        self.logger.info(f'Disconnecting')
         i.Disconnect(result_handler=self._on_disconnect_result)
 
     def _on_disconnect_result(self, obj, result, user_data):
         if isinstance(result, Exception):
-            logger.error(f'Disconnection failed: {result}')
+            self.logger.error(f'Disconnection failed: {result}')
 
     def _on_properties_changed(self, obj, properties, invalidated_properties):
         properties = properties.unpack()
 
         if 'Connected' in properties:
             if properties['Connected']:
-                logger.info('Connection established')
+                self.logger.info('Connection established')
             else:
-                logger.info('Disconnected')
+                self.logger.info('Disconnected')
                 self.emit('disconnected')
         if 'ServicesResolved' in properties:
             if properties['ServicesResolved']:
