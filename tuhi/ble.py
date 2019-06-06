@@ -35,16 +35,25 @@ class BlueZCharacteristic(GObject.Object):
         :param obj: the org.bluez.GattCharacteristic1 DBus proxy object
         '''
         self.obj = obj
-        self.objpath = obj.get_object_path()
-        self.interface = obj.get_interface(ORG_BLUEZ_GATTCHARACTERISTIC1)
-        assert(self.interface is not None)
 
-        self.uuid = self.interface.get_cached_property('UUID').unpack()
+        assert(self.interface is not None)
         assert(self.uuid is not None)
 
         self._property_callbacks = {}
         self.interface.connect('g-properties-changed',
                                self._on_properties_changed)
+
+    @GObject.Property
+    def interface(self):
+        return self.obj.get_interface(ORG_BLUEZ_GATTCHARACTERISTIC1)
+
+    @GObject.Property
+    def objpath(self):
+        return self.obj.get_object_path()
+
+    @GObject.Property
+    def uuid(self):
+        return self.interface.get_cached_property('UUID').unpack()
 
     def connect_property(self, propname, callback):
         '''
@@ -104,10 +113,9 @@ class BlueZDevice(GObject.Object):
         :param obj: The org.bluez.Device1 DBus proxy object
         '''
         GObject.Object.__init__(self)
-        self.objpath = obj.get_object_path()
         self.obj = obj
         self.om = om
-        self.interface = obj.get_interface(ORG_BLUEZ_DEVICE1)
+
         assert(self.interface is not None)
 
         logger.debug(f'Device {self.objpath} - {self.address} - {self.name}')
@@ -117,6 +125,14 @@ class BlueZDevice(GObject.Object):
         self.interface.connect('g-properties-changed', self._on_properties_changed)
         if self.connected:
             self.emit('connected')
+
+    @GObject.Property
+    def objpath(self):
+        return self.obj.get_object_path()
+
+    @GObject.Property
+    def interface(self):
+        return self.obj.get_interface(ORG_BLUEZ_DEVICE1)
 
     @GObject.Property
     def name(self):
