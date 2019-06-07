@@ -3,7 +3,7 @@
     "command": "/app/bin/tuhi",
     "runtime": "org.freedesktop.Platform",
     "sdk": "org.freedesktop.Sdk",
-    "runtime-version": "1.6",
+    "runtime-version": "18.08",
     "cleanup": [ "/cache",
                  "/include",
                  "/lib/pkgconfig",
@@ -27,26 +27,10 @@
     ],
     "modules": [
         {
-            "name": "cpython",
-            "sources": [
-                {
-                    "type": "archive",
-                    "url": "https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz",
-                    "sha256": "159b932bf56aeaa76fd66e7420522d8c8853d486b8567c459b84fe2ed13bcaba"
-                }
-            ]
-        },
-        {
             "name": "pycairo",
-            "build-options" : {
-                "env": {
-                    "PYTHON": "/app/bin/python3"
-                }
-            },
             "buildsystem": "simple",
             "build-commands": [
-                "python3 ./setup.py sdist",
-                "pip3 install dist/*.tar.gz"
+                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
             ],
             "sources": [
                 {
@@ -59,11 +43,6 @@
         {
             "name": "pygobject",
             "config-opts": ["--enable-compile-warnings=minimum"],
-            "build-options" : {
-                "env": {
-                    "PYTHON": "/app/bin/python3"
-                }
-            },
             "sources": [
                 {
                     "type": "archive",
@@ -82,8 +61,7 @@
                 }
             ],
             "build-commands": [
-                "python3 ./setup.py sdist",
-                "pip3 install dist/*.tar.gz"
+                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
             ]
         },
         {
@@ -97,8 +75,7 @@
                 }
             ],
             "build-commands": [
-                "python3 ./setup.py sdist",
-                "pip3 install dist/*.tar.gz"
+                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
             ]
         },
         {
@@ -111,8 +88,7 @@
                 }
             ],
             "build-commands": [
-                "python3 ./setup.py sdist",
-                "pip3 install dist/*.tar.gz"
+                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
             ]
         },
         {
@@ -125,10 +101,10 @@
                 }
             ],
             "build-commands": [
-                "python3 setup.py install --verbose"
+                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
             ],
             "post-install": [
-                "cp tools/kete.py /app/lib/python3.6/site-packages/kete.py",
+                "cp tools/kete.py /app/lib/python3.7/site-packages/kete.py",
                 "cp tools/tuhi-kete-sandboxed.py /app/bin/tuhi-kete",
                 "chmod +x /app/bin/tuhi-kete"
             ]
