@@ -27,27 +27,21 @@
     ],
     "modules": [
         {
-            "name": "pycairo",
+            "name": "pygobject",
             "buildsystem": "simple",
             "build-commands": [
-                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
+                "python3 setup.py install --prefix=/app"
             ],
-            "sources": [
-                {
-                    "type": "archive",
-                    "url": "https://github.com/pygobject/pycairo/releases/download/v1.18.1/pycairo-1.18.1.tar.gz",
-                    "sha256": "70172e58b6bad7572a3518c26729b074acdde15e6fee6cbab6d3528ad552b786"
+            "build-options": {
+                "env": {
+                    "PYGOBJECT_WITHOUT_PYCAIRO" : "1"
                 }
-            ]
-        },
-        {
-            "name": "pygobject",
-            "config-opts": ["--enable-compile-warnings=minimum"],
+            },
             "sources": [
                 {
                     "type": "archive",
-                    "url": "http://ftp.gnome.org/pub/GNOME/sources/pygobject/3.27/pygobject-3.27.5.tar.xz",
-                    "sha256": "3e57f42a48f7e762a791ccec2514894945829dc1e70caeea0252505cbddbeda4"
+                    "url": "https://ftp.gnome.org/pub/GNOME/sources/pygobject/3.32/pygobject-3.32.1.tar.xz",
+                    "sha256": "32c99def94b8dea5ce9e4bc99576ef87591ea779b4db77cfdca7af81b76d04d8"
                 }
             ]
         },
