@@ -374,7 +374,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
 
     def send_nordic_command_sync(self,
                                  command,
-                                 expected_opcode,
+                                 expected_opcode=0xb3,
                                  arguments=None):
         if arguments is None:
             arguments = [0x00]
@@ -421,9 +421,7 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
             # Usually that triggers a WacomWrongModeException but here it's
             # expected
             try:
-                self.send_nordic_command_sync(command=0xe6,
-                                              expected_opcode=0xb3,
-                                              arguments=args)
+                self.send_nordic_command_sync(command=0xe6, arguments=args)
             except WacomWrongModeException:
                 # this is expected
                 pass
@@ -554,13 +552,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
     def check_connection(self):
         args = [int(i) for i in binascii.unhexlify(self._uuid)]
-        self.send_nordic_command_sync(command=0xe6,
-                                      expected_opcode=0xb3,
-                                      arguments=args)
+        self.send_nordic_command_sync(command=0xe6, arguments=args)
 
     def e3_command(self):
-        self.send_nordic_command_sync(command=0xe3,
-                                      expected_opcode=0xb3)
+        self.send_nordic_command_sync(command=0xe3)
 
     def time_to_bytes(self):
         # Device time is UTC
@@ -575,9 +570,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
     def set_time(self):
         args = self.time_to_bytes()
-        self.send_nordic_command_sync(command=0xb6,
-                                      expected_opcode=0xb3,
-                                      arguments=args)
+        self.send_nordic_command_sync(command=0xb6, arguments=args)
 
     def read_time(self):
         data = self.send_nordic_command_sync(command=0xb6,
@@ -622,13 +615,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
     def ec_command(self):
         args = [0x06, 0x00, 0x00, 0x00, 0x00, 0x00]
-        self.send_nordic_command_sync(command=0xec,
-                                      expected_opcode=0xb3,
-                                      arguments=args)
+        self.send_nordic_command_sync(command=0xec, arguments=args)
 
     def start_live(self, fd):
-        self.send_nordic_command_sync(command=0xb1,
-                                      expected_opcode=0xb3)
+        self.send_nordic_command_sync(command=0xb1)
         logger.debug(f'Starting wacom live mode on fd: {fd}')
 
         rdesc = wacom_live_rdesc_template[:]
@@ -646,15 +636,11 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
     def stop_live(self):
         args = [0x02]
-        self.send_nordic_command_sync(command=0xb1,
-                                      expected_opcode=0xb3,
-                                      arguments=args)
+        self.send_nordic_command_sync(command=0xb1, arguments=args)
 
     def b1_command(self):
         args = [0x01]
-        self.send_nordic_command_sync(command=0xb1,
-                                      expected_opcode=0xb3,
-                                      arguments=args)
+        self.send_nordic_command_sync(command=0xb1, arguments=args)
 
     def is_data_available(self):
         data = self.send_nordic_command_sync(command=0xc1,
@@ -835,14 +821,12 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         # firmware gets confused.
         args = [ord(c) for c in name] + [0x0a]
         data = self.send_nordic_command_sync(command=0xbb,
-                                             arguments=args,
-                                             expected_opcode=0xb3)
+                                             arguments=args)
         return bytes(data)
 
     def register_device_finish(self):
         self.send_nordic_command_sync(command=0xe5,
-                                      arguments=None,
-                                      expected_opcode=0xb3)
+                                      arguments=None)
         self.set_time()
         self.read_time()
         name = self.get_name()
@@ -925,8 +909,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         self.fw_logger.debug(f'mysterious: {binascii.hexlify(bytes(value))}')
 
     def ack_transaction(self):
-        self.send_nordic_command_sync(command=0xca,
-                                      expected_opcode=0xb3)
+        self.send_nordic_command_sync(command=0xca)
 
     def is_data_available(self):
         data = self.send_nordic_command_sync(command=0xc1,
@@ -1053,8 +1036,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     def set_name(self, name):
         args = [ord(c) for c in name]
         data = self.send_nordic_command_sync(command=0xbb,
-                                             arguments=args,
-                                             expected_opcode=0xb3)
+                                             arguments=args)
         return bytes(data)
 
     def check_connection(self):
