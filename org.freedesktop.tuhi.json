@@ -70,8 +70,8 @@
             "sources": [
                 {
                     "type": "archive",
-                    "url": "http://downloads.sourceforge.net/pyparsing/pyparsing-2.1.10.tar.gz",
-                    "sha512": "21af73d6f479d52746f269c8fbaf90c1107a8aec756d30af8c7c4e6a2ff0ea9659cc07816b7ea19286bc12d43497f5e8e63351453bf18daf6a1cb380a195532e"
+                    "url": "https://github.com/pyparsing/pyparsing/releases/download/pyparsing_2.4.0/pyparsing-2.4.0.tar.gz",
+                    "sha512": "71877dc006cce5c1b1d45e7cc89cd60e03cb80353387fb0c6498cfc0d69af465dc574d1bceb87248033e7a82694aa940e9fce1ca80b2ef538a8df51f697ef530"
                 }
             ],
             "build-commands": [
