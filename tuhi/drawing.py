@@ -43,7 +43,7 @@ class Stroke(GObject.Object):
         self._pressure = 0
         self._is_sealed = False
 
-    @GObject.property
+    @GObject.Property
     def sealed(self):
         return self._is_sealed
 
