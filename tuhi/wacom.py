@@ -1026,7 +1026,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     @classmethod
     def time_from_bytes(self, data):
         seconds = int.from_bytes(data[0:4], byteorder='little')
-        return time.gmtime(seconds)
+        return time.localtime(seconds)
 
     # set_time is identical to spark/slate except the timestamp format
 
@@ -1035,8 +1035,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
                                              expected_opcode=0xbd)
 
         # Last two bytes are unknown
-        t = self.time_from_bytes(data)
-        ts = time.strftime('%y-%m-%d %H:%M:%S', time.localtime(t))
+        ts = time.strftime('%y-%m-%d %H:%M:%S', self.time_from_bytes(data))
         logger.debug(f'b6 returned: {ts}')
 
     def get_firmware_version(self, arg):
