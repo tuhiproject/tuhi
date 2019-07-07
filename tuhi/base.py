@@ -300,6 +300,10 @@ class Tuhi(GObject.Object):
         self.bluez.stop_discovery()
         self._search_device_handler = None
 
+        unregistered = [addr for (addr, d) in self.devices.items() if not d.registered]
+        for addr in unregistered:
+            del self.devices[addr]
+
     @classmethod
     def _device_in_register_mode(cls, bluez_device):
         if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
