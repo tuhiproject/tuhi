@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.22.1 -->
+<interface>
+  <requires lib="gtk+" version="3.20"/>
+  <menu id="primary_menu">
+    <item>
+      <attribute name="action">app.about</attribute>
+      <attribute name="label" translatable="yes">_About TuhiGUI</attribute>
+    </item>
+  </menu>
+  <template class="MainWindow" parent="GtkApplicationWindow">
+    <property name="can_focus">False</property>
+    <property name="resizable">False</property>
+    <property name="default_width">1000</property>
+    <property name="default_height">700</property>
+    <child type="titlebar">
+      <object class="GtkStack" id="stack_titlebar">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="hhomogeneous">False</property>
+        <property name="vhomogeneous">False</property>
+        <child>
+          <object class="GtkHeaderBar" id="headerbar">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkButton" id="btn_quit">
+                <property name="label" translatable="yes">Quit</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="_on_quit_button_clicked" swapped="no"/>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="name">page0</property>
+            <property name="title" translatable="yes">page0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkStack" id="stack_perspectives">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="transition_type">crossfade</property>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

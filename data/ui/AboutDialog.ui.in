@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.20.0 -->
+<interface domain="tuhigui">
+  <requires lib="gtk+" version="3.4"/>
+  <object class="GtkAboutDialog" id="about_dialog">
+    <property name="can_focus">False</property>
+    <property name="modal">True</property>
+    <property name="type_hint">normal</property>
+    <property name="program_name">TuhiGUI</property>
+    <property name="version">@version@</property>
+    <property name="copyright">Copyright © 2019 Tuhi Developers</property>
+    <property name="website">@url@</property>
+    <property name="website_label" translatable="yes">Visit Tuhi’s website</property>
+    <property name="authors">Maintainers:
+    Peter Hutterer &lt;peter.hutterer@who-t.net&gt;
+
+    <!--  Contributor list: git log | git shortlog \-\-summary | cut -f2 -->
+Contributors:
+    </property>
+    <property name="artists">Peter Hutterer &lt;peter.hutterer@who-t.net&gt;</property>
+    <property name="translator_credits" translatable="yes">translator-credits</property>
+    <property name="logo_icon_name">org.freedesktop.TuhiGui</property>
+    <property name="license_type">gpl-2-0</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can_focus">False</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <child>
+      <placeholder/>
+    </child>
+  </object>
+</interface>

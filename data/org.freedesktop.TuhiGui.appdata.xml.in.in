@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.freedesktop.Piper</id>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-2.0+</project_license>
+  <content_rating type="oars-1.0" />
+  <name>Piper</name>
+  <summary>Configurable mouse configuration utility</summary>
+  <description>
+    <p>
+      Piper is a graphical user interface to configure gaming mice.
+      Configuration options include changing the resolution (DPI) of the
+      mouse, adding and removing profiles, setting LED colors and changing
+      button behaviors.
+    </p>
+    <p>
+      Piper requires libratbag’s ratbagd, the daemon to actually communicate with the
+      mice. Piper is merely a front end to ratbagd, ratbagd must be
+      installed and running when Piper is launched.
+    </p>
+  </description>
+
+  <kudos>
+    <kudo>AppMenu</kudo>
+    <kudo>HiDpiIcon</kudo>
+    <kudo>ModernToolkit</kudo>
+  </kudos>
+
+  <launchable type="desktop-id">org.freedesktop.Piper.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>The button configuraton page</caption>
+      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-buttonpage.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The LED configuraton page</caption>
+      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-ledpage.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The resolution configuraton page</caption>
+      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-resolutionpage.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/libratbag/piper/</url>
+  <url type="bugtracker">https://github.com/libratbag/piper/issues</url>
+  <url type="help">https://github.com/libratbag/piper/wiki</url>
+  <project_group>GNOME</project_group>
+
+  <translation type="gettext">piper</translation>
+
+  <provides>
+    <binary>piper</binary>
+  </provides>
+
+  <releases>
+    <release version="@version@" date="@version_date@"/>
+  </releases>
+</component>

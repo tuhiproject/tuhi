@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+
+import gi
+import sys
+import os
+
+gi.require_version('Gio', '2.0')
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gio, Gtk, Gdk
+
+@devel@
+resource = Gio.resource_load(os.path.join('@pkgdatadir@', 'tuhigui.gresource'))
+Gio.Resource._register(resource)
+
+def install_excepthook():
+    old_hook = sys.excepthook
+    def new_hook(etype, evalue, etb):
+        old_hook(etype, evalue, etb)
+        while Gtk.main_level():
+            Gtk.main_quit()
+        sys.exit()
+    sys.excepthook = new_hook
+
+def gtk_style():
+    css = b"""
+    .bg-white {
+      background-color: white;
+    }
+    """
+
+    style_provider = Gtk.CssProvider()
+    style_provider.load_from_data(css)
+    Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            style_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
+
+if __name__ == "__main__":
+    import gettext
+    import locale
+    import signal
+    from tuhigui.application import Application
+
+    install_excepthook()
+    gtk_style()
+
+    locale.bindtextdomain('tuhigui', '@localedir@')
+    locale.textdomain('tuhigui')
+    gettext.bindtextdomain('tuhigui', '@localedir@')
+    gettext.textdomain('tuhigui')
+
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    exit_status = Application().run(sys.argv)
+    sys.exit(exit_status)
+
