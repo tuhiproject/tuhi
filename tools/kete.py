@@ -595,8 +595,8 @@ class Fetcher(Worker):
         if dimensions == [0, 0]:
             width, height = 100, 100
         else:
-            # Original diemnsions are too big for SVG Standard
-            # so we nomalize them
+            # Original dimensions are too big for SVG Standard
+            # so we normalize them
             width, height = dimensions[0] / 100, dimensions[1] / 100
 
         if self.orientation in ['Portrait', 'Reverse-Portrait']:

@@ -60,7 +60,7 @@ Installation
  $> tuhi
 ```
 
-TUHI requires Python v3.6 or above.
+Tuhi requires Python v3.6 or above.
 
 Units used by this interface
 ----------------------------
