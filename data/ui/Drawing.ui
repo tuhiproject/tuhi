@@ -26,7 +26,6 @@
         <property name="hexpand">True</property>
         <child>
           <object class="GtkButton" id="btn_remove">
-            <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="image">icon_remove</property>
