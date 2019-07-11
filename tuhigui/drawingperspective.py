@@ -28,7 +28,6 @@ logger = logging.getLogger('drawingperspective')
 class DrawingPerspective(Gtk.Stack):
     __gtype_name__ = "DrawingPerspective"
 
-    label_devicename = Gtk.Template.Child()
     image_battery = Gtk.Template.Child()
     flowbox_drawings = Gtk.Template.Child()
 
@@ -54,7 +53,6 @@ class DrawingPerspective(Gtk.Stack):
     @device.setter
     def device(self, device):
         self._device = device
-        self.label_devicename.set_text(f'{device.name} - {device.address}')
 
         device.connect('notify::connected', self._on_connected)
         device.connect('notify::listening', self._on_listening_stopped)
