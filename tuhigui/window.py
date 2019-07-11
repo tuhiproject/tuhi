@@ -40,14 +40,14 @@ class MainWindow(Gtk.ApplicationWindow):
         self.stack_perspectives.set_visible_child_name(ep.name)
 
         # the dbus bindings need more async...
-        if not self._tuhi.connected:
-            self._tuhi.connect('notify::connected', self._on_dbus_connected)
+        if not self._tuhi.online:
+            self._tuhi.connect('notify::online', self._on_dbus_online)
         else:
-            self._on_dbus_connected()
+            self._on_dbus_online()
 
         self._add_primary_menu()
 
-    def _on_dbus_connected(self, *args, **kwargs):
+    def _on_dbus_online(self, *args, **kwargs):
         dp = DrawingPerspective()
         self._add_perspective(dp)
 

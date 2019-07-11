@@ -50,7 +50,7 @@ class _DBusObject(GObject.Object):
 
         self.interface = interface
         self.objpath = objpath
-        self._connected = False
+        self._online = False
         self._name = name
         try:
             self._connect()
@@ -66,8 +66,8 @@ class _DBusObject(GObject.Object):
             if self.proxy.get_name_owner() is None:
                 raise DBusError(f'No-one is handling {self._name}, is the daemon running?')
 
-            self._connected = True
-            self.notify('connected')
+            self._online = True
+            self.notify('online')
         except GLib.Error as e:
             if (e.domain == 'g-io-error-quark' and
                     e.code == Gio.IOErrorEnum.DBUS_ERROR):
@@ -87,8 +87,8 @@ class _DBusObject(GObject.Object):
             return True
 
     @GObject.Property
-    def connected(self):
-        return self._connected
+    def online(self):
+        return self._online
 
     def _connect_to_session(self):
         try:
@@ -297,13 +297,13 @@ class TuhiKeteManager(_DBusObject):
         self._unregistered_devices = {}
         logger.info('starting up')
 
-        if not self.connected:
-            self.connect('notify::connected', self._init)
+        if not self.online:
+            self.connect('notify::online', self._init)
         else:
             self._init()
 
     def _init(self, *args, **kwargs):
-        logger.info('connected')
+        logger.info('online')
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
             self._devices[device.address] = device
