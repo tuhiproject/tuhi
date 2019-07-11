@@ -82,8 +82,12 @@ class DrawingPerspective(Gtk.Stack):
         return "drawing_perspective"
 
     def _on_connected(self, device, pspec):
+        # Turns out we don't really care about whether the device is
+        # connected or not, it has little effect on how we work here
         pass
 
     def _on_listening_stopped(self, device, pspec):
-        # We never want to stop listening
-        device.start_listening()
+        if not device.listening:
+            logger.debug(f'{device.name} - listening stopped, restarting')
+            # We never want to stop listening
+            device.start_listening()
