@@ -30,9 +30,14 @@ class DrawingPerspective(Gtk.Stack):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.known_drawings = []
 
-    def _init_drawings(self):
+    def _update_drawings(self, device, pspec):
         for ts in self.device.drawings_available:
+            if ts in self.known_drawings:
+                continue
+
+            self.known_drawings.append(ts)
             js = json.loads(self.device.json(ts))
             svg = JsonSvg(js)
             drawing = Drawing(svg)
@@ -47,6 +52,11 @@ class DrawingPerspective(Gtk.Stack):
         self._device = device
         self.label_devicename.set_text(f'{device.name} - {device.address}')
 
+        device.connect('notify::connected', self._on_connected)
+        device.connect('notify::listening', self._on_listening_stopped)
+        self.device.connect('notify::drawings-available',
+                            self._update_drawings)
+
         # icon name is something like battery-020-charging, or battery-040
         # in 20-step increments
         if device.battery_state == 1:
@@ -57,13 +67,18 @@ class DrawingPerspective(Gtk.Stack):
         batt_icon_name = f'battery-{percent}{state}'
         _, isize = self.image_battery.get_icon_name()
         self.image_battery.set_from_icon_name(batt_icon_name, isize)
-        self._init_drawings()
+        self._update_drawings(self.device, None)
+
+        # We always want to sync on startup
+        device.start_listening()
 
     @GObject.Property
     def name(self):
         return "drawing_perspective"
 
-    @Gtk.Template.Callback("_on_sync_button_clicked")
-    def _on_quit_button_clicked(self, button):
-        button.set_label('Stop')
-        print('sync now')
+    def _on_connected(self, device, pspec):
+        pass
+
+    def _on_listening_stopped(self, device, pspec):
+        # We never want to stop listening
+        device.start_listening()
