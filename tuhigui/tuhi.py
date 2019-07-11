@@ -303,7 +303,7 @@ class TuhiKeteManager(_DBusObject):
             self._init()
 
     def _init(self, *args, **kwargs):
-        logger.info('online')
+        logger.info('manager is online')
         for objpath in self.property('Devices'):
             device = TuhiKeteDevice(self, objpath)
             self._devices[device.address] = device

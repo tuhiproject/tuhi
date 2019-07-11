@@ -19,6 +19,10 @@ import json
 import gi
 gi.require_version("Gtk", "3.0")
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('drawingperspective')
+
 
 @Gtk.Template(resource_path="/org/freedesktop/TuhiGui/ui/DrawingPerspective.ui")
 class DrawingPerspective(Gtk.Stack):
@@ -70,6 +74,7 @@ class DrawingPerspective(Gtk.Stack):
         self._update_drawings(self.device, None)
 
         # We always want to sync on startup
+        logger.debug(f'{device.name} - starting to listen')
         device.start_listening()
 
     @GObject.Property

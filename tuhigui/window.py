@@ -18,8 +18,12 @@ from .drawingperspective import DrawingPerspective
 from .errorperspective import ErrorPerspective
 from .tuhi import TuhiKeteManager
 
+import logging
 import gi
 gi.require_version("Gtk", "3.0")
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('window')
 
 MENU_XML = """
 <?xml version="1.0" encoding="UTF-8"?>
@@ -62,6 +66,8 @@ class MainWindow(Gtk.ApplicationWindow):
             self._on_dbus_online()
 
     def _on_dbus_online(self, *args, **kwargs):
+        logger.debug('dbus is online')
+
         dp = DrawingPerspective()
         self._add_perspective(dp)
 
@@ -78,6 +84,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.stack_perspectives.set_visible_child_name(active.name)
 
     def _on_new_device_registered(self, setupperspective, device):
+        logger.debug('device was registered')
         setupperspective.disconnect_by_func(self._on_new_device_registered)
 
         self.headerbar.set_title(f'Tuhi - {device.name}')
