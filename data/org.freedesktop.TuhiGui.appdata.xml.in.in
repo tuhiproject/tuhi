@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>org.freedesktop.Piper</id>
+  <id>org.freedesktop.TuhiGui</id>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-2.0+</project_license>
   <content_rating type="oars-1.0" />
-  <name>Piper</name>
-  <summary>Configurable mouse configuration utility</summary>
+  <name>TuhiGui</name>
+  <summary>Utility to download drawings from the Wacom Ink range of devices</summary>
   <description>
     <p>
-      Piper is a graphical user interface to configure gaming mice.
-      Configuration options include changing the resolution (DPI) of the
-      mouse, adding and removing profiles, setting LED colors and changing
-      button behaviors.
+      TuhiGui is a graphical user interface to download drawings stored on
+      tablet devices from the Wacom Ink range, e.g. Intuos Pro Paper or
+      Bamboo Slate.
     </p>
     <p>
-      Piper requires libratbag’s ratbagd, the daemon to actually communicate with the
-      mice. Piper is merely a front end to ratbagd, ratbagd must be
-      installed and running when Piper is launched.
+      TuhiGui requires Tuhi, the daemon to actually communicate with the
+      devices. ThiGui is merely a front end to Tuhi, Tuhi must be
+      installed and running when TuhiGui is launched.
     </p>
   </description>
 
@@ -26,7 +25,7 @@
     <kudo>ModernToolkit</kudo>
   </kudos>
 
-  <launchable type="desktop-id">org.freedesktop.Piper.desktop</launchable>
+  <launchable type="desktop-id">org.freedesktop.TuhiGui.desktop</launchable>
 
   <screenshots>
     <screenshot type="default">
@@ -43,15 +42,15 @@
     </screenshot>
   </screenshots>
 
-  <url type="homepage">https://github.com/libratbag/piper/</url>
-  <url type="bugtracker">https://github.com/libratbag/piper/issues</url>
-  <url type="help">https://github.com/libratbag/piper/wiki</url>
+  <url type="homepage">https://github.com/tuhiproject/tuhigui/</url>
+  <url type="bugtracker">https://github.com/tuhiproject/tuhigui/issues</url>
+  <url type="help">https://github.com/tuhiproject/tuhigui/wiki</url>
   <project_group>GNOME</project_group>
 
-  <translation type="gettext">piper</translation>
+  <translation type="gettext">tuhigui</translation>
 
   <provides>
-    <binary>piper</binary>
+    <binary>tuhigui</binary>
   </provides>
 
   <releases>

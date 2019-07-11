@@ -80,6 +80,7 @@ class _DBusObject(GObject.Object):
 
     def _on_reconnect_timer(self):
         try:
+            logger.debug('reconnecting')
             self._connect()
             return False
         except DBusError:

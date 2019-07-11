@@ -1,0 +1,65 @@
+{
+    "app-id": "org.freedesktop.TuhiGui",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "3.30",
+    "sdk": "org.gnome.Sdk",
+    "command": "tuhigui",
+      "finish-args": [
+        "--share=ipc",
+        "--socket=x11",
+        "--talk-name=org.freedesktop.tuhi1",
+        "--system-talk-name=org.bluez"
+      ],
+    "modules": [
+        {
+            "name": "pyxdg",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "git://anongit.freedesktop.org/xdg/pyxdg"
+                }
+            ],
+            "build-commands": [
+                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
+            ]
+        },
+        {
+            "name": "python-pyparsing",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/pyparsing/pyparsing/releases/download/pyparsing_2.4.0/pyparsing-2.4.0.tar.gz",
+                    "sha512": "71877dc006cce5c1b1d45e7cc89cd60e03cb80353387fb0c6498cfc0d69af465dc574d1bceb87248033e7a82694aa940e9fce1ca80b2ef538a8df51f697ef530"
+                }
+            ],
+            "build-commands": [
+                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
+            ]
+        },
+        {
+            "name": "python-svgwrite",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/mozman/svgwrite.git"
+                }
+            ],
+            "build-commands": [
+                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
+            ]
+        },
+        {
+            "name": "tuhigui",
+            "buildsystem": "meson",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "."
+                }
+            ]
+        }
+    ]
+}

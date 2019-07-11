@@ -1,11 +1,11 @@
 [Desktop Entry]
-Name=Piper
-Comment=Configurable mouse configuration utility
-Exec=piper
+Name=TuhiGui
+Comment=Utility to download drawings from the Wacom Ink range of devices
+Exec=tuhigui
 # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
-Icon=org.freedesktop.Piper
+Icon=org.freedesktop.TuhiGui
 Type=Application
 StartupNotify=true
 Categories=GTK;GNOME;Utility;
 # Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
-Keywords=gaming;configuration;mouse;mice;
+Keywords=tablet;wacom;ink;

@@ -21,6 +21,9 @@ localedir = join_paths(prefix, get_option('localedir'))
 pkgdatadir = join_paths(datadir, meson.project_name())
 bindir = join_paths(prefix, get_option('bindir'))
 podir = join_paths(meson.source_root(), 'po')
+desktopdir = join_paths(datadir, 'applications')
+icondir = join_paths(datadir, 'icons', 'hicolor', 'scalable', 'apps')
+metainfodir = join_paths(datadir, 'metainfo')
 
 i18n = import('i18n')
 
@@ -59,10 +62,45 @@ configure_file(input: 'tuhigui.in',
 
 meson.add_install_script('meson_install.sh')
 
+desktop_file = i18n.merge_file(input: 'data/org.freedesktop.TuhiGui.desktop.in',
+                               output: 'org.freedesktop.TuhiGui.desktop',
+                               type: 'desktop',
+                               po_dir: podir,
+                               install: true,
+                               install_dir: desktopdir)
+
+conf = configuration_data()
+conf.set('version', meson.project_version())
+conf.set('url', 'https://github.com/tuhiproject/tuhigui')
+conf.set('version_date', version_date)
+
+appdata_intl = configure_file(input: 'data/org.freedesktop.TuhiGui.appdata.xml.in.in',
+                              output: 'org.freedesktop.TuhiGui.appdata.xml.in',
+                              configuration: conf)
+
+appdata = i18n.merge_file(input: appdata_intl,
+                          output: 'org.freedesktop.TuhiGui.appdata.xml',
+                          type: 'xml',
+                          po_dir: podir,
+                          install: true,
+                          install_dir: metainfodir)
+
+install_data('data/org.freedesktop.TuhiGui.svg', install_dir: icondir)
 
 flake8 = find_program('flake8-3', required: false)
 if flake8.found()
    test('flake8', flake8,
         args: ['--ignore=E501,W504',
                join_paths(meson.source_root(), 'tuhigui/')])
+endif
+
+desktop_validate = find_program('desktop-file-validate', required: false)
+if desktop_validate.found()
+    test('desktop-file-validate', desktop_validate, args: [desktop_file])
+endif
+
+appstream_util = find_program('appstream-util', required: false)
+if appstream_util.found()
+    test('appstream-util validate-relax', appstream_util,
+         args: ['validate-relax', appdata])
 endif
