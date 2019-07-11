@@ -63,7 +63,7 @@ class DrawingPerspective(Gtk.Stack):
             state = '-charging'
         else:
             state = ''
-        percent = f'{int(device.battery_percent/20):03d}'
+        percent = f'{int(device.battery_percent/20) * 20:03d}'
         batt_icon_name = f'battery-{percent}{state}'
         _, isize = self.image_battery.get_icon_name()
         self.image_battery.set_from_icon_name(batt_icon_name, isize)
