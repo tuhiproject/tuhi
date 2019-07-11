@@ -21,19 +21,35 @@ from .tuhi import TuhiKeteManager
 import gi
 gi.require_version("Gtk", "3.0")
 
+MENU_XML = """
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <menu id="primary-menu">
+    <item>
+        <attribute name="label">About</attribute>
+        <attribute name="action">app.about</attribute>
+    </item>
+  </menu>
+</interface>
+"""
+
 
 @Gtk.Template(resource_path='/org/freedesktop/TuhiGui/ui/MainWindow.ui')
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
 
     stack_perspectives = Gtk.Template.Child()
-    primary_menu = Gtk.Template.Child()
     headerbar = Gtk.Template.Child()
+    menubutton1 = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self._tuhi = TuhiKeteManager()
+
+        builder = Gtk.Builder.new_from_string(MENU_XML, -1)
+        menu = builder.get_object("primary-menu")
+        self.menubutton1.set_menu_model(menu)
 
         ep = ErrorPerspective()
         self._add_perspective(ep)
@@ -44,8 +60,6 @@ class MainWindow(Gtk.ApplicationWindow):
             self._tuhi.connect('notify::online', self._on_dbus_online)
         else:
             self._on_dbus_online()
-
-        self._add_primary_menu()
 
     def _on_dbus_online(self, *args, **kwargs):
         dp = DrawingPerspective()
@@ -59,11 +73,14 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             dp.device = self._tuhi.devices[0]
             active = dp
+            self.headerbar.set_title(f'Tuhi - {dp.device.name}')
 
         self.stack_perspectives.set_visible_child_name(active.name)
 
     def _on_new_device_registered(self, setupperspective, device):
         setupperspective.disconnect_by_func(self._on_new_device_registered)
+
+        self.headerbar.set_title(f'Tuhi - {device.name}')
 
         dp = self._get_child('drawing_perspective')
         dp.device = device
@@ -75,23 +92,5 @@ class MainWindow(Gtk.ApplicationWindow):
     def _get_child(self, name):
         return self.stack_perspectives.get_child_by_name(name)
 
-    def _add_primary_menu(self):
-        hamburger = Gtk.Image.new_from_icon_name("open-menu-symbolic",
-                                                 Gtk.IconSize.BUTTON)
-        hamburger.set_visible(True)
-        button_primary_menu = Gtk.MenuButton.new()
-        button_primary_menu.add(hamburger)
-        button_primary_menu.set_visible(True)
-        button_primary_menu.set_menu_model(self.primary_menu)
-        self.headerbar.pack_end(button_primary_menu)
-        # Place the button last in the titlebar.
-        self.headerbar.child_set_property(button_primary_menu, "position", 0)
-
     def _on_reconnect_tuhi(self, tuhi):
         self._tuhi = tuhi
-
-    @Gtk.Template.Callback("_on_quit_button_clicked")
-    def _on_quit_button_clicked(self, button):
-        window = button.get_toplevel()
-        if not window.emit("delete-event", Gdk.Event.new(Gdk.EventType.DELETE)):
-            window.destroy()
