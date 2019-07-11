@@ -167,7 +167,6 @@ class TuhiKeteDevice(_DBusObject):
                              objpath)
         self.manager = manager
         self.is_registering = False
-        self.live = False
         self._bluez_device = BlueZDevice(self.property('BlueZDevice'))
         self._bluez_device.connect('notify::connected', self._on_connected)
 
@@ -227,23 +226,6 @@ class TuhiKeteDevice(_DBusObject):
                     e.code != Gio.IOErrorEnum.EXISTS or
                     Gio.dbus_error_get_remote_error(e) != 'org.freedesktop.DBus.Error.ServiceUnknown'):
                 raise e
-
-    def start_live(self, fd):
-        fd_list = Gio.UnixFDList.new()
-        fd_list.append(fd)
-
-        res, fds = self.proxy.call_with_unix_fd_list_sync('org.freedesktop.tuhi1.Device.StartLive',
-                                                          GLib.Variant('(h)', (fd,)),
-                                                          Gio.DBusCallFlags.NO_AUTO_START,
-                                                          -1,
-                                                          fd_list,
-                                                          None)
-        if res[0] == 0:
-            self.live = True
-
-    def stop_live(self):
-        self.proxy.StopLive()
-        self.live = False
 
     def json(self, timestamp):
         SUPPORTED_FILE_FORMAT = 1
