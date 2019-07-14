@@ -326,6 +326,10 @@ class Tuhi(GObject.Object):
         self._on_listening_updated(None, None)
 
     def _add_device(self, manager, bluez_device, hotplugged=False):
+        # Note: this function gets called every time the bluez device
+        # changes a property too (like signal strength). IOW, it gets called
+        # every second or so.
+
         uuid = None
 
         # check if the device is already known by us
