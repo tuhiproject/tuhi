@@ -939,6 +939,12 @@ class WacomProtocolSlate(WacomProtocolSpark):
         fw_high = self.get_firmware_version(0)
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
+        battery, charging = self.get_battery_info()
+        if charging:
+            logger.debug(f'device is plugged in and charged at {battery}%')
+        else:
+            logger.debug(f'device is discharging: {battery}%')
+        self.emit('battery-status', battery, charging)
 
     def retrieve_data(self):
         try:
