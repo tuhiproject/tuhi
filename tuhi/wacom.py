@@ -1112,7 +1112,7 @@ class WacomDevice(GObject.Object):
         'done':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, )),
         # Signal sent when the device requires the user to press the
-        # physical button'''
+        # physical button
         'button-press-required':
             (GObject.SignalFlags.RUN_FIRST, None, ()),
         # battery level in %, boolean for is-charging
