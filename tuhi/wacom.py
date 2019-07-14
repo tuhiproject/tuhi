@@ -496,7 +496,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
 
         data = self.check_nordic_incoming()
 
-        logger.debug(f'received {data.opcode:02x} / {data.length:02x} / {b2hex(bytes(data))}')
+        # logger.debug(f'received {data.opcode:02x} / {data.length:02x} / {b2hex(bytes(data))}')
 
         if isinstance(expected_opcode, list):
             if data.opcode not in expected_opcode:
@@ -1084,6 +1084,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         logger.info(f'device name is {name}')
         w = self.get_dimensions('width')
         h = self.get_dimensions('height')
+        logger.debug(f'dimensions: {w}x{h}')
         if self.width != w or self.height != h:
             logger.error(f'incompatible dimensions: {w}x{h}')
         fw_high = self.get_firmware_version(0)
