@@ -363,11 +363,11 @@ class Tuhi(GObject.Object):
 
         d = self.devices[bluez_device.address]
 
-        if mode == DeviceMode.REGISTER:
+        if d.mode == DeviceMode.LISTEN or d.listening:
+            d.listen()
+        else:
             d.mode = mode
             logger.debug(f'{bluez_device.objpath}: call Register() on device')
-        elif d.listening:
-            d.listen()
 
     def _on_bluez_device_updated(self, manager, bluez_device):
         self._add_device(manager, bluez_device, True)
