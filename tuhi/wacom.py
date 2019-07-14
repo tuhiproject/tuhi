@@ -583,7 +583,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         data = self.send_nordic_command_sync(command=0xb6,
                                              expected_opcode=0xbd)
         ts = self.time_from_bytes(data)
-        logger.debug(f'b6 returned time: UTC {time.strftime("%y%m%d%H%M%S", ts)}')
+        logger.debug(f'device time: UTC {time.strftime("%y%m%d%H%M%S", ts)}')
 
         tdelta = time.mktime(time.gmtime()) - time.mktime(ts)
         if abs(tdelta) > 300:
