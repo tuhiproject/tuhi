@@ -106,6 +106,10 @@ INTROSPECTION_XML = '''
     <signal name='LiveStopped'>
        <arg name='status' type='i' />
     </signal>
+
+    <signal name='SyncState'>
+       <arg name='status' type='i' />
+    </signal>
   </interface>
 </node>
 '''
@@ -182,6 +186,7 @@ class TuhiDBusDevice(_TuhiDBus):
         device.connect('notify::battery-percent', self._on_battery_percent)
         device.connect('notify::battery-state', self._on_battery_state)
         device.connect('device-error', self._on_device_error)
+        device.connect('notify::sync-state', self._on_sync_state)
 
     @GObject.Property
     def listening(self):
@@ -329,6 +334,14 @@ class TuhiDBusDevice(_TuhiDBus):
         if self.listening:
             self._stop_listening(self.connection, self._listening_client[0],
                                  -exception.errno)
+
+    def _on_sync_state(self, device, pspec):
+        if self._listening_client is None:
+            return
+
+        dest = self._listening_client[0]
+        status = GLib.Variant.new_int32(device.sync_state)
+        self.signal('SyncState', status, dest=dest)
 
     def _start_listening(self, connection, sender):
         if self.listening:

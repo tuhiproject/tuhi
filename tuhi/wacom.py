@@ -1115,6 +1115,7 @@ class WacomDevice(GObject.Object):
         self._is_running = False
         self._config = None
         self._wacom_protocol = None
+        self._sync_state = 0
 
         try:
             self._config = config.devices[device.address]
@@ -1168,6 +1169,14 @@ class WacomDevice(GObject.Object):
         assert self._wacom_protocol is not None
         return self._wacom_protocol.protocol
 
+    @GObject.Property
+    def sync_state(self):
+        return self._sync_state
+
+    @sync_state.setter
+    def sync_state(self, state):
+        self._sync_state = state
+
     def register_device(self):
         self._uuid = uuid.uuid4().hex[:12]
         logger.debug(f'{self._device.address}: registering device, assigned {self.uuid}')
@@ -1204,10 +1213,13 @@ class WacomDevice(GObject.Object):
                 self.register_device()
             else:
                 assert self._wacom_protocol is not None
+                self.sync_state = 1
                 self._wacom_protocol.retrieve_data()
+                self.sync_state = 0
         except WacomException as e:
             logger.error(f'**** Exception: {e} ****')
             exception = e
+            self.sync_state = 0
         finally:
             self._is_running = False
             self.emit('done', exception)
