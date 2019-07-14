@@ -1289,15 +1289,17 @@ class WacomDevice(GObject.Object):
             self._init_protocol(protocol)
 
     def _init_protocol(self, protocol):
-        if protocol == Protocol.SPARK:
-            self._wacom_protocol = WacomProtocolSpark(self._device, self._uuid)
-        elif protocol == Protocol.SLATE:
-            self._wacom_protocol = WacomProtocolSlate(self._device, self._uuid)
-        elif protocol == Protocol.INTUOS_PRO:
-            self._wacom_protocol = WacomProtocolIntuosPro(self._device, self._uuid)
-        else:
+        protocols = {
+                Protocol.SPARK: WacomProtocolSpark,
+                Protocol.SLATE: WacomProtocolSlate,
+                Protocol.INTUOS_PRO: WacomProtocolIntuosPro,
+        }
+
+        if protocol not in protocols:
             raise WacomCorruptDataException(f'Protocol "{protocol}" not implemented')
 
+        pclass = protocols[protocol]
+        self._wacom_protocol = pclass(self._device, self._uuid)
         logger.debug(f'{self._device.name} is using protocol {protocol}')
 
         self._wacom_protocol.connect(
