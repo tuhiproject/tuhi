@@ -72,7 +72,8 @@ class TuhiDevice(GObject.Object):
         self._battery_percent = 0
         self._last_battery_update_time = 0
         self._battery_timer_source = None
-        self._signals = {}
+        self._signals = {'connected': None,
+                         'disconnected': None}
 
         self._bluez_device = bluez_device
 
@@ -151,8 +152,10 @@ class TuhiDevice(GObject.Object):
         return self._sync_state
 
     def _connect_device(self, mode):
-        self._signals['connected'] = self._bluez_device.connect('connected', self._on_bluez_device_connected, mode)
-        self._signals['disconnected'] = self._bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
+        if self._signals['connected'] is None:
+            self._signals['connected'] = self._bluez_device.connect('connected', self._on_bluez_device_connected, mode)
+        if self._signals['disconnected'] is None:
+            self._signals['disconnected'] = self._bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
         self._bluez_device.connect_device()
 
     def register(self):
@@ -181,7 +184,7 @@ class TuhiDevice(GObject.Object):
 
         try:
             bluez_device.disconnect(self._signals['connected'])
-            del self._signals['connected']
+            self._signals['connected'] = None
         except KeyError:
             pass
 
@@ -193,7 +196,7 @@ class TuhiDevice(GObject.Object):
         logger.debug(f'{bluez_device.address}: disconnected')
         try:
             bluez_device.disconnect(self._signals['disconnected'])
-            del self._signals['disconnected']
+            self._signals['disconnected'] = None
         except KeyError:
             pass
 
