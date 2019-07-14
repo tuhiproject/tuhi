@@ -146,6 +146,10 @@ class TuhiDevice(GObject.Object):
     def battery_state(self, value):
         self._battery_state = value
 
+    @GObject.Property
+    def sync_state(self):
+        return self._sync_state
+
     def _connect_device(self, mode):
         self._signals['connected'] = self._bluez_device.connect('connected', self._on_bluez_device_connected, mode)
         self._signals['disconnected'] = self._bluez_device.connect('disconnected', self._on_bluez_device_disconnected)
@@ -166,6 +170,7 @@ class TuhiDevice(GObject.Object):
             self._wacom_device.connect('button-press-required', self._on_button_press_required)
             self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
             self._wacom_device.connect('battery-status', self._on_battery_status, bluez_device)
+            self._wacom_device.connect('notify::sync-state', self._on_sync_state)
 
         if mode == DeviceMode.REGISTER:
             self._wacom_device.start_register()
@@ -179,6 +184,10 @@ class TuhiDevice(GObject.Object):
             del self._signals['connected']
         except KeyError:
             pass
+
+    def _on_sync_state(self, device, pspec):
+        self._sync_state = device.sync_state
+        self.notify('sync-state')
 
     def _on_bluez_device_disconnected(self, bluez_device):
         logger.debug(f'{bluez_device.address}: disconnected')

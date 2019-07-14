@@ -378,6 +378,15 @@ org.freedesktop.tuhi1.Device
 
       These errnos indicate a bug in the daemon, and the client should
       display a message to that effect.
+
+  Signal: SyncState(i)
+      An enum to represent the current synchronization state of the device.
+      When on (1), Tuhi is currently trying to download data from the
+      device. When off (0), Tuhi is not currently connecting to the device.
+
+      This signal should be used for UI feedback.
+
+      This signal is only send when the device is **not** in Live mode.
 ```
 
 JSON File Format

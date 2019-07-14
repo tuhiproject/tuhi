@@ -285,6 +285,13 @@ class TuhiKeteDevice(_DBusObject):
             elif err < 0:
                 logger.error(f'{self}: an error occured: {os.strerror(-err)}')
             self.notify('listening')
+        elif signal == 'SyncState':
+            state = parameters[0]
+            if state:
+                logger.debug(f'{self}: Downloading from device')
+            else:
+                logger.debug(f'{self}: Download done')
+
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
         if changed_props is None:
