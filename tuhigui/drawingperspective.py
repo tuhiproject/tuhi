@@ -16,12 +16,31 @@ from .drawing import Drawing
 from .svg import JsonSvg
 
 import json
+import time
 import gi
 gi.require_version("Gtk", "3.0")
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('drawingperspective')
+
+def relative_time(seconds):
+    MIN = 60
+    H = 60 * MIN
+    DAY = 24 * H
+    WEEK = 7 * DAY
+
+    if seconds < 30:
+              return 'just now'
+    if seconds < 5 * MIN:
+              return 'a few minutes ago'
+    if seconds < H:
+              return f'{int(seconds/MIN/10) * 10} minutes ago'
+    if seconds < DAY:
+              return f'{int(seconds/H)} hours ago'
+    if seconds < 4 * WEEK:
+        return f'{int(seconds/D)} days ago'
+    return 'a long time ago'
 
 
 @Gtk.Template(resource_path="/org/freedesktop/TuhiGui/ui/DrawingPerspective.ui")
@@ -30,10 +49,15 @@ class DrawingPerspective(Gtk.Stack):
 
     image_battery = Gtk.Template.Child()
     flowbox_drawings = Gtk.Template.Child()
+    spinner_sync = Gtk.Template.Child()
+    label_last_sync = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.known_drawings = []
+        self.last_sync_time = 0
+        self._sync_label_timer = GObject.timeout_add_seconds(60, self._update_sync_label)
+        self._update_sync_label()
 
     def _update_drawings(self, device, pspec):
         for ts in self.device.drawings_available:
@@ -56,6 +80,7 @@ class DrawingPerspective(Gtk.Stack):
 
         device.connect('notify::connected', self._on_connected)
         device.connect('notify::listening', self._on_listening_stopped)
+        device.connect('notify::sync-state', self._on_sync_state)
         self.device.connect('notify::drawings-available',
                             self._update_drawings)
 
@@ -78,6 +103,19 @@ class DrawingPerspective(Gtk.Stack):
     @GObject.Property
     def name(self):
         return "drawing_perspective"
+
+    def _on_sync_state(self, device, pspec):
+        if device.sync_state:
+            self.spinner_sync.start()
+        else:
+            self.spinner_sync.stop()
+            self.last_sync_time = time.time()
+            self._update_sync_label()
+
+    def _update_sync_label(self):
+        now = time.time()
+        self.label_last_sync.set_text(f'{relative_time(now - self.last_sync_time)}')
+        return True
 
     def _on_connected(self, device, pspec):
         # Turns out we don't really care about whether the device is

@@ -169,6 +169,7 @@ class TuhiKeteDevice(_DBusObject):
         self.is_registering = False
         self._bluez_device = BlueZDevice(self.property('BlueZDevice'))
         self._bluez_device.connect('notify::connected', self._on_connected)
+        self._sync_state = 0
 
     @classmethod
     def is_device_address(cls, string):
@@ -208,6 +209,10 @@ class TuhiKeteDevice(_DBusObject):
     def connected(self):
         return self._bluez_device.connected
 
+    @GObject.Property
+    def sync_state(self):
+        return self._sync_state
+
     def _on_connected(self, bluez_device, pspec):
         self.notify('connected')
 
@@ -246,6 +251,9 @@ class TuhiKeteDevice(_DBusObject):
             elif err < 0:
                 logger.error(f'{self}: an error occured: {os.strerror(-err)}')
             self.notify('listening')
+        elif signal == 'SyncState':
+            self._sync_state = parameters[0]
+            self.notify('sync-state')
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
         if changed_props is None:
