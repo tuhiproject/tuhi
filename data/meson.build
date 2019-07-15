@@ -6,7 +6,7 @@ metainfodir = join_paths(datadir, 'metainfo')
 
 conf = configuration_data()
 conf.set('version', meson.project_version())
-conf.set('url', 'https://github.com/libratbag/tuhigui')
+conf.set('url', 'https://github.com/tuhiproject/tuhigui')
 conf.set('version_date', version_date)
 
 about_dialog = configure_file(input: 'ui/AboutDialog.ui.in',
