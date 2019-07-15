@@ -857,10 +857,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             self.e3_command()
             self.set_time()
             battery, charging = self.get_battery_info()
-            if charging:
-                logger.debug(f'device is plugged in and charged at {battery}%')
-            else:
-                logger.debug(f'device is discharging: {battery}%')
+            logger.debug(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
             self.emit('battery-status', battery, charging)
             if self.read_offline_data() == 0:
                 logger.info('no data to retrieve')
@@ -1099,10 +1096,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
         battery, charging = self.get_battery_info()
-        if charging:
-            logger.debug(f'device is plugged in and charged at {battery}%')
-        else:
-            logger.debug(f'device is discharging: {battery}%')
+        logger.debug(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
         self.emit('battery-status', battery, charging)
 
     def retrieve_data(self):
@@ -1110,10 +1104,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
             self.check_connection()
             self.set_time()
             battery, charging = self.get_battery_info()
-            if charging:
-                logger.debug(f'device is plugged in and charged at {battery}%')
-            else:
-                logger.debug(f'device is discharging: {battery}%')
+            logger.debug(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
             self.emit('battery-status', battery, charging)
             self.width = w = self.get_dimensions('width')
             self.height = h = self.get_dimensions('height')
