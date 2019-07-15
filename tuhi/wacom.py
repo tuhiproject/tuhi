@@ -1181,7 +1181,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
 
         # Last two bytes are unknown
         ts = time.strftime('%y-%m-%d %H:%M:%S', self.time_from_bytes(data))
-        logger.debug(f'b6 returned: {ts}')
+        logger.debug(f'device time: {ts}')
 
     def get_firmware_version(self):
         hi = self.send_nordic_command_sync(command=0xb7,
