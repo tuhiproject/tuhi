@@ -757,19 +757,26 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                              expected_opcode=0xbc)
         return bytes(data)
 
-    def get_dimensions(self, arg):
-        possible_args = {
-            'width': 3,
-            'height': 4,
-        }
-        args = [possible_args[arg], 0x00]
+    def get_dimensions(self):
+        args = [3, 0x00]  # width
         data = self.send_nordic_command_sync(command=0xea,
                                              expected_opcode=0xeb,
                                              arguments=args)
         if len(data) != 6:
             str_data = binascii.hexlify(bytes(data))
             raise WacomCorruptDataException(f'unexpected answer for get_dimensions: {str_data}')
-        return int.from_bytes(data[2:4], byteorder='little')
+        width = int.from_bytes(data[2:4], byteorder='little')
+
+        args = [4, 0x00]  # height
+        data = self.send_nordic_command_sync(command=0xea,
+                                             expected_opcode=0xeb,
+                                             arguments=args)
+        if len(data) != 6:
+            str_data = binascii.hexlify(bytes(data))
+            raise WacomCorruptDataException(f'unexpected answer for get_dimensions: {str_data}')
+        height = int.from_bytes(data[2:4], byteorder='little')
+
+        return width, height
 
     def ec_command(self):
         args = [0x06, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -1052,8 +1059,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         # Slate tablet has two models A5 and A4
         # Here, we read real tablet dimensions before
         # starting live mode
-        self.width = self.get_dimensions('width')
-        self.height = self.get_dimensions('height')
+        self.width, self.height = self.get_dimensions()
         self.notify('dimensions')
         self.x_max = self.width - 1000
         self.y_max = self.height - 500
@@ -1088,8 +1094,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         name = self.get_name()
         logger.info(f'device name is {name}')
 
-        w = self.get_dimensions('width')
-        h = self.get_dimensions('height')
+        w, h = self.get_dimensions()
         logger.debug(f'dimensions: {w}x{h}')
         if self.width != w or self.height != h:
             logger.error(f'incompatible dimensions: {w}x{h}')
@@ -1108,8 +1113,9 @@ class WacomProtocolSlate(WacomProtocolSpark):
             battery, charging = self.get_battery_info()
             logger.debug(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
             self.emit('battery-status', battery, charging)
-            self.width = w = self.get_dimensions('width')
-            self.height = h = self.get_dimensions('height')
+            w, h = self.get_dimensions()
+            self.width = w
+            self.height = h
             self.notify('dimensions')
             logger.debug(f'dimensions: {w}x{h}')
 
