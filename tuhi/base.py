@@ -355,7 +355,7 @@ class Tuhi(GObject.Object):
         # restart discovery if some users are already in the listening mode
         self._on_listening_updated(None, None)
 
-    def _add_device(self, manager, bluez_device, hotplugged=False):
+    def _add_device(self, manager, bluez_device, from_live_update=False):
         '''
         Process a new BlueZ device that may be one of our devices.
 
@@ -363,7 +363,7 @@ class Tuhi(GObject.Object):
         BlueZ devices and for every BlueZ device property change. Including
         RSSI which will give you a value every second or so.
 
-        .. :param hotplugged: True if this function was called from a BlueZ
+        .. :param from_live_update: True if this function was called from a BlueZ
             device property update. False when called during the initial setup
             stage.
         '''
@@ -380,10 +380,10 @@ class Tuhi(GObject.Object):
         if uuid is None and bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return
 
-        # if the device has been 'hotplugged' in the bluez stack,
+        # if we got here from a currently live BlueZ device,
         # ManufacturerData is reliable. Else, consider the device not in
         # register mode
-        if hotplugged and Tuhi._device_in_register_mode(bluez_device):
+        if from_live_update and Tuhi._device_in_register_mode(bluez_device):
             mode = DeviceMode.REGISTER
         else:
             mode = DeviceMode.LISTEN
