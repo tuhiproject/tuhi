@@ -72,7 +72,7 @@
                 <property name="can_focus">False</property>
                 <property name="margin_left">10</property>
                 <property name="margin_right">10</property>
-                <property name="icon_name">battery-empty-symbolic</property>
+                <property name="icon_name">battery-missing-symbolic</property>
               </object>
               <packing>
                 <property name="expand">False</property>

@@ -84,14 +84,20 @@ class DrawingPerspective(Gtk.Stack):
         self.device.connect('notify::drawings-available',
                             self._update_drawings)
 
-        # icon name is something like battery-020-charging, or battery-040
-        # in 20-step increments
+        if device.battery_percent > 80:
+            percent = 'full'
+        elif device.battery_percent > 40:
+            percent = 'good'
+        elif device.battery_percent > 10:
+            percent = 'low'
+        else:
+            percent = 'caution'
+
         if device.battery_state == 1:
             state = '-charging'
         else:
             state = ''
-        percent = f'{int(device.battery_percent/20) * 20:03d}'
-        batt_icon_name = f'battery-{percent}{state}'
+        batt_icon_name = f'battery-{percent}{state}-symbolic'
         _, isize = self.image_battery.get_icon_name()
         self.image_battery.set_from_icon_name(batt_icon_name, isize)
         self._update_drawings(self.device, None)
