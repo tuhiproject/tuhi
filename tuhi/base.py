@@ -80,6 +80,12 @@ class TuhiDevice(GObject.Object):
         self._tuhi_dbus_device = None
 
     @GObject.Property
+    def dimensions(self):
+        if self._wacom_device is None:
+            return 0, 0
+        return self._wacom_device.dimensions
+
+    @GObject.Property
     def mode(self):
         return self._mode
 
@@ -174,6 +180,7 @@ class TuhiDevice(GObject.Object):
             self._wacom_device.connect('notify::uuid', self._on_uuid_updated, bluez_device)
             self._wacom_device.connect('battery-status', self._on_battery_status, bluez_device)
             self._wacom_device.connect('notify::sync-state', self._on_sync_state)
+            self._wacom_device.connect('notify::dimensions', self._on_dimensions)
 
         if mode == DeviceMode.REGISTER:
             self._wacom_device.start_register()
@@ -187,6 +194,9 @@ class TuhiDevice(GObject.Object):
             self._signals['connected'] = None
         except KeyError:
             pass
+
+    def _on_dimensions(self, device, pspec):
+        self.notify('dimensions')
 
     def _on_sync_state(self, device, pspec):
         self._sync_state = device.sync_state
