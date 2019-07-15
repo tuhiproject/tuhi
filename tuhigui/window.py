@@ -13,7 +13,7 @@
 
 from gi.repository import Gtk, Gdk
 
-from .setupperspective import SetupPerspective
+from .setupdialog import SetupDialog
 from .drawingperspective import DrawingPerspective
 from .errorperspective import ErrorPerspective
 from .tuhi import TuhiKeteManager
@@ -70,23 +70,28 @@ class MainWindow(Gtk.ApplicationWindow):
 
         dp = DrawingPerspective()
         self._add_perspective(dp)
+        active = dp
+        self.headerbar.set_title(f'Tuhi')
+        self.stack_perspectives.set_visible_child_name(active.name)
 
         if not self._tuhi.devices:
-            sp = SetupPerspective(self._tuhi)
-            sp.connect('new-device', self._on_new_device_registered)
-            self._add_perspective(sp)
-            active = sp
+            dialog = SetupDialog(self._tuhi)
+            dialog.set_transient_for(self)
+            dialog.connect('response', self._on_setup_dialog_closed)
+            dialog.show()
         else:
             dp.device = self._tuhi.devices[0]
             active = dp
             self.headerbar.set_title(f'Tuhi - {dp.device.name}')
 
-        self.stack_perspectives.set_visible_child_name(active.name)
+    def _on_setup_dialog_closed(self, dialog, response):
+        device = dialog.device
+        dialog.destroy()
 
-    def _on_new_device_registered(self, setupperspective, device):
+        if device is None:
+            self.destroy()
+
         logger.debug('device was registered')
-        setupperspective.disconnect_by_func(self._on_new_device_registered)
-
         self.headerbar.set_title(f'Tuhi - {device.name}')
 
         dp = self._get_child('drawing_perspective')

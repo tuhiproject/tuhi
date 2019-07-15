@@ -185,6 +185,10 @@ class TuhiKeteDevice(_DBusObject):
         return self._bluez_device.property('Name')
 
     @GObject.Property
+    def dimensions(self):
+        return self.property('Dimensions')
+
+    @GObject.Property
     def listening(self):
         return self.property('Listening')
 
