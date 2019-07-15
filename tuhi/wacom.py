@@ -739,7 +739,9 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def get_battery_info(self):
         data = self.send_nordic_command_sync(command=0xb9,
                                              expected_opcode=0xba)
-        return int(data[0]), data[1] == 1
+        battery, charging = int(data[0]), data[1] == 1
+        logger.info(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
+        return battery, charging
 
     def get_firmware_version(self, arg):
         hi = self.send_nordic_command_sync(command=0xb7,
@@ -750,12 +752,16 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                            arguments=(1,))
         fw_hi = ''.join([hex(d)[2:] for d in hi[1:]])
         fw_lo = ''.join([hex(d)[2:] for d in lo[1:]])
-        return f'{fw_hi}-{fw_lo}'
+        fw = f'{fw_hi}-{fw_lo}'
+        logger.info(f'firmware is {fw}')
+        return fw
 
     def get_name(self):
         data = self.send_nordic_command_sync(command=0xbb,
                                              expected_opcode=0xbc)
-        return bytes(data)
+        name = bytes(data)
+        logger.info(f'device name is {name}')
+        return name
 
     def get_dimensions(self):
         args = [3, 0x00]  # width
@@ -775,6 +781,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             str_data = binascii.hexlify(bytes(data))
             raise WacomCorruptDataException(f'unexpected answer for get_dimensions: {str_data}')
         height = int.from_bytes(data[2:4], byteorder='little')
+
+        logger.info(f'dimensions: {width}x{height}')
 
         return width, height
 
@@ -868,7 +876,6 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             self.e3_command()
             self.set_time()
             battery, charging = self.get_battery_info()
-            logger.debug(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
             self.emit('battery-status', battery, charging)
             if self.read_offline_data() == 0:
                 logger.info('no data to retrieve')
@@ -992,9 +999,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         self.set_time()
         self.read_time()
         name = self.get_name()
-        logger.info(f'device name is {name}')
-        fw = self.get_firmware_version()
-        logger.info(f'firmware is {fw}')
+        self.get_firmware_version()
 
     def live_mode(self, mode, uhid):
         try:
@@ -1092,18 +1097,14 @@ class WacomProtocolSlate(WacomProtocolSpark):
         self.read_time()
         self.ec_command()
         name = self.get_name()
-        logger.info(f'device name is {name}')
 
         w, h = self.get_dimensions()
-        logger.debug(f'dimensions: {w}x{h}')
         if self.width != w or self.height != h:
             logger.error(f'incompatible dimensions: {w}x{h}')
         self.notify('dimensions')
 
-        fw = self.get_firmware_version()
-        logger.info(f'firmware is {fw}')
+        self.get_firmware_version()
         battery, charging = self.get_battery_info()
-        logger.debug(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
         self.emit('battery-status', battery, charging)
 
     def retrieve_data(self):
@@ -1111,16 +1112,13 @@ class WacomProtocolSlate(WacomProtocolSpark):
             self.check_connection()
             self.set_time()
             battery, charging = self.get_battery_info()
-            logger.debug(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
             self.emit('battery-status', battery, charging)
             w, h = self.get_dimensions()
             self.width = w
             self.height = h
             self.notify('dimensions')
-            logger.debug(f'dimensions: {w}x{h}')
 
             fw = self.get_firmware_version()
-            logger.debug(f'firmware is {fw}')
             self.ec_command()
             if self.read_offline_data() == 0:
                 logger.info('no data to retrieve')
@@ -1194,12 +1192,16 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
                                            arguments=(1,))
         fw_hi = ''.join([chr(d) for d in hi[1:]])
         fw_lo = ''.join([chr(d) for d in lo[1:]])
-        return f'{fw_hi}-{fw_lo}'
+        fw = f'{fw_hi}-{fw_lo}'
+        logger.info(f'firmware is {fw}')
+        return fw
 
     def get_name(self):
         data = self.send_nordic_command_sync(command=0xdb,
                                              expected_opcode=0xbc)
-        return bytes(data)
+        name = bytes(data)
+        logger.info(f'device name is {name}')
+        return name
 
     def set_name(self, name):
         args = [ord(c) for c in name]
