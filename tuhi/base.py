@@ -241,6 +241,7 @@ class TuhiDevice(GObject.Object):
         self.mode = DeviceMode.LISTEN
 
     def _on_listening_updated(self, dbus_device, pspec):
+        # Callback when a DBus client calls Start/Stop listening
         self.notify('listening')
 
     def _on_live_updated(self, dbus_device, pspec):
@@ -274,6 +275,10 @@ class TuhiDevice(GObject.Object):
 
 
 class Tuhi(GObject.Object):
+    '''
+    The Tuhi object is the main entry point and glue object between the
+    backend and the DBus server.
+    '''
     __gsignals__ = {
         'device-added':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
@@ -331,6 +336,9 @@ class Tuhi(GObject.Object):
         if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return False
 
+        # When the device is in register mode (blue light blinking), the
+        # manufacturer is merely 4 bytes. This will reset to 7 bytes even
+        # when the device simply times out and does not register fully.
         manufacturer_data = bluez_device.manufacturer_data
         return manufacturer_data is not None and len(manufacturer_data) == 4
 
@@ -348,13 +356,21 @@ class Tuhi(GObject.Object):
         self._on_listening_updated(None, None)
 
     def _add_device(self, manager, bluez_device, hotplugged=False):
-        # Note: this function gets called every time the bluez device
-        # changes a property too (like signal strength). IOW, it gets called
-        # every second or so.
+        '''
+        Process a new BlueZ device that may be one of our devices.
+
+        This function is called once during intial setup to enumerate the
+        BlueZ devices and for every BlueZ device property change. Including
+        RSSI which will give you a value every second or so.
+
+        .. :param hotplugged: True if this function was called from a BlueZ
+            device property update. False when called during the initial setup
+            stage.
+        '''
 
         uuid = None
 
-        # check if the device is already known by us
+        # check if the device is already known to us
         try:
             config = self.config.devices[bluez_device.address]
             uuid = config['uuid']
