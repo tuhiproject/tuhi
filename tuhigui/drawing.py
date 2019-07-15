@@ -12,9 +12,24 @@
 #
 from gi.repository import GObject, Gtk
 
+import datetime
 import time
 import gi
 gi.require_version("Gtk", "3.0")
+
+def relative_date(timestamp):
+    t = datetime.date.fromtimestamp(timestamp)
+    today = datetime.date.today()
+    diff = t - today
+
+    if diff.days == 0:
+        return 'Today'
+    if diff.days == -1:
+        return 'Yesterday'
+    if diff.days > -4:  # last 4 days we convert to weekdays
+        return t.strftime('%A')
+
+    return t.strftime('%x')
 
 
 @Gtk.Template(resource_path='/org/freedesktop/TuhiGui/ui/Drawing.ui')
@@ -29,9 +44,10 @@ class Drawing(Gtk.Box):
     def __init__(self, svg, *args, **kwargs):
         super().__init__()
         self.svg = svg
-        t = time.localtime(svg.timestamp)
-        t = time.strftime('%Y-%m-%d at %H:%M', t)
-        self.label_timestamp.set_text(t)
+        day = relative_date(svg.timestamp)
+        hour = time.strftime('%H:%M', time.localtime(svg.timestamp))
+
+        self.label_timestamp.set_text(f'{day} {hour}')
         self.image_svg.set_from_file(svg.filename)
         self.image_completed.set_visible(False)
 
