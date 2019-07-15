@@ -5,12 +5,12 @@
   <object class="GtkImage" id="icon_download">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="icon_name">filesaveas</property>
+    <property name="icon_name">document-save-as-symbolic</property>
   </object>
   <object class="GtkImage" id="icon_remove">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="icon_name">edit-delete</property>
+    <property name="icon_name">edit-delete-symbolic</property>
   </object>
   <template class="Drawing" parent="GtkBox">
     <property name="visible">True</property>
