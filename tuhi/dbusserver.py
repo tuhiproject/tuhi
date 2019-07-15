@@ -171,7 +171,7 @@ class TuhiDBusDevice(_TuhiDBus):
 
         self.bluez_device_objpath = device.bluez_device.objpath
         self.name = device.name
-        self.width, self.height = 0, 0
+        self.width, self.height = device.dimensions
         self.drawings = {}
         self.registered = device.registered
         self._listening = False
@@ -187,6 +187,7 @@ class TuhiDBusDevice(_TuhiDBus):
         device.connect('notify::battery-state', self._on_battery_state)
         device.connect('device-error', self._on_device_error)
         device.connect('notify::sync-state', self._on_sync_state)
+        device.connect('notify::dimensions', self._on_dimensions)
 
     @GObject.Property
     def listening(self):
@@ -334,6 +335,12 @@ class TuhiDBusDevice(_TuhiDBus):
         if self.listening:
             self._stop_listening(self.connection, self._listening_client[0],
                                  -exception.errno)
+
+    def _on_dimensions(self, device, pspec):
+        self.width, self.height = device.dimensions
+        w = GLib.Variant.new_uint32(self.width)
+        h = GLib.Variant.new_uint32(self.height)
+        self.properties_changed({'Dimensions': GLib.Variant.new_tuple(w, h)})
 
     def _on_sync_state(self, device, pspec):
         if self._listening_client is None:

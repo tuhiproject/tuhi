@@ -655,6 +655,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
             child = cls
 
+    @GObject.property
+    def dimensions(self):
+        return (self.width, self.height)
+
     def _on_pen_data_changed(self, name, value):
         logger.debug(binascii.hexlify(bytes(value)))
 
@@ -1050,6 +1054,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         # starting live mode
         self.width = self.get_dimensions('width')
         self.height = self.get_dimensions('height')
+        self.notify('dimensions')
         self.x_max = self.width - 1000
         self.y_max = self.height - 500
 
@@ -1082,11 +1087,14 @@ class WacomProtocolSlate(WacomProtocolSpark):
         self.ec_command()
         name = self.get_name()
         logger.info(f'device name is {name}')
+
         w = self.get_dimensions('width')
         h = self.get_dimensions('height')
         logger.debug(f'dimensions: {w}x{h}')
         if self.width != w or self.height != h:
             logger.error(f'incompatible dimensions: {w}x{h}')
+        self.notify('dimensions')
+
         fw_high = self.get_firmware_version(0)
         fw_low = self.get_firmware_version(1)
         logger.info(f'firmware is {fw_high}-{fw_low}')
@@ -1109,6 +1117,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
             self.emit('battery-status', battery, charging)
             self.width = w = self.get_dimensions('width')
             self.height = h = self.get_dimensions('height')
+            self.notify('dimensions')
             logger.debug(f'dimensions: {w}x{h}')
 
             fw_high = self.get_firmware_version(0)
@@ -1311,6 +1320,14 @@ class WacomDevice(GObject.Object):
             'battery-status',
             lambda prot, percent, is_charging, self: self.emit('battery-status', percent, is_charging),
             self)
+        self._wacom_protocol.connect('notify::dimensions', self._on_dimensions)
+
+    @GObject.Property
+    def dimensions(self):
+        return self._wacom_protocol.dimensions
+
+    def _on_dimensions(self, protocol, pspec):
+        self.notify('dimensions')
 
     @GObject.Property
     def uuid(self):
