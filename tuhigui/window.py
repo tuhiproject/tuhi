@@ -113,8 +113,9 @@ class MainWindow(Gtk.ApplicationWindow):
         device = dialog.device
         dialog.destroy()
 
-        if device is None:
+        if response != Gtk.ResponseType.OK or device is None:
             self.destroy()
+            return
 
         logger.debug('device was registered')
         self.headerbar.set_title(f'Tuhi - {device.name}')

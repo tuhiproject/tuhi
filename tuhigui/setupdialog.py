@@ -26,10 +26,7 @@ class SetupDialog(Gtk.Dialog):
     }
 
     stack = Gtk.Template.Child()
-    device_name_p3 = Gtk.Template.Child()
-    label_size = Gtk.Template.Child()
-    label_btaddr = Gtk.Template.Child()
-    label_battery = Gtk.Template.Child()
+    label_devicename_p1 = Gtk.Template.Child()
     btn_quit = Gtk.Template.Child()
 
     def __init__(self, tuhi, *args, **kwargs):
@@ -42,6 +39,7 @@ class SetupDialog(Gtk.Dialog):
     def _on_unregistered_device(self, tuhi, device):
         tuhi.disconnect(self._sig)
 
+        self.label_devicename_p1.set_text(f'Connecting to {device.name}')
         self.stack.set_visible_child_name('page1')
         self._sig = device.connect('button-press-required', self._on_button_press_required)
         device.register()
@@ -54,16 +52,8 @@ class SetupDialog(Gtk.Dialog):
 
     def _on_registered(self, tuhi, device):
         tuhi.disconnect(self._sig)
-
-        self.device_name_p3.set_text(device.name)
-        self.stack.set_visible_child_name('page3')
-        w, h = device.dimensions  # in 100th of mm
-        self.label_size.set_text(f'{w/100}x{h/100}mm')
-        self.label_btaddr.set_text(device.address)
-        self.label_battery.set_text(f'{device.battery_percent}%')
         self.device = device
-
-        self.btn_quit.set_label("Let's go")
+        self.response(Gtk.ResponseType.OK)
 
     @GObject.Property
     def name(self):
