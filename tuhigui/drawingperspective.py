@@ -117,6 +117,7 @@ class DrawingPerspective(Gtk.Stack):
         batt_icon_name = f'battery-{percent}{state}-symbolic'
         _, isize = self.image_battery.get_icon_name()
         self.image_battery.set_from_icon_name(batt_icon_name, isize)
+        self.image_battery.set_tooltip_text(f'{device.battery_percent}%')
 
     def _on_sync_state(self, device, pspec):
         if device.sync_state:
