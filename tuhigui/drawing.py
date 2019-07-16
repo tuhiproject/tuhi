@@ -60,7 +60,7 @@ class Drawing(Gtk.Box):
         self.timestamp = svg.timestamp
 
     def refresh(self):
-        self.svg = svg = JsonSvg(self.json_data)
+        self.svg = svg = JsonSvg(self.json_data, self.orientation)
         self.image_svg.set_from_file(svg.filename)
 
     @GObject.Property
@@ -101,3 +101,10 @@ class Drawing(Gtk.Box):
     @Gtk.Template.Callback('_on_delete_button_clicked')
     def _on_delete_button_clicked(self, button):
         Config.instance().delete_drawing(self.timestamp)
+
+    @Gtk.Template.Callback('_on_rotate_button_clicked')
+    def _on_rotate_button_clicked(self, button):
+        orientations = ['portrait', 'landscape', 'reverse-portrait', 'reverse-landscape'] * 2
+        o = orientations[orientations.index(self.orientation) + 1]
+        self.orientation = o
+        self.refresh()
