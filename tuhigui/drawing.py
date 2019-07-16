@@ -42,6 +42,8 @@ class Drawing(Gtk.Box):
 
     label_timestamp = Gtk.Template.Child()
     image_svg = Gtk.Template.Child()
+    btn_rotate_left = Gtk.Template.Child()
+    btn_rotate_right = Gtk.Template.Child()
 
     def __init__(self, json_data, *args, **kwargs):
         super().__init__()
@@ -99,7 +101,12 @@ class Drawing(Gtk.Box):
 
     @Gtk.Template.Callback('_on_rotate_button_clicked')
     def _on_rotate_button_clicked(self, button):
-        orientations = ['portrait', 'landscape', 'reverse-portrait', 'reverse-landscape'] * 2
-        o = orientations[orientations.index(self.orientation) + 1]
+        if button == self.btn_rotate_left:
+            advance = 1
+        else:
+            advance = 3
+
+        orientations = ['portrait', 'landscape', 'reverse-portrait', 'reverse-landscape'] * 3
+        o = orientations[orientations.index(self.orientation) + advance]
         self.orientation = o
         self.refresh()
