@@ -168,6 +168,9 @@ class DrawingPerspective(Gtk.Stack):
 
         if device.battery_state == 1:
             state = '-charging'
+        elif device.battery_state == 0:  # unknown
+            fill = 'missing'
+            state = ''
         else:
             state = ''
         batt_icon_name = f'battery-{fill}{state}-symbolic'
