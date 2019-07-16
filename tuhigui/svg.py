@@ -19,7 +19,7 @@ import xdg.BaseDirectory
 import svgwrite
 import os
 
-DATA_PATH = os.path.join(xdg.BaseDirectory.get_runtime_dir(), 'tuhigui')
+DATA_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhigui')
 
 
 class JsonSvg(GObject.Object):
