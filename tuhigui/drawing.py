@@ -47,8 +47,10 @@ class Drawing(Gtk.Box):
 
     def __init__(self, json_data, *args, **kwargs):
         super().__init__()
+        self.orientation = Config.instance().orientation
+
         self.json_data = json_data
-        self.svg = svg = JsonSvg(json_data)
+        self.svg = svg = JsonSvg(json_data, orientation=self.orientation)
         day = relative_date(svg.timestamp)
         hour = time.strftime('%H:%M', time.localtime(svg.timestamp))
 

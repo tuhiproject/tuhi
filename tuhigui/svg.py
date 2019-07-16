@@ -13,8 +13,6 @@
 
 from gi.repository import GObject
 
-from .config import Config
-
 import xdg.BaseDirectory
 import svgwrite
 import os
@@ -23,7 +21,7 @@ DATA_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhigui')
 
 
 class JsonSvg(GObject.Object):
-    def __init__(self, json, *args, **kwargs):
+    def __init__(self, json, orientation, *args, **kwargs):
         self.json = json
         try:
             os.mkdir(DATA_PATH)
@@ -32,7 +30,7 @@ class JsonSvg(GObject.Object):
 
         self.timestamp = json['timestamp']
         self.filename = os.path.join(DATA_PATH, f'{self.timestamp}.svg')
-        self.orientation = Config.instance().orientation
+        self.orientation = orientation
         self._convert()
 
     def _convert(self):
@@ -61,11 +59,11 @@ class JsonSvg(GObject.Object):
                 # Normalize coordinates too
                 x, y = x / 100, y / 100
 
-                if self.orientation == 'reverse-Portrait':
+                if self.orientation == 'reverse-portrait':
                     x, y = y, width - x
                 elif self.orientation == 'portrait':
                     x, y = height - y, x
-                elif self.orientation == 'reverse-Landscape':
+                elif self.orientation == 'reverse-landscape':
                     x, y = width - x, height - y
 
                 delta = (p['pressure'] - 1000.0) / 1000.0
