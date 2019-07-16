@@ -54,6 +54,9 @@ class DrawingPerspective(Gtk.Stack):
     flowbox_drawings = Gtk.Template.Child()
     spinner_sync = Gtk.Template.Child()
     label_last_sync = Gtk.Template.Child()
+    overlay_undo = Gtk.Template.Child()
+    notification_delete_undo = Gtk.Template.Child()
+    notification_delete_close = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -101,6 +104,19 @@ class DrawingPerspective(Gtk.Stack):
                 child = self.flowbox_drawings.get_child_at_index(index)
 
             self.flowbox_drawings.insert(drawing, index)
+
+        # Remove deleted ones
+        deleted = [d for d in self.known_drawings if d not in config.drawings]
+        for d in deleted:
+            child = self.flowbox_drawings.get_child_at_index(0)
+            while child is not None:
+                if child.get_child().timestamp == d['timestamp']:
+                    self.flowbox_drawings.remove(child)
+                    self.known_drawings.remove(d)
+                    self.notification_delete_undo.deleted_drawing = d['timestamp']
+                    self.overlay_undo.set_reveal_child(True)
+                    break
+                child = self.flowbox_drawings.get_child_at_index(0)
 
     @GObject.Property
     def device(self):
@@ -180,3 +196,12 @@ class DrawingPerspective(Gtk.Stack):
             logger.debug(f'{device.name} - listening stopped, restarting')
             # We never want to stop listening
             device.start_listening()
+
+    @Gtk.Template.Callback('_on_undo_close_clicked')
+    def _on_undo_close_clicked(self, button):
+        self.overlay_undo.set_reveal_child(False)
+
+    @Gtk.Template.Callback('_on_undo_clicked')
+    def _on_undo_clicked(self, button):
+        Config.load().undelete_drawing(button.deleted_drawing)
+        self.overlay_undo.set_reveal_child(False)

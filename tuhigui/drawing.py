@@ -12,6 +12,8 @@
 #
 from gi.repository import GObject, Gtk
 
+from .config import Config
+
 import datetime
 import time
 import gi
@@ -87,3 +89,7 @@ class Drawing(Gtk.Box):
             # FIXME: error handling
 
         dialog.destroy()
+
+    @Gtk.Template.Callback('_on_delete_button_clicked')
+    def _on_delete_button_clicked(self, button):
+        Config.load().delete_drawing(self.timestamp)

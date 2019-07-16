@@ -90,10 +90,35 @@ class Config(GObject.Object):
         if path.exists():
             return
 
+        # Tuhi may still cache files we've 'deleted' locally. These need to
+        # be ignored because they're still technically deleted.
+        deleted = Path(ROOT_PATH, f'{timestamp}.json.deleted')
+        if deleted.exists():
+            return
+
         with open(path, 'w') as fd:
             fd.write(json_string)
 
         self._drawings.append(json.loads(json_string))
+        self.notify('drawings')
+
+    def delete_drawing(self, timestamp):
+        # We don't delete json files immediately, we just rename them
+        # so we can resurrect them in the future if need be.
+        path = Path(ROOT_PATH, f'{timestamp}.json')
+        target = Path(ROOT_PATH, f'{timestamp}.json.deleted')
+        path.rename(target)
+
+        self._drawings = [d for d in self._drawings if d['timestamp'] != timestamp]
+        self.notify('drawings')
+
+    def undelete_drawing(self, timestamp):
+        path = Path(ROOT_PATH, f'{timestamp}.json')
+        target = Path(ROOT_PATH, f'{timestamp}.json.deleted')
+        target.rename(path)
+
+        with open(path) as fd:
+            self._drawings.append(json.load(fd))
         self.notify('drawings')
 
     @classmethod
