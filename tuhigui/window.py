@@ -29,10 +29,18 @@ MENU_XML = """
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <menu id="primary-menu">
-    <item>
+  <section>
+      <item>
+        <attribute name="label">Help</attribute>
+        <attribute name="action">app.help</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label">About</attribute>
         <attribute name="action">app.about</attribute>
-    </item>
+      </item>
+    </section>
   </menu>
 </interface>
 """

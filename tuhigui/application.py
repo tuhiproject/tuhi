@@ -35,7 +35,9 @@ class Application(Gtk.Application):
         window.present()
 
     def _build_app_menu(self):
-        actions = [('about', self._about), ('quit', self._quit)]
+        actions = [('about', self._about),
+                   ('quit', self._quit),
+                   ('help', self._help)]
         for (name, callback) in actions:
             action = Gio.SimpleAction.new(name, None)
             action.connect('activate', callback)
@@ -52,3 +54,7 @@ class Application(Gtk.Application):
         windows = self.get_windows()
         for window in windows:
             window.destroy()
+
+    def _help(self, action, param):
+        import time
+        Gtk.show_uri(None, 'https://github.com/tuhiproject/tuhi/wiki', time.time())
