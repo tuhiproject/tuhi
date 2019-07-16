@@ -51,6 +51,7 @@ class Drawing(Gtk.Box):
         self.label_timestamp.set_text(f'{day} {hour}')
         self.image_svg.set_from_file(svg.filename)
         self.image_completed.set_visible(False)
+        self.timestamp = svg.timestamp
 
     @GObject.Property
     def name(self):

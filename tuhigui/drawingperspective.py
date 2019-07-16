@@ -16,7 +16,6 @@ from .drawing import Drawing
 from .svg import JsonSvg
 from .config import Config
 
-import json
 import time
 import gi
 import logging
@@ -73,18 +72,35 @@ class DrawingPerspective(Gtk.Stack):
             self.flowbox_drawings.remove(child)
             child = self.flowbox_drawings.get_child_at_index(0)
 
-        self._update_drawings(self.device, None)
+        self._update_drawings(Config.load(), None)
 
-    def _update_drawings(self, device, pspec):
-        for ts in reversed(sorted(self.device.drawings_available)):
-            if ts in self.known_drawings:
+    def _cache_drawings(self, device, pspec):
+        # The config backend filters duplicates anyway, so don't care here
+        for ts in self.device.drawings_available:
+            json_string = self.device.json(ts)
+            Config.load().add_drawing(ts, json_string)
+
+    def _update_drawings(self, config, pspec):
+        for js in config.drawings:
+            if js in self.known_drawings:
                 continue
 
-            self.known_drawings.append(ts)
-            js = json.loads(self.device.json(ts))
+            self.known_drawings.append(js)
+
             svg = JsonSvg(js)
             drawing = Drawing(svg)
-            self.flowbox_drawings.add(drawing)
+
+            # We don't know which order we get drawings from the device, so
+            # let's do a sorted insert here
+            index = 0
+            child = self.flowbox_drawings.get_child_at_index(index)
+            while child is not None:
+                if child.get_child().timestamp < drawing.timestamp:
+                    break
+                index += 1
+                child = self.flowbox_drawings.get_child_at_index(index)
+
+            self.flowbox_drawings.insert(drawing, index)
 
     @GObject.Property
     def device(self):
@@ -99,11 +115,20 @@ class DrawingPerspective(Gtk.Stack):
         device.connect('notify::sync-state', self._on_sync_state)
         device.connect('notify::battery-percent', self._on_battery_changed)
         device.connect('notify::battery-state', self._on_battery_changed)
-        device.connect('notify::drawings-available', self._update_drawings)
+
+        # This is a bit convoluted. We need to cache all drawings
+        # because Tuhi doesn't have guaranteed storage. So any json that
+        # comes in from Tuhi, we pass to our config backend to save
+        # somewhere.
+        # The config backend adds the json file and emits a notify for the
+        # json itself (once cached) that we then actually use for SVG
+        # generation.
+        device.connect('notify::drawings-available', self._cache_drawings)
+        Config.load().connect('notify::drawings', self._update_drawings)
 
         self._on_battery_changed(device, None)
 
-        self._update_drawings(self.device, None)
+        self._update_drawings(Config.load(), None)
 
         # We always want to sync on startup
         logger.debug(f'{device.name} - starting to listen')

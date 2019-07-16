@@ -17,6 +17,7 @@ from gi.repository import GObject
 import xdg.BaseDirectory
 import configparser
 import logging
+import json
 from pathlib import Path
 
 logger = logging.getLogger('config')
@@ -33,7 +34,9 @@ class Config(GObject.Object):
         self.config = configparser.ConfigParser()
         # Don't lowercase options
         self.config.optionxform = str
+        self._drawings = []
         self._load()
+        self._load_cached_drawings()
 
     def _load(self):
         if not self.path.exists():
@@ -41,6 +44,15 @@ class Config(GObject.Object):
 
         logger.debug(f'configuration found')
         self.config.read(self.path)
+
+    def _load_cached_drawings(self):
+        if not ROOT_PATH.exists():
+            return
+
+        for filename in ROOT_PATH.glob('*.json'):
+            with open(filename) as fd:
+                self._drawings.append(json.load(fd))
+        self.notify('drawings')
 
     def _write(self):
         self.path.resolve().parent.mkdir(parents=True, exist_ok=True)
@@ -64,6 +76,25 @@ class Config(GObject.Object):
     def orientation(self, orientation):
         assert(orientation in ['landscape', 'portrait'])
         self._add_key('Device', 'Orientation', orientation)
+
+    @GObject.property
+    def drawings(self):
+        return self._drawings
+
+    def add_drawing(self, timestamp, json_string):
+        '''Add a drawing JSON with the given timestamp to the backend
+        storage. This will update self.drawings.'''
+        ROOT_PATH.mkdir(parents=True, exist_ok=True)
+
+        path = Path(ROOT_PATH, f'{timestamp}.json')
+        if path.exists():
+            return
+
+        with open(path, 'w') as fd:
+            fd.write(json_string)
+
+        self._drawings.append(json.loads(json_string))
+        self.notify('drawings')
 
     @classmethod
     def load(cls):
