@@ -72,11 +72,8 @@ class DrawingPerspective(Gtk.Stack):
         # When the orientation changes, we just re-generate all SVGs. This
         # isn't something that should happen very often anyway so meh.
         self.known_drawings = []
-        child = self.flowbox_drawings.get_child_at_index(0)
-        while child is not None:
-            self.flowbox_drawings.remove(child)
-            child = self.flowbox_drawings.get_child_at_index(0)
 
+        self.flowbox_drawings.foreach(lambda child: self.flowbox_drawings.remove(child))
         self._update_drawings(Config.load(), None)
 
     def _cache_drawings(self, device, pspec):
@@ -110,15 +107,13 @@ class DrawingPerspective(Gtk.Stack):
         # Remove deleted ones
         deleted = [d for d in self.known_drawings if d not in config.drawings]
         for d in deleted:
-            child = self.flowbox_drawings.get_child_at_index(0)
-            while child is not None:
-                if child.get_child().timestamp == d['timestamp']:
+            def delete_matching_child(child, drawing):
+                if child.get_child().timestamp == drawing['timestamp']:
                     self.flowbox_drawings.remove(child)
-                    self.known_drawings.remove(d)
-                    self.notification_delete_undo.deleted_drawing = d['timestamp']
+                    self.known_drawings.remove(drawing)
+                    self.notification_delete_undo.deleted_drawing = drawing['timestamp']
                     self.overlay_undo.set_reveal_child(True)
-                    break
-                child = self.flowbox_drawings.get_child_at_index(0)
+            self.flowbox_drawings.foreach(delete_matching_child, d)
 
     @GObject.Property
     def device(self):
