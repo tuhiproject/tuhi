@@ -84,8 +84,7 @@ class DrawingPerspective(Gtk.Stack):
         device.connect('notify::connected', self._on_connected)
         device.connect('notify::listening', self._on_listening_stopped)
         device.connect('notify::sync-state', self._on_sync_state)
-        self.device.connect('notify::drawings-available',
-                            self._update_drawings)
+        device.connect('notify::drawings-available', self._update_drawings)
 
         if device.battery_percent > 80:
             percent = 'full'
