@@ -102,19 +102,19 @@ class DrawingPerspective(Gtk.Stack):
 
     def _on_battery_changed(self, device, pspec):
         if device.battery_percent > 80:
-            percent = 'full'
+            fill = 'full'
         elif device.battery_percent > 40:
-            percent = 'good'
+            fill = 'good'
         elif device.battery_percent > 10:
-            percent = 'low'
+            fill = 'low'
         else:
-            percent = 'caution'
+            fill = 'caution'
 
         if device.battery_state == 1:
             state = '-charging'
         else:
             state = ''
-        batt_icon_name = f'battery-{percent}{state}-symbolic'
+        batt_icon_name = f'battery-{fill}{state}-symbolic'
         _, isize = self.image_battery.get_icon_name()
         self.image_battery.set_from_icon_name(batt_icon_name, isize)
         self.image_battery.set_tooltip_text(f'{device.battery_percent}%')
