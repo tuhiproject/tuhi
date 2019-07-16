@@ -65,20 +65,18 @@ class DrawingPerspective(Gtk.Stack):
         self.last_sync_time = 0
         self._sync_label_timer = GObject.timeout_add_seconds(60, self._update_sync_label)
         self._update_sync_label()
-        Config.load().connect('notify::orientation', self._on_orientation_changed)
+        Config.instance().connect('notify::orientation', self._on_orientation_changed)
 
     def _on_orientation_changed(self, config, pspec):
         # When the orientation changes, we just re-generate all SVGs. This
         # isn't something that should happen very often anyway so meh.
-        self.known_drawings = []
-
         self.flowbox_drawings.foreach(lambda child: child.get_child().refresh())
 
     def _cache_drawings(self, device, pspec):
         # The config backend filters duplicates anyway, so don't care here
         for ts in self.device.drawings_available:
             json_string = self.device.json(ts)
-            Config.load().add_drawing(ts, json_string)
+            Config.instance().add_drawing(ts, json_string)
 
     def _update_drawings(self, config, pspec):
         for js in config.drawings:
@@ -134,11 +132,11 @@ class DrawingPerspective(Gtk.Stack):
         # json itself (once cached) that we then actually use for SVG
         # generation.
         device.connect('notify::drawings-available', self._cache_drawings)
-        Config.load().connect('notify::drawings', self._update_drawings)
+        Config.instance().connect('notify::drawings', self._update_drawings)
 
         self._on_battery_changed(device, None)
 
-        self._update_drawings(Config.load(), None)
+        self._update_drawings(Config.instance(), None)
 
         # We always want to sync on startup
         logger.debug(f'{device.name} - starting to listen')
@@ -200,5 +198,5 @@ class DrawingPerspective(Gtk.Stack):
 
     @Gtk.Template.Callback('_on_undo_clicked')
     def _on_undo_clicked(self, button):
-        Config.load().undelete_drawing(button.deleted_drawing)
+        Config.instance().undelete_drawing(button.deleted_drawing)
         self.overlay_undo.set_reveal_child(False)

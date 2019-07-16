@@ -98,4 +98,4 @@ class Drawing(Gtk.Box):
 
     @Gtk.Template.Callback('_on_delete_button_clicked')
     def _on_delete_button_clicked(self, button):
-        Config.load().delete_drawing(self.timestamp)
+        Config.instance().delete_drawing(self.timestamp)

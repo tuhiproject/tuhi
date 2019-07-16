@@ -122,7 +122,7 @@ class Config(GObject.Object):
         self.notify('drawings')
 
     @classmethod
-    def load(cls):
+    def instance(cls):
         if cls._config_obj is None:
             cls._config_obj = Config()
         return cls._config_obj

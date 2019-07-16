@@ -32,7 +32,7 @@ class JsonSvg(GObject.Object):
 
         self.timestamp = json['timestamp']
         self.filename = os.path.join(DATA_PATH, f'{self.timestamp}.svg')
-        self.orientation = Config.load().orientation
+        self.orientation = Config.instance().orientation
         self._convert()
 
     def _convert(self):
