@@ -84,8 +84,23 @@ class DrawingPerspective(Gtk.Stack):
         device.connect('notify::connected', self._on_connected)
         device.connect('notify::listening', self._on_listening_stopped)
         device.connect('notify::sync-state', self._on_sync_state)
+        device.connect('notify::battery-percent', self._on_battery_changed)
+        device.connect('notify::battery-state', self._on_battery_changed)
         device.connect('notify::drawings-available', self._update_drawings)
 
+        self._on_battery_changed(device, None)
+
+        self._update_drawings(self.device, None)
+
+        # We always want to sync on startup
+        logger.debug(f'{device.name} - starting to listen')
+        device.start_listening()
+
+    @GObject.Property
+    def name(self):
+        return "drawing_perspective"
+
+    def _on_battery_changed(self, device, pspec):
         if device.battery_percent > 80:
             percent = 'full'
         elif device.battery_percent > 40:
@@ -102,15 +117,6 @@ class DrawingPerspective(Gtk.Stack):
         batt_icon_name = f'battery-{percent}{state}-symbolic'
         _, isize = self.image_battery.get_icon_name()
         self.image_battery.set_from_icon_name(batt_icon_name, isize)
-        self._update_drawings(self.device, None)
-
-        # We always want to sync on startup
-        logger.debug(f'{device.name} - starting to listen')
-        device.start_listening()
-
-    @GObject.Property
-    def name(self):
-        return "drawing_perspective"
 
     def _on_sync_state(self, device, pspec):
         if device.sync_state:
