@@ -11,12 +11,13 @@
 #  GNU General Public License for more details.
 #
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gio, GLib
 
 from .setupdialog import SetupDialog
 from .drawingperspective import DrawingPerspective
 from .errorperspective import ErrorPerspective
 from .tuhi import TuhiKeteManager
+from .config import Config
 
 import logging
 import gi
@@ -31,11 +32,21 @@ MENU_XML = """
   <menu id="primary-menu">
   <section>
       <item>
+        <attribute name="label">Portrait</attribute>
+        <attribute name="action">win.orientation</attribute>
+        <attribute name="target">portrait</attribute>
+      </item>
+      <item>
+        <attribute name="label">Landscape</attribute>
+        <attribute name="action">win.orientation</attribute>
+        <attribute name="target">landscape</attribute>
+      </item>
+  </section>
+  <section>
+      <item>
         <attribute name="label">Help</attribute>
         <attribute name="action">app.help</attribute>
       </item>
-    </section>
-    <section>
       <item>
         <attribute name="label">About</attribute>
         <attribute name="action">app.about</attribute>
@@ -58,6 +69,12 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(**kwargs)
 
         self._tuhi = TuhiKeteManager()
+
+        action = Gio.SimpleAction.new_stateful('orientation', GLib.VariantType('s'),
+                                               GLib.Variant('s', 'landscape'))
+        action.connect('activate', self._on_orientation_changed)
+        action.set_state(GLib.Variant.new_string(Config.load().orientation))
+        self.add_action(action)
 
         builder = Gtk.Builder.new_from_string(MENU_XML, -1)
         menu = builder.get_object("primary-menu")
@@ -114,3 +131,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _on_reconnect_tuhi(self, tuhi):
         self._tuhi = tuhi
+
+    def _on_orientation_changed(self, action, label):
+        action.set_state(label)
+        Config.load().orientation = label.get_string()  # this is a GVariant

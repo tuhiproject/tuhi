@@ -12,6 +12,9 @@
 #
 
 from gi.repository import GObject
+
+from .config import Config
+
 import xdg.BaseDirectory
 import svgwrite
 import os
@@ -29,7 +32,7 @@ class JsonSvg(GObject.Object):
 
         self.timestamp = json['timestamp']
         self.filename = os.path.join(DATA_PATH, f'{self.timestamp}.svg')
-        self.orientation = 'Landscape'
+        self.orientation = Config.load().orientation
         self._convert()
 
     def _convert(self):
@@ -42,7 +45,7 @@ class JsonSvg(GObject.Object):
             # so we normalize them
             width, height = dimensions[0] / 100, dimensions[1] / 100
 
-        if self.orientation in ['Portrait', 'Reverse-Portrait']:
+        if self.orientation in ['portrait', 'reverse-Portrait']:
             size = (height, width)
         else:
             size = (width, height)
@@ -58,11 +61,11 @@ class JsonSvg(GObject.Object):
                 # Normalize coordinates too
                 x, y = x / 100, y / 100
 
-                if self.orientation == 'Reverse-Portrait':
+                if self.orientation == 'reverse-Portrait':
                     x, y = y, width - x
-                elif self.orientation == 'Portrait':
+                elif self.orientation == 'portrait':
                     x, y = height - y, x
-                elif self.orientation == 'Reverse-Landscape':
+                elif self.orientation == 'reverse-Landscape':
                     x, y = width - x, height - y
 
                 delta = (p['pressure'] - 1000.0) / 1000.0

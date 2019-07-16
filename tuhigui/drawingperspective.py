@@ -14,6 +14,7 @@
 from gi.repository import GObject, Gtk
 from .drawing import Drawing
 from .svg import JsonSvg
+from .config import Config
 
 import json
 import time
@@ -61,6 +62,18 @@ class DrawingPerspective(Gtk.Stack):
         self.last_sync_time = 0
         self._sync_label_timer = GObject.timeout_add_seconds(60, self._update_sync_label)
         self._update_sync_label()
+        Config.load().connect('notify::orientation', self._on_orientation_changed)
+
+    def _on_orientation_changed(self, config, pspec):
+        # When the orientation changes, we just re-generate all SVGs. This
+        # isn't something that should happen very often anyway so meh.
+        self.known_drawings = []
+        child = self.flowbox_drawings.get_child_at_index(0)
+        while child is not None:
+            self.flowbox_drawings.remove(child)
+            child = self.flowbox_drawings.get_child_at_index(0)
+
+        self._update_drawings(self.device, None)
 
     def _update_drawings(self, device, pspec):
         for ts in reversed(sorted(self.device.drawings_available)):
