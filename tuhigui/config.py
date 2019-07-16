@@ -16,12 +16,12 @@ from gi.repository import GObject
 
 import xdg.BaseDirectory
 import configparser
-import os
 import logging
+from pathlib import Path
 
 logger = logging.getLogger('config')
 
-ROOT_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhigui')
+ROOT_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhigui')
 
 
 class Config(GObject.Object):
@@ -29,24 +29,29 @@ class Config(GObject.Object):
 
     def __init__(self):
         super().__init__()
-        self.path = os.path.join(ROOT_PATH, 'tuhigui.ini')
+        self.path = Path(ROOT_PATH, 'tuhigui.ini')
         self.config = configparser.ConfigParser()
         # Don't lowercase options
         self.config.optionxform = str
         self._load()
 
     def _load(self):
-        if not os.path.exists(self.path):
+        if not self.path.exists():
             return
 
         logger.debug(f'configuration found')
         self.config.read(self.path)
 
     def _write(self):
-        if not os.path.exists(ROOT_PATH):
-            os.mkdir(ROOT_PATH)
+        self.path.resolve().parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, 'w') as fd:
             self.config.write(fd)
+
+    def _add_key(self, section, key, value):
+        if section not in self.config:
+            self.config[section] = {}
+        self.config[section][key] = value
+        self._write()
 
     @GObject.property
     def orientation(self):
@@ -59,12 +64,6 @@ class Config(GObject.Object):
     def orientation(self, orientation):
         assert(orientation in ['landscape', 'portrait'])
         self._add_key('Device', 'Orientation', orientation)
-
-    def _add_key(self, section, key, value):
-        if section not in self.config:
-            self.config[section] = {}
-        self.config[section][key] = value
-        self._write()
 
     @classmethod
     def load(cls):
