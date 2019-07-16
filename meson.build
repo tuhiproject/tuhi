@@ -104,3 +104,8 @@ if appstream_util.found()
     test('appstream-util validate-relax', appstream_util,
          args: ['validate-relax', appdata])
 endif
+
+# A wrapper to start tuhi at the same time as tuhigui, used by the flatpak
+configure_file(input: 'tools/tuhi-gui-flatpak.py',
+               output: 'tuhi-gui-flatpak.py',
+               copy: true)

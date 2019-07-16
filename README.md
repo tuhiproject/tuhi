@@ -34,6 +34,16 @@ Install TuhiGUI
 
 TuhiGui requires Python v3.6 or above.
 
+Flatpak
+-------
+
+```
+ $> git clone http://github.com/tuhiproject/tuhigui
+ $> cd tuhigui
+ $> flatpak-builder flatpak_builddir org.freedesktop.TuhiGui.json --install --user --force-clean
+ $> flatpak run org.freedesktop.TuhiGui
+```
+
 License
 -------
 
