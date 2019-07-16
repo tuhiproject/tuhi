@@ -11,7 +11,7 @@
 #  GNU General Public License for more details.
 #
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk
 
 from .setupdialog import SetupDialog
 from .drawingperspective import DrawingPerspective

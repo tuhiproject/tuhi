@@ -18,11 +18,13 @@ from .svg import JsonSvg
 import json
 import time
 import gi
+import logging
+
 gi.require_version("Gtk", "3.0")
 
-import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('drawingperspective')
+
 
 def relative_time(seconds):
     MIN = 60
@@ -31,15 +33,16 @@ def relative_time(seconds):
     WEEK = 7 * DAY
 
     if seconds < 30:
-              return 'just now'
+        return 'just now'
     if seconds < 5 * MIN:
-              return 'a few minutes ago'
+        return 'a few minutes ago'
     if seconds < H:
-              return f'{int(seconds/MIN/10) * 10} minutes ago'
+        return f'{int(seconds/MIN/10) * 10} minutes ago'
     if seconds < DAY:
-              return f'{int(seconds/H)} hours ago'
+        return f'{int(seconds/H)} hours ago'
     if seconds < 4 * WEEK:
-        return f'{int(seconds/D)} days ago'
+        return f'{int(seconds/DAY)} days ago'
+
     return 'a long time ago'
 
 

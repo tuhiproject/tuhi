@@ -17,6 +17,7 @@ import time
 import gi
 gi.require_version("Gtk", "3.0")
 
+
 def relative_date(timestamp):
     t = datetime.date.fromtimestamp(timestamp)
     today = datetime.date.today()
