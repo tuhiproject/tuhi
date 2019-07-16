@@ -65,7 +65,7 @@ class Drawing(Gtk.Box):
                                         Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
 
         dialog.set_do_overwrite_confirmation(True)
-        dialog.set_filename('Untitled.svg')
+        dialog.set_current_name('untitled.svg')
 
         filter_any = Gtk.FileFilter()
         filter_any.set_name('Any files')
