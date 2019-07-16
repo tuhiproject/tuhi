@@ -11,6 +11,7 @@
 #  GNU General Public License for more details.
 #
 
+from gettext import gettext as _
 from gi.repository import GObject, Gtk
 
 import gi
@@ -39,7 +40,7 @@ class SetupDialog(Gtk.Dialog):
     def _on_unregistered_device(self, tuhi, device):
         tuhi.disconnect(self._sig)
 
-        self.label_devicename_p1.set_text(f'Connecting to {device.name}')
+        self.label_devicename_p1.set_text(_(f'Connecting to {device.name}'))
         self.stack.set_visible_child_name('page1')
         self._sig = device.connect('button-press-required', self._on_button_press_required)
         device.register()

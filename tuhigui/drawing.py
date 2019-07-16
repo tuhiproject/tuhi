@@ -10,6 +10,8 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #
+
+from gettext import gettext as _
 from gi.repository import GObject, Gtk
 
 from .config import Config
@@ -27,9 +29,9 @@ def relative_date(timestamp):
     diff = t - today
 
     if diff.days == 0:
-        return 'Today'
+        return _('Today')
     if diff.days == -1:
-        return 'Yesterday'
+        return _('Yesterday')
     if diff.days > -4:  # last 4 days we convert to weekdays
         return t.strftime('%A')
 
@@ -68,20 +70,23 @@ class Drawing(Gtk.Box):
 
     @Gtk.Template.Callback('_on_download_button_clicked')
     def _on_download_button_clicked(self, button):
-        dialog = Gtk.FileChooserDialog('Please choose a file',
+        dialog = Gtk.FileChooserDialog(_('Please choose a file'),
                                        None,
                                        Gtk.FileChooserAction.SAVE,
                                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                         Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
 
         dialog.set_do_overwrite_confirmation(True)
-        dialog.set_current_name('untitled.svg')
+        # Translators: the default filename to save to
+        dialog.set_current_name(_('untitled.svg'))
 
         filter_any = Gtk.FileFilter()
-        filter_any.set_name('Any files')
+        # Translators: filter name to show all/any files
+        filter_any.set_name(_('Any files'))
         filter_any.add_pattern('*')
         filter_svg = Gtk.FileFilter()
-        filter_svg.set_name('SVG files')
+        # Translators: filter to show svg files only
+        filter_svg.set_name(_('SVG files'))
         filter_svg.add_pattern('*.svg')
         dialog.add_filter(filter_svg)
         dialog.add_filter(filter_any)

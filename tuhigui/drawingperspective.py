@@ -11,6 +11,7 @@
 #  GNU General Public License for more details.
 #
 
+from gettext import gettext as _
 from gi.repository import GObject, Gtk
 from .drawing import Drawing
 from .config import Config
@@ -32,19 +33,22 @@ def relative_time(seconds):
     WEEK = 7 * DAY
 
     if seconds < 30:
-        return 'just now'
+        return _('just now')
     if seconds < 5 * MIN:
-        return 'a few minutes ago'
+        return _('a few minutes ago')
     if seconds < H:
-        return f'{int(seconds/MIN/10) * 10} minutes ago'
+        minutes = int(seconds / MIN / 10) * 10
+        return _(f'{minutes} minutes ago')
     if seconds < DAY:
-        return f'{int(seconds/H)} hours ago'
+        hours = int(seconds / H)
+        return _(f'{hours} hours ago')
     if seconds < 4 * WEEK:
-        return f'{int(seconds/DAY)} days ago'
+        days = int(seconds / DAY)
+        return _(f'{days} days ago')
     if seconds > 10 * 365 * DAY:
-        return 'never'
+        return _('never')
 
-    return 'a long time ago'
+    return _('a long time ago')
 
 
 @Gtk.Template(resource_path="/org/freedesktop/TuhiGui/ui/DrawingPerspective.ui")

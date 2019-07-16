@@ -32,23 +32,23 @@ MENU_XML = """
   <menu id="primary-menu">
   <section>
       <item>
-        <attribute name="label">Portrait</attribute>
+        <attribute name="label" translatable="yes">Portrait</attribute>
         <attribute name="action">win.orientation</attribute>
         <attribute name="target">portrait</attribute>
       </item>
       <item>
-        <attribute name="label">Landscape</attribute>
+        <attribute name="label" translatable="yes">Landscape</attribute>
         <attribute name="action">win.orientation</attribute>
         <attribute name="target">landscape</attribute>
       </item>
   </section>
   <section>
       <item>
-        <attribute name="label">Help</attribute>
+        <attribute name="label" translatable="yes">Help</attribute>
         <attribute name="action">app.help</attribute>
       </item>
       <item>
-        <attribute name="label">About</attribute>
+        <attribute name="label" translatable="yes">About</attribute>
         <attribute name="action">app.about</attribute>
       </item>
     </section>
