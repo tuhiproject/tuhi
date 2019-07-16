@@ -61,19 +61,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkImage" id="image_completed">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_right">10</property>
-            <property name="icon_name">process-completed-symbolic</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">2</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkButton" id="btn_rotate">
             <property name="visible">True</property>
             <property name="can_focus">True</property>

@@ -42,8 +42,6 @@ class Drawing(Gtk.Box):
 
     label_timestamp = Gtk.Template.Child()
     image_svg = Gtk.Template.Child()
-    image_completed = Gtk.Template.Child()
-    btn_download = Gtk.Template.Child()
 
     def __init__(self, json_data, *args, **kwargs):
         super().__init__()
@@ -56,7 +54,6 @@ class Drawing(Gtk.Box):
 
         self.label_timestamp.set_text(f'{day} {hour}')
         self.image_svg.set_from_file(svg.filename)
-        self.image_completed.set_visible(False)
         self.timestamp = svg.timestamp
 
     def refresh(self):
@@ -92,8 +89,6 @@ class Drawing(Gtk.Box):
             import shutil
             file = dialog.get_filename()
             shutil.copyfile(self.svg.filename, file)
-            self.image_completed.set_visible(True)
-            self.btn_download.set_visible(False)
             # FIXME: error handling
 
         dialog.destroy()
