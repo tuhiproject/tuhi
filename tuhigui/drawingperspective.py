@@ -13,7 +13,6 @@
 
 from gi.repository import GObject, Gtk
 from .drawing import Drawing
-from .svg import JsonSvg
 from .config import Config
 
 import time
@@ -73,8 +72,7 @@ class DrawingPerspective(Gtk.Stack):
         # isn't something that should happen very often anyway so meh.
         self.known_drawings = []
 
-        self.flowbox_drawings.foreach(lambda child: self.flowbox_drawings.remove(child))
-        self._update_drawings(Config.load(), None)
+        self.flowbox_drawings.foreach(lambda child: child.get_child().refresh())
 
     def _cache_drawings(self, device, pspec):
         # The config backend filters duplicates anyway, so don't care here
@@ -89,8 +87,7 @@ class DrawingPerspective(Gtk.Stack):
 
             self.known_drawings.append(js)
 
-            svg = JsonSvg(js)
-            drawing = Drawing(svg)
+            drawing = Drawing(js)
 
             # We don't know which order we get drawings from the device, so
             # let's do a sorted insert here

@@ -13,6 +13,7 @@
 from gi.repository import GObject, Gtk
 
 from .config import Config
+from .svg import JsonSvg
 
 import datetime
 import time
@@ -44,9 +45,10 @@ class Drawing(Gtk.Box):
     image_completed = Gtk.Template.Child()
     btn_download = Gtk.Template.Child()
 
-    def __init__(self, svg, *args, **kwargs):
+    def __init__(self, json_data, *args, **kwargs):
         super().__init__()
-        self.svg = svg
+        self.json_data = json_data
+        self.svg = svg = JsonSvg(json_data)
         day = relative_date(svg.timestamp)
         hour = time.strftime('%H:%M', time.localtime(svg.timestamp))
 
@@ -54,6 +56,10 @@ class Drawing(Gtk.Box):
         self.image_svg.set_from_file(svg.filename)
         self.image_completed.set_visible(False)
         self.timestamp = svg.timestamp
+
+    def refresh(self):
+        self.svg = svg = JsonSvg(self.json_data)
+        self.image_svg.set_from_file(svg.filename)
 
     @GObject.Property
     def name(self):
