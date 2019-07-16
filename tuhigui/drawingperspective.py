@@ -63,7 +63,7 @@ class DrawingPerspective(Gtk.Stack):
         self._update_sync_label()
 
     def _update_drawings(self, device, pspec):
-        for ts in self.device.drawings_available:
+        for ts in reversed(sorted(self.device.drawings_available)):
             if ts in self.known_drawings:
                 continue
 
