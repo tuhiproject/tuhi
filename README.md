@@ -6,7 +6,7 @@ Wacom ink range (Spark, Slate, Folio, Intuos Paper, ...). The data is
 provided to clients in the form of JSON, any conversion to other formats
 like SVG must be done by the clients.
 
-Tuhi is the Maori word for "to draw".
+Tuhi is the Māori word for "to draw".
 
 Supported Devices
 -----------------
