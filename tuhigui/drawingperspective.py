@@ -42,6 +42,8 @@ def relative_time(seconds):
         return f'{int(seconds/H)} hours ago'
     if seconds < 4 * WEEK:
         return f'{int(seconds/DAY)} days ago'
+    if seconds > 10 * 365 * DAY:
+        return 'never'
 
     return 'a long time ago'
 
