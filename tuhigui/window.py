@@ -11,11 +11,10 @@
 #  GNU General Public License for more details.
 #
 
-from gi.repository import Gtk, Gio, GLib
+from gi.repository import Gtk, Gio, GLib, GObject
 
 from .setupdialog import SetupDialog
 from .drawingperspective import DrawingPerspective
-from .errorperspective import ErrorPerspective
 from .tuhi import TuhiKeteManager
 from .config import Config
 
@@ -55,6 +54,21 @@ MENU_XML = """
   </menu>
 </interface>
 """
+
+
+@Gtk.Template(resource_path="/org/freedesktop/TuhiGui/ui/ErrorPerspective.ui")
+class ErrorPerspective(Gtk.Box):
+    '''
+    The page loaded when we cannot connect to the Tuhi DBus server.
+    '''
+    __gtype_name__ = "ErrorPerspective"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @GObject.Property
+    def name(self):
+        return "error_perspective"
 
 
 @Gtk.Template(resource_path='/org/freedesktop/TuhiGui/ui/MainWindow.ui')
