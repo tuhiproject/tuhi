@@ -309,8 +309,10 @@ class Tuhi(GObject.Object):
         for dev in self.bluez.devices:
             self._add_device(self.bluez, dev)
 
-        self.bluez.connect('device-added', self._on_bluez_device_updated)
-        self.bluez.connect('device-updated', self._on_bluez_device_updated)
+        self.bluez.connect('device-added',
+                           lambda mgr, dev: self._add_device(mgr, dev, True))
+        self.bluez.connect('device-updated',
+                           lambda mgr, dev: self._add_device(mgr, dev, True))
 
     def _on_tuhi_bus_name_lost(self, dbus_server):
         self.mainloop.quit()
@@ -400,9 +402,6 @@ class Tuhi(GObject.Object):
             logger.debug(f'{bluez_device.objpath}: call Register() on device')
         elif d.listening:
             d.listen()
-
-    def _on_bluez_device_updated(self, manager, bluez_device):
-        self._add_device(manager, bluez_device, True)
 
     def _on_listening_updated(self, tuhi_dbus_device, pspec):
         listen = self._search_stop_handler is not None
