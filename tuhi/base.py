@@ -333,9 +333,6 @@ class Tuhi(GObject.Object):
 
     @classmethod
     def _device_in_register_mode(cls, bluez_device):
-        if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
-            return False
-
         # When the device is in register mode (blue light blinking), the
         # manufacturer is merely 4 bytes. This will reset to 7 bytes even
         # when the device simply times out and does not register fully.
@@ -368,16 +365,17 @@ class Tuhi(GObject.Object):
             stage.
         '''
 
-        uuid = None
+        # We have a reverse-engineered protocol. Let's not talk to anyone
+        # who doesn't look like we know them to avoid potentially bricking a
+        # device.
+        if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
+            return
 
         # check if the device is already known to us
         try:
             config = self.config.devices[bluez_device.address]
             uuid = config['uuid']
         except KeyError:
-            pass
-
-        if uuid is None and bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return
 
         # if we got here from a currently live BlueZ device,
