@@ -12,7 +12,6 @@ tuhigui/application.py
 tuhigui/config.py
 tuhigui/drawing.py
 tuhigui/drawingperspective.py
-tuhigui/setupdialog.py
 tuhigui/svg.py
 tuhigui/tuhi.py
 tuhigui/window.py

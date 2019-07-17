@@ -11,9 +11,9 @@
 #  GNU General Public License for more details.
 #
 
+from gettext import gettext as _
 from gi.repository import Gtk, Gio, GLib, GObject
 
-from .setupdialog import SetupDialog
 from .drawingperspective import DrawingPerspective
 from .tuhi import TuhiKeteManager
 from .config import Config
@@ -69,6 +69,52 @@ class ErrorPerspective(Gtk.Box):
     @GObject.Property
     def name(self):
         return "error_perspective"
+
+
+@Gtk.Template(resource_path="/org/freedesktop/TuhiGui/ui/SetupPerspective.ui")
+class SetupDialog(Gtk.Dialog):
+    '''
+    The setup dialog when we don't yet have a registered device with Tuhi.
+    '''
+    __gtype_name__ = "SetupDialog"
+    __gsignals__ = {
+        'new-device':
+            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+    }
+
+    stack = Gtk.Template.Child()
+    label_devicename_p1 = Gtk.Template.Child()
+    btn_quit = Gtk.Template.Child()
+
+    def __init__(self, tuhi, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._tuhi = tuhi
+        self._sig = tuhi.connect('unregistered-device', self._on_unregistered_device)
+        tuhi.start_search()
+        self.device = None
+
+    def _on_unregistered_device(self, tuhi, device):
+        tuhi.disconnect(self._sig)
+
+        self.label_devicename_p1.set_text(_(f'Connecting to {device.name}'))
+        self.stack.set_visible_child_name('page1')
+        self._sig = device.connect('button-press-required', self._on_button_press_required)
+        device.register()
+
+    def _on_button_press_required(self, tuhi, device):
+        tuhi.disconnect(self._sig)
+
+        self.stack.set_visible_child_name('page2')
+        self._sig = device.connect('registered', self._on_registered)
+
+    def _on_registered(self, tuhi, device):
+        tuhi.disconnect(self._sig)
+        self.device = device
+        self.response(Gtk.ResponseType.OK)
+
+    @GObject.Property
+    def name(self):
+        return "setup_dialog"
 
 
 @Gtk.Template(resource_path='/org/freedesktop/TuhiGui/ui/MainWindow.ui')
