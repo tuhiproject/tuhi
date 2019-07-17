@@ -743,7 +743,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         logger.info(f'device battery: {battery}% ({"dis" if not charging else ""}charging)')
         return battery, charging
 
-    def get_firmware_version(self, arg):
+    def get_firmware_version(self):
         hi = self.send_nordic_command_sync(command=0xb7,
                                            expected_opcode=0xb8,
                                            arguments=(0,))
