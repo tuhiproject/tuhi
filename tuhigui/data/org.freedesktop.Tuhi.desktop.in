@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=TuhiGui
+Name=Tuhi
 Comment=Utility to download drawings from the Wacom Ink range of devices
-Exec=tuhigui
+Exec=tuhi
 # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
-Icon=org.freedesktop.TuhiGui
+Icon=org.freedesktop.Tuhi
 Type=Application
 StartupNotify=true
 Categories=GTK;GNOME;Utility;

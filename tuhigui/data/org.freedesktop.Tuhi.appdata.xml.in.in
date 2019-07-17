@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>org.freedesktop.TuhiGui</id>
+  <id>org.freedesktop.Tuhi</id>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-2.0+</project_license>
   <content_rating type="oars-1.0" />
-  <name>TuhiGui</name>
+  <name>Tuhi</name>
   <summary>Utility to download drawings from the Wacom Ink range of devices</summary>
   <description>
     <p>
-      TuhiGui is a graphical user interface to download drawings stored on
+      Tuhi is a graphical user interface to download drawings stored on
       tablet devices from the Wacom Ink range, e.g. Intuos Pro Paper or
       Bamboo Slate.
     </p>
     <p>
-      TuhiGui requires Tuhi, the daemon to actually communicate with the
+      Tuhi requires Tuhi, the daemon to actually communicate with the
       devices. ThiGui is merely a front end to Tuhi, Tuhi must be
-      installed and running when TuhiGui is launched.
+      installed and running when Tuhi is launched.
     </p>
   </description>
 
@@ -25,7 +25,7 @@
     <kudo>ModernToolkit</kudo>
   </kudos>
 
-  <launchable type="desktop-id">org.freedesktop.TuhiGui.desktop</launchable>
+  <launchable type="desktop-id">org.freedesktop.Tuhi.desktop</launchable>
 
   <screenshots>
     <screenshot type="default">
@@ -42,15 +42,15 @@
     </screenshot>
   </screenshots>
 
-  <url type="homepage">https://github.com/tuhiproject/tuhigui/</url>
-  <url type="bugtracker">https://github.com/tuhiproject/tuhigui/issues</url>
-  <url type="help">https://github.com/tuhiproject/tuhigui/wiki</url>
+  <url type="homepage">https://github.com/tuhiproject/tuhi/</url>
+  <url type="bugtracker">https://github.com/tuhiproject/tuhi/issues</url>
+  <url type="help">https://github.com/tuhiproject/tuhi/wiki</url>
   <project_group>GNOME</project_group>
 
-  <translation type="gettext">tuhigui</translation>
+  <translation type="gettext">tuhi</translation>
 
   <provides>
-    <binary>tuhigui</binary>
+    <binary>tuhi</binary>
   </provides>
 
   <releases>

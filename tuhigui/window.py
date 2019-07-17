@@ -56,7 +56,7 @@ MENU_XML = """
 """
 
 
-@Gtk.Template(resource_path="/org/freedesktop/TuhiGui/ui/ErrorPerspective.ui")
+@Gtk.Template(resource_path="/org/freedesktop/Tuhi/ui/ErrorPerspective.ui")
 class ErrorPerspective(Gtk.Box):
     '''
     The page loaded when we cannot connect to the Tuhi DBus server.
@@ -71,7 +71,7 @@ class ErrorPerspective(Gtk.Box):
         return "error_perspective"
 
 
-@Gtk.Template(resource_path="/org/freedesktop/TuhiGui/ui/SetupPerspective.ui")
+@Gtk.Template(resource_path="/org/freedesktop/Tuhi/ui/SetupPerspective.ui")
 class SetupDialog(Gtk.Dialog):
     '''
     The setup dialog when we don't yet have a registered device with Tuhi.
@@ -117,7 +117,7 @@ class SetupDialog(Gtk.Dialog):
         return "setup_dialog"
 
 
-@Gtk.Template(resource_path='/org/freedesktop/TuhiGui/ui/MainWindow.ui')
+@Gtk.Template(resource_path='/org/freedesktop/Tuhi/ui/MainWindow.ui')
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
 

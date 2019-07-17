@@ -9,7 +9,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, Gtk, Gdk
 
 @devel@
-resource = Gio.resource_load(os.path.join('@pkgdatadir@', 'tuhigui.gresource'))
+resource = Gio.resource_load(os.path.join('@pkgdatadir@', 'tuhi.gresource'))
 Gio.Resource._register(resource)
 
 def install_excepthook():
@@ -45,11 +45,10 @@ if __name__ == "__main__":
     install_excepthook()
     gtk_style()
 
-    locale.bindtextdomain('tuhigui', '@localedir@')
-    locale.textdomain('tuhigui')
-    gettext.bindtextdomain('tuhigui', '@localedir@')
-    gettext.textdomain('tuhigui')
-
+    locale.bindtextdomain('tuhi', '@localedir@')
+    locale.textdomain('tuhi')
+    gettext.bindtextdomain('tuhi', '@localedir@')
+    gettext.textdomain('tuhi')
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     exit_status = Application().run(sys.argv)
     sys.exit(exit_status)

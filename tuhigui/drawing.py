@@ -38,7 +38,7 @@ def relative_date(timestamp):
     return t.strftime('%x')
 
 
-@Gtk.Template(resource_path='/org/freedesktop/TuhiGui/ui/Drawing.ui')
+@Gtk.Template(resource_path='/org/freedesktop/Tuhi/ui/Drawing.ui')
 class Drawing(Gtk.Box):
     __gtype_name__ = "Drawing"
 

@@ -51,7 +51,7 @@ def relative_time(seconds):
     return _('a long time ago')
 
 
-@Gtk.Template(resource_path="/org/freedesktop/TuhiGui/ui/DrawingPerspective.ui")
+@Gtk.Template(resource_path="/org/freedesktop/Tuhi/ui/DrawingPerspective.ui")
 class DrawingPerspective(Gtk.Stack):
     __gtype_name__ = "DrawingPerspective"
 

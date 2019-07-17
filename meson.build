@@ -1,4 +1,4 @@
-project('tuhigui',
+project('tuhi',
 	version: '0.1',
 	license: 'GPLv2',
 	meson_version: '>= 0.48.0')
@@ -27,14 +27,14 @@ metainfodir = join_paths(datadir, 'metainfo')
 
 i18n = import('i18n')
 
-subdir('data')
 subdir('po')
+subdir('tuhigui/data')
 
 # Find the directory to install our Python code
 pymod = import('python')
 py3 = pymod.find_installation()
 python_dir = py3.get_install_dir()
-install_subdir('tuhigui', install_dir: python_dir, exclude_directories: '__pycache__')
+install_subdir('tuhigui/tuhigui', install_dir: python_dir, exclude_directories: '__pycache__')
 
 config_tuhigui = configuration_data()
 config_tuhigui.set('pkgdatadir', pkgdatadir)
@@ -44,7 +44,7 @@ config_tuhigui.set('gtk_minor_version', gtk_minor_version)
 config_tuhigui.set('devel', '')
 
 config_tuhigui_devel = config_tuhigui
-config_tuhigui_devel.set('pkgdatadir', join_paths(meson.build_root(), 'data'))
+config_tuhigui_devel.set('pkgdatadir', join_paths(meson.build_root(), 'tuhigui', 'data'))
 config_tuhigui_devel.set('localedir', join_paths(meson.build_root(), 'po'))
 config_tuhigui_devel.set('devel', '''
 sys.path.insert(1, '@0@')
@@ -52,18 +52,18 @@ print('Running from source tree, using local files')
 '''.format(meson.source_root()))
 
 configure_file(input: 'tuhigui.in',
-	       output: 'tuhigui',
+	       output: 'tuhi.gui',
 	       configuration: config_tuhigui,
 	       install_dir: bindir)
 
 configure_file(input: 'tuhigui.in',
-	       output: 'tuhigui.devel',
+	       output: 'tuhi.gui.devel',
 	       configuration: config_tuhigui_devel)
 
 meson.add_install_script('meson_install.sh')
 
-desktop_file = i18n.merge_file(input: 'data/org.freedesktop.TuhiGui.desktop.in',
-                               output: 'org.freedesktop.TuhiGui.desktop',
+desktop_file = i18n.merge_file(input: 'tuhigui/data/org.freedesktop.Tuhi.desktop.in',
+                               output: 'org.freedesktop.Tuhi.desktop',
                                type: 'desktop',
                                po_dir: podir,
                                install: true,
@@ -71,21 +71,21 @@ desktop_file = i18n.merge_file(input: 'data/org.freedesktop.TuhiGui.desktop.in',
 
 conf = configuration_data()
 conf.set('version', meson.project_version())
-conf.set('url', 'https://github.com/tuhiproject/tuhigui')
+conf.set('url', 'https://github.com/tuhiproject/tuhi')
 conf.set('version_date', version_date)
 
-appdata_intl = configure_file(input: 'data/org.freedesktop.TuhiGui.appdata.xml.in.in',
-                              output: 'org.freedesktop.TuhiGui.appdata.xml.in',
+appdata_intl = configure_file(input: 'tuhigui/data/org.freedesktop.Tuhi.appdata.xml.in.in',
+                              output: 'org.freedesktop.Tuhi.appdata.xml.in',
                               configuration: conf)
 
 appdata = i18n.merge_file(input: appdata_intl,
-                          output: 'org.freedesktop.TuhiGui.appdata.xml',
+                          output: 'org.freedesktop.Tuhi.appdata.xml',
                           type: 'xml',
                           po_dir: podir,
                           install: true,
                           install_dir: metainfodir)
 
-install_data('data/org.freedesktop.TuhiGui.svg', install_dir: icondir)
+install_data('tuhigui/data/org.freedesktop.Tuhi.svg', install_dir: icondir)
 
 flake8 = find_program('flake8-3', required: false)
 if flake8.found()

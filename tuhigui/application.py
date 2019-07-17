@@ -21,9 +21,9 @@ gi.require_version("Gtk", "3.0")
 
 class Application(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id='org.freedesktop.TuhiGui',
+        super().__init__(application_id='org.freedesktop.Tuhi',
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
-        GLib.set_application_name('TuhiGui')
+        GLib.set_application_name('Tuhi')
         self._tuhi = None
 
     def do_startup(self):
@@ -44,7 +44,7 @@ class Application(Gtk.Application):
             self.add_action(action)
 
     def _about(self, action, param):
-        builder = Gtk.Builder().new_from_resource('/org/freedesktop/TuhiGui/AboutDialog.ui')
+        builder = Gtk.Builder().new_from_resource('/org/freedesktop/Tuhi/AboutDialog.ui')
         about = builder.get_object('about_dialog')
         about.set_transient_for(self.get_active_window())
         about.connect('response', lambda about, param: about.destroy())

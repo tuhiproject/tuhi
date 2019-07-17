@@ -1,5 +1,5 @@
-data/org.freedesktop.TuhiGui.appdata.xml.in.in
-data/org.freedesktop.TuhiGui.desktop.in
+data/org.freedesktop.Tuhi.appdata.xml.in.in
+data/org.freedesktop.Tuhi.desktop.in
 
 data/ui/AboutDialog.ui.in
 data/ui/Drawing.ui
