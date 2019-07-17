@@ -46,7 +46,7 @@ def relative_time(seconds):
         days = int(seconds / DAY)
         return _(f'{days} days ago')
     if seconds > 10 * 365 * DAY:
-        return _('never')
+        return _('not yet')
 
     return _('a long time ago')
 
