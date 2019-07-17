@@ -336,8 +336,7 @@ class Tuhi(GObject.Object):
         # When the device is in register mode (blue light blinking), the
         # manufacturer is merely 4 bytes. This will reset to 7 bytes even
         # when the device simply times out and does not register fully.
-        manufacturer_data = bluez_device.manufacturer_data
-        return manufacturer_data is not None and len(manufacturer_data) == 4
+        return len(bluez_device.manufacturer_data or []) == 4
 
     def _on_bluez_discovery_started(self, manager):
         # Something else may turn discovery mode on, we don't care about
