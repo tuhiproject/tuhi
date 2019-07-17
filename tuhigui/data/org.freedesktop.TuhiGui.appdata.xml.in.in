@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.freedesktop.TuhiGui</id>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-2.0+</project_license>
+  <content_rating type="oars-1.0" />
+  <name>TuhiGui</name>
+  <summary>Utility to download drawings from the Wacom Ink range of devices</summary>
+  <description>
+    <p>
+      TuhiGui is a graphical user interface to download drawings stored on
+      tablet devices from the Wacom Ink range, e.g. Intuos Pro Paper or
+      Bamboo Slate.
+    </p>
+    <p>
+      TuhiGui requires Tuhi, the daemon to actually communicate with the
+      devices. ThiGui is merely a front end to Tuhi, Tuhi must be
+      installed and running when TuhiGui is launched.
+    </p>
+  </description>
+
+  <kudos>
+    <kudo>AppMenu</kudo>
+    <kudo>HiDpiIcon</kudo>
+    <kudo>ModernToolkit</kudo>
+  </kudos>
+
+  <launchable type="desktop-id">org.freedesktop.TuhiGui.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>The button configuraton page</caption>
+      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-buttonpage.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The LED configuraton page</caption>
+      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-ledpage.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The resolution configuraton page</caption>
+      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-resolutionpage.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/tuhiproject/tuhigui/</url>
+  <url type="bugtracker">https://github.com/tuhiproject/tuhigui/issues</url>
+  <url type="help">https://github.com/tuhiproject/tuhigui/wiki</url>
+  <project_group>GNOME</project_group>
+
+  <translation type="gettext">tuhigui</translation>
+
+  <provides>
+    <binary>tuhigui</binary>
+  </provides>
+
+  <releases>
+    <release version="@version@" date="@version_date@"/>
+  </releases>
+</component>
