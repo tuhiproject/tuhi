@@ -331,13 +331,6 @@ class Tuhi(GObject.Object):
         for addr in unregistered:
             del self.devices[addr]
 
-    @classmethod
-    def _device_in_register_mode(cls, bluez_device):
-        # When the device is in register mode (blue light blinking), the
-        # manufacturer is merely 4 bytes. This will reset to 7 bytes even
-        # when the device simply times out and does not register fully.
-        return len(bluez_device.manufacturer_data or []) == 4
-
     def _on_bluez_discovery_started(self, manager):
         # Something else may turn discovery mode on, we don't care about
         # it then
@@ -380,7 +373,11 @@ class Tuhi(GObject.Object):
         # if we got here from a currently live BlueZ device,
         # ManufacturerData is reliable. Else, consider the device not in
         # register mode
-        if from_live_update and Tuhi._device_in_register_mode(bluez_device):
+        #
+        # When the device is in register mode (blue light blinking), the
+        # manufacturer is merely 4 bytes. This will reset to 7 bytes even
+        # when the device simply times out and does not register fully.
+        if from_live_update and len(bluez_device.manufacturer_data or []) == 4:
             mode = DeviceMode.REGISTER
         else:
             mode = DeviceMode.LISTEN
