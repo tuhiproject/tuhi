@@ -126,6 +126,7 @@ class MainWindow(Gtk.ApplicationWindow):
     menubutton1 = Gtk.Template.Child()
     spinner_sync = Gtk.Template.Child()
     image_battery = Gtk.Template.Child()
+    image_missing_tablet = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -201,6 +202,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.image_battery.set_tooltip_text(f'{device.battery_percent}%')
 
     def _on_sync_state(self, device, pspec):
+        self.image_missing_tablet.set_visible(False)
         if device.sync_state:
             self.spinner_sync.start()
         else:

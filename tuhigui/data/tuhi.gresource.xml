@@ -7,5 +7,6 @@
         <file preprocess="xml-stripblanks">ui/MainWindow.ui</file>
         <file preprocess="xml-stripblanks">ui/SetupPerspective.ui</file>
         <file preprocess="xml-stripblanks">ui/ErrorPerspective.ui</file>
+        <file preprocess="xml-stripblanks">input-tablet-missing-symbolic.svg</file>
     </gresource>
 </gresources>
