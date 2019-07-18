@@ -34,7 +34,12 @@ subdir('tuhigui/data')
 pymod = import('python')
 py3 = pymod.find_installation()
 python_dir = py3.get_install_dir()
-install_subdir('tuhigui/tuhigui', install_dir: python_dir, exclude_directories: '__pycache__')
+install_subdir('tuhigui',
+               install_dir: python_dir,
+               exclude_directories: ['__pycache__', 'data'])
+install_subdir('tuhi',
+               install_dir: python_dir,
+               exclude_directories: '__pycache__')
 
 config_tuhigui = configuration_data()
 config_tuhigui.set('pkgdatadir', pkgdatadir)
@@ -57,6 +62,11 @@ configure_file(input: 'tuhi-gui.in',
 configure_file(input: 'tuhi-gui.in',
 	       output: 'tuhi-gui.devel',
 	       configuration: config_tuhigui_devel)
+
+configure_file(input: 'tuhi-server.py',
+	       output: 'tuhi-server',
+	       copy: true,
+	       install_dir: bindir)
 
 meson.add_install_script('meson_install.sh')
 
