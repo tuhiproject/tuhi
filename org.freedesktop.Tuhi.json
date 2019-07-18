@@ -1,12 +1,13 @@
 {
-    "app-id": "org.freedesktop.TuhiGui",
+    "app-id": "org.freedesktop.Tuhi",
     "runtime": "org.gnome.Platform",
     "runtime-version": "3.30",
     "sdk": "org.gnome.Sdk",
-    "command": "tuhi-gui",
+    "command": "tuhi",
       "finish-args": [
         "--share=ipc",
         "--socket=x11",
+        "--socket=wayland",
         "--talk-name=org.freedesktop.tuhi1",
         "--own-name=org.freedesktop.tuhi1",
         "--system-talk-name=org.bluez"
@@ -54,29 +55,12 @@
         },
         {
             "name": "tuhi",
-            "buildsystem": "simple",
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://github.com/tuhiproject/tuhi"
-                }
-            ],
-            "build-commands": [
-                "pip3 install --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} ."
-            ]
-        },
-        {
-            "name": "tuhigui",
             "buildsystem": "meson",
             "sources": [
                 {
                     "type": "git",
                     "url": "."
                 }
-            ],
-            "post-install": [
-                "cp tuhi-gui-flatpak.py /app/bin/tuhi-gui",
-                "chmod +x /app/bin/tuhi-gui"
             ]
         }
     ]
