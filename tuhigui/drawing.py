@@ -50,6 +50,7 @@ class Drawing(Gtk.Box):
     def __init__(self, json_data, *args, **kwargs):
         super().__init__()
         self.orientation = Config.instance().orientation
+        Config.instance().connect('notify::orientation', self._on_orientation_changed)
 
         self.json_data = json_data
         self.svg = svg = JsonSvg(json_data, orientation=self.orientation)
@@ -59,6 +60,10 @@ class Drawing(Gtk.Box):
         self.label_timestamp.set_text(f'{day} {hour}')
         self.image_svg.set_from_file(svg.filename)
         self.timestamp = svg.timestamp
+
+    def _on_orientation_changed(self, config, pspec):
+        self.orientation = config.orientation
+        self.refresh()
 
     def refresh(self):
         self.svg = svg = JsonSvg(self.json_data, self.orientation)

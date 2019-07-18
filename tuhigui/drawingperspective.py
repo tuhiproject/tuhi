@@ -63,12 +63,6 @@ class DrawingPerspective(Gtk.Stack):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.known_drawings = []
-        Config.instance().connect('notify::orientation', self._on_orientation_changed)
-
-    def _on_orientation_changed(self, config, pspec):
-        # When the orientation changes, we just re-generate all SVGs. This
-        # isn't something that should happen very often anyway so meh.
-        self.flowbox_drawings.foreach(lambda child: child.get_child().refresh())
 
     def _cache_drawings(self, device, pspec):
         # The config backend filters duplicates anyway, so don't care here
