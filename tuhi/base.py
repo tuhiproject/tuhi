@@ -279,6 +279,8 @@ class Tuhi(GObject.Object):
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         'device-connected':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        'terminate':
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self):
@@ -297,7 +299,6 @@ class Tuhi(GObject.Object):
         self.devices = {}
 
         self._search_stop_handler = None
-        self.mainloop = GLib.MainLoop()
 
     def _on_tuhi_bus_name_acquired(self, dbus_server):
         self.bluez.connect_to_bluez()
@@ -308,7 +309,7 @@ class Tuhi(GObject.Object):
         self.bluez.connect('device-updated', self._on_bluez_device_updated)
 
     def _on_tuhi_bus_name_lost(self, dbus_server):
-        self.mainloop.quit()
+        self.emit('terminate')
 
     def _on_start_search_requested(self, dbus_server, stop_handler):
         self._search_stop_handler = stop_handler
@@ -406,9 +407,6 @@ class Tuhi(GObject.Object):
         else:
             self.bluez.stop_discovery()
 
-    def run(self):
-        self.mainloop.run()
-
 
 def main(args=sys.argv):
     if sys.version_info < (3, 6):
@@ -426,6 +424,9 @@ def main(args=sys.argv):
         logger.setLevel(logging.DEBUG)
 
     try:
-        Tuhi().run()
+        mainloop = GLib.MainLoop()
+        tuhi = Tuhi()
+        tuhi.connect('terminate', lambda tuhi: mainloop.quit())
+        mainloop.run()
     except KeyboardInterrupt:
         pass
