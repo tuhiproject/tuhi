@@ -126,7 +126,7 @@
           <object class="GtkLabel" id="label_sync">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Press the button on device to synchronize drawings</property>
+            <property name="label" translatable="yes">Press the button on the device to synchronize drawings</property>
           </object>
           <packing>
             <property name="expand">False</property>
