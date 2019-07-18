@@ -155,9 +155,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
         dp = DrawingPerspective()
         self._add_perspective(dp)
-        active = dp
         self.headerbar.set_title(f'Tuhi')
-        self.stack_perspectives.set_visible_child_name(active.name)
+        self.stack_perspectives.set_visible_child_name(dp.name)
 
         if not self._tuhi.devices:
             dialog = SetupDialog(self._tuhi)
@@ -166,7 +165,6 @@ class MainWindow(Gtk.ApplicationWindow):
             dialog.show()
         else:
             dp.device = self._tuhi.devices[0]
-            active = dp
             self.headerbar.set_title(f'Tuhi - {dp.device.name}')
 
     def _on_setup_dialog_closed(self, dialog, response):
