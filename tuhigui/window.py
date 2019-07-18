@@ -124,6 +124,8 @@ class MainWindow(Gtk.ApplicationWindow):
     stack_perspectives = Gtk.Template.Child()
     headerbar = Gtk.Template.Child()
     menubutton1 = Gtk.Template.Child()
+    spinner_sync = Gtk.Template.Child()
+    image_battery = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -164,8 +166,45 @@ class MainWindow(Gtk.ApplicationWindow):
             dialog.connect('response', self._on_setup_dialog_closed)
             dialog.show()
         else:
-            dp.device = self._tuhi.devices[0]
+            device = self._tuhi.devices[0]
+            self._init_device(device)
+            dp.device = device
             self.headerbar.set_title(f'Tuhi - {dp.device.name}')
+
+    def _init_device(self, device):
+        device.connect('notify::sync-state', self._on_sync_state)
+        device.connect('notify::battery-percent', self._on_battery_changed)
+        device.connect('notify::battery-state', self._on_battery_changed)
+        self._on_battery_changed(device, None)
+
+
+    def _on_battery_changed(self, device, pspec):
+        if device.battery_percent > 80:
+            fill = 'full'
+        elif device.battery_percent > 40:
+            fill = 'good'
+        elif device.battery_percent > 10:
+            fill = 'low'
+        else:
+            fill = 'caution'
+
+        if device.battery_state == 1:
+            state = '-charging'
+        elif device.battery_state == 0:  # unknown
+            fill = 'missing'
+            state = ''
+        else:
+            state = ''
+        batt_icon_name = f'battery-{fill}{state}-symbolic'
+        _, isize = self.image_battery.get_icon_name()
+        self.image_battery.set_from_icon_name(batt_icon_name, isize)
+        self.image_battery.set_tooltip_text(f'{device.battery_percent}%')
+
+    def _on_sync_state(self, device, pspec):
+        if device.sync_state:
+            self.spinner_sync.start()
+        else:
+            self.spinner_sync.stop()
 
     def _on_setup_dialog_closed(self, dialog, response):
         device = dialog.device
@@ -180,6 +219,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         dp = self._get_child('drawing_perspective')
         dp.device = device
+        self._init_device(device)
         self.stack_perspectives.set_visible_child_name(dp.name)
 
     def _add_perspective(self, perspective):

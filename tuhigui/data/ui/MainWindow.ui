@@ -11,6 +11,16 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="show_close_button">True</property>
+        <child>
+          <object class="GtkSpinner" id="spinner_sync">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_left">10</property>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
         <child type="title">
           <placeholder/>
         </child>
@@ -29,6 +39,18 @@
           </object>
           <packing>
             <property name="pack_type">end</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage" id="image_battery">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_right">10</property>
+            <property name="icon_name">battery-missing-symbolic</property>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+            <property name="position">2</property>
           </packing>
         </child>
       </object>

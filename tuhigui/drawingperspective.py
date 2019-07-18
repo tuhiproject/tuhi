@@ -55,10 +55,7 @@ def relative_time(seconds):
 class DrawingPerspective(Gtk.Stack):
     __gtype_name__ = "DrawingPerspective"
 
-    image_battery = Gtk.Template.Child()
     flowbox_drawings = Gtk.Template.Child()
-    spinner_sync = Gtk.Template.Child()
-    label_last_sync = Gtk.Template.Child()
     overlay_undo = Gtk.Template.Child()
     notification_delete_undo = Gtk.Template.Child()
     notification_delete_close = Gtk.Template.Child()
@@ -66,9 +63,6 @@ class DrawingPerspective(Gtk.Stack):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.known_drawings = []
-        self.last_sync_time = 0
-        self._sync_label_timer = GObject.timeout_add_seconds(60, self._update_sync_label)
-        self._update_sync_label()
         Config.instance().connect('notify::orientation', self._on_orientation_changed)
 
     def _on_orientation_changed(self, config, pspec):
@@ -124,9 +118,6 @@ class DrawingPerspective(Gtk.Stack):
 
         device.connect('notify::connected', self._on_connected)
         device.connect('notify::listening', self._on_listening_stopped)
-        device.connect('notify::sync-state', self._on_sync_state)
-        device.connect('notify::battery-percent', self._on_battery_changed)
-        device.connect('notify::battery-state', self._on_battery_changed)
 
         # This is a bit convoluted. We need to cache all drawings
         # because Tuhi doesn't have guaranteed storage. So any json that
@@ -138,8 +129,6 @@ class DrawingPerspective(Gtk.Stack):
         device.connect('notify::drawings-available', self._cache_drawings)
         Config.instance().connect('notify::drawings', self._update_drawings)
 
-        self._on_battery_changed(device, None)
-
         self._update_drawings(Config.instance(), None)
 
         # We always want to sync on startup
@@ -149,41 +138,6 @@ class DrawingPerspective(Gtk.Stack):
     @GObject.Property
     def name(self):
         return "drawing_perspective"
-
-    def _on_battery_changed(self, device, pspec):
-        if device.battery_percent > 80:
-            fill = 'full'
-        elif device.battery_percent > 40:
-            fill = 'good'
-        elif device.battery_percent > 10:
-            fill = 'low'
-        else:
-            fill = 'caution'
-
-        if device.battery_state == 1:
-            state = '-charging'
-        elif device.battery_state == 0:  # unknown
-            fill = 'missing'
-            state = ''
-        else:
-            state = ''
-        batt_icon_name = f'battery-{fill}{state}-symbolic'
-        _, isize = self.image_battery.get_icon_name()
-        self.image_battery.set_from_icon_name(batt_icon_name, isize)
-        self.image_battery.set_tooltip_text(f'{device.battery_percent}%')
-
-    def _on_sync_state(self, device, pspec):
-        if device.sync_state:
-            self.spinner_sync.start()
-        else:
-            self.spinner_sync.stop()
-            self.last_sync_time = time.time()
-            self._update_sync_label()
-
-    def _update_sync_label(self):
-        now = time.time()
-        self.label_last_sync.set_text(f'{relative_time(now - self.last_sync_time)}')
-        return True
 
     def _on_connected(self, device, pspec):
         # Turns out we don't really care about whether the device is
