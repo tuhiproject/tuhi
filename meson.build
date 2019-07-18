@@ -51,13 +51,13 @@ sys.path.insert(1, '@0@')
 print('Running from source tree, using local files')
 '''.format(meson.source_root()))
 
-configure_file(input: 'tuhigui.in',
-	       output: 'tuhi.gui',
+configure_file(input: 'tuhi-gui.in',
+	       output: 'tuhi-gui',
 	       configuration: config_tuhigui,
 	       install_dir: bindir)
 
-configure_file(input: 'tuhigui.in',
-	       output: 'tuhi.gui.devel',
+configure_file(input: 'tuhi-gui.in',
+	       output: 'tuhi-gui.devel',
 	       configuration: config_tuhigui_devel)
 
 meson.add_install_script('meson_install.sh')
