@@ -39,8 +39,6 @@ install_subdir('tuhigui/tuhigui', install_dir: python_dir, exclude_directories: 
 config_tuhigui = configuration_data()
 config_tuhigui.set('pkgdatadir', pkgdatadir)
 config_tuhigui.set('localedir', localedir)
-config_tuhigui.set('gtk_major_version', gtk_major_version)
-config_tuhigui.set('gtk_minor_version', gtk_minor_version)
 config_tuhigui.set('devel', '')
 
 config_tuhigui_devel = config_tuhigui
