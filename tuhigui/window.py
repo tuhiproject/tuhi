@@ -23,7 +23,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('window')
+logger = logging.getLogger('tuhi.gui.window')
 
 MENU_XML = """
 <?xml version="1.0" encoding="UTF-8"?>

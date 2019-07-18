@@ -20,7 +20,7 @@ import logging
 import json
 from pathlib import Path
 
-logger = logging.getLogger('config')
+logger = logging.getLogger('tuhi.gui.config')
 
 ROOT_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhigui')
 
