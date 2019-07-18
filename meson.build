@@ -24,6 +24,8 @@ podir = join_paths(meson.source_root(), 'po')
 desktopdir = join_paths(datadir, 'applications')
 icondir = join_paths(datadir, 'icons', 'hicolor', 'scalable', 'apps')
 metainfodir = join_paths(datadir, 'metainfo')
+libexecdir = join_paths(get_option('prefix'), get_option('libexecdir'), 'tuhi')
+
 
 i18n = import('i18n')
 
@@ -41,6 +43,28 @@ install_subdir('tuhi',
                install_dir: python_dir,
                exclude_directories: '__pycache__')
 
+# We have three startup scripts:
+# - tuhi: starts server and GUI
+# - tuhi-gui: starts the GUI only
+# - tuhi-server: starts the server only
+#
+# tuhi-server can run as-is, we don't need meson for it. But for the other
+# two we build a {name}.devel version that uses the in-tree files.
+# For that we need to replace a few paths, in the installed versions we just
+# use the normal dirs.
+#
+config_tuhi = configuration_data()
+config_tuhi.set_quoted('libexecdir', libexecdir)
+config_tuhi.set('devel', '')
+
+config_tuhi_devel = configuration_data()
+config_tuhi_devel.set_quoted('libexecdir', '')
+config_tuhi_devel.set('devel', '''
+tuhi_gui = '@1@/tuhi-gui.devel'
+tuhi_server = '@0@/tuhi-server.py'
+print('Running from source tree, using local files')
+'''.format(meson.source_root(), meson.build_root()))
+
 config_tuhigui = configuration_data()
 config_tuhigui.set('pkgdatadir', pkgdatadir)
 config_tuhigui.set('localedir', localedir)
@@ -52,12 +76,21 @@ config_tuhigui_devel.set('localedir', join_paths(meson.build_root(), 'po'))
 config_tuhigui_devel.set('devel', '''
 sys.path.insert(1, '@0@')
 print('Running from source tree, using local files')
-'''.format(meson.source_root()))
+'''.format(meson.source_root(), meson.build_root()))
+
+configure_file(input: 'tuhi.in',
+	       output: 'tuhi',
+	       configuration: config_tuhi,
+	       install_dir: bindir)
+
+configure_file(input: 'tuhi.in',
+	       output: 'tuhi.devel',
+	       configuration: config_tuhi_devel)
 
 configure_file(input: 'tuhi-gui.in',
 	       output: 'tuhi-gui',
 	       configuration: config_tuhigui,
-	       install_dir: bindir)
+	       install_dir: libexecdir)
 
 configure_file(input: 'tuhi-gui.in',
 	       output: 'tuhi-gui.devel',
@@ -66,7 +99,7 @@ configure_file(input: 'tuhi-gui.in',
 configure_file(input: 'tuhi-server.py',
 	       output: 'tuhi-server',
 	       copy: true,
-	       install_dir: bindir)
+	       install_dir: libexecdir)
 
 meson.add_install_script('meson_install.sh')
 

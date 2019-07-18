@@ -19,6 +19,8 @@ Devices tested and known to be supported:
 Building Tuhi
 -------------
 
+To build and run Tuhi from the repository directly:
+
 ```
  $> git clone http://github.com/tuhiproject/tuhi
  $> cd tuhi
@@ -32,11 +34,18 @@ Tuhi requires Python v3.6 or above.
 Install Tuhi
 ---------------
 
+To install and run Tuhi:
+
 ```
  $> git clone http://github.com/tuhiproject/tuhi
  $> cd tuhi
  $> meson builddir
  $> ninja -C builddir install
+```
+
+Run Tuhi with:
+
+```
  $> tuhi
 ```
 
