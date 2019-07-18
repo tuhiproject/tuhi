@@ -61,6 +61,11 @@ Flatpak
  $> flatpak run org.freedesktop.Tuhi
 ```
 
+Note that Flatpak's containers use different XDG directories. This affects
+Tuhi being able to remember devices and the data storage. Switching between
+the Flatpak and a normal installation requires re-registering the device and
+previously downloaded drawings may become inaccessible.
+
 License
 -------
 
