@@ -101,6 +101,7 @@ class DrawingPerspective(Gtk.Stack):
         super().__init__(*args, **kwargs)
         self.known_drawings = {}  # type {timestamp: Drawing()}
         self.flowboxes = {}
+        self._zoom = 0
 
     def _cache_drawings(self, device, pspec):
         # The config backend filters duplicates anyway, so don't care here
@@ -175,6 +176,19 @@ class DrawingPerspective(Gtk.Stack):
     @GObject.Property
     def name(self):
         return "drawing_perspective"
+
+    @GObject.Property
+    def zoom(self):
+        return self._zoom
+
+    @zoom.setter
+    def zoom(self, zoom):
+        if zoom == self._zoom:
+            return
+
+        self._zoom = zoom
+        for ts, drawing in self.known_drawings.items():
+            drawing.zoom = zoom
 
     def _on_connected(self, device, pspec):
         # Turns out we don't really care about whether the device is

@@ -38,6 +38,7 @@ class Drawing(Gtk.Box):
         Config.instance().connect('notify::orientation', self._on_orientation_changed)
 
         self.json_data = json_data
+        self._zoom = 0
         self.refresh()  # sets self.svg
 
         self.timestamp = self.svg.timestamp
@@ -47,17 +48,33 @@ class Drawing(Gtk.Box):
         self.refresh()
 
     def refresh(self):
-        self.svg = svg = JsonSvg(self.json_data, self.orientation)
+        self.svg = JsonSvg(self.json_data, self.orientation)
+        self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(filename=self.svg.filename,
+                                                              width=1000,
+                                                              height=1000,
+                                                              preserve_aspect_ratio=True)
+        self.redraw()
 
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(filename=svg.filename,
-                                                         width=250,
-                                                         height=250,
-                                                         preserve_aspect_ratio=True)
-        self.image_svg.set_from_pixbuf(pixbuf)
+    def redraw(self):
+        pb = self.pixbuf.scale_simple(250 + (self.zoom * 50),
+                                 250 + (self.zoom * 50),
+                                 GdkPixbuf.InterpType.BILINEAR)
+        self.image_svg.set_from_pixbuf(pb)
 
     @GObject.Property
     def name(self):
         return "drawing"
+
+    @GObject.Property
+    def zoom(self):
+        return self._zoom
+
+    @zoom.setter
+    def zoom(self, zoom):
+        if zoom == self._zoom:
+            return
+        self._zoom = zoom
+        self.redraw()
 
     @Gtk.Template.Callback('_on_download_button_clicked')
     def _on_download_button_clicked(self, button):

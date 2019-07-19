@@ -237,3 +237,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def _on_orientation_changed(self, action, label):
         action.set_state(label)
         Config.instance().orientation = label.get_string()  # this is a GVariant
+
+    @Gtk.Template.Callback('_on_zoom_changed')
+    def _on_zoom_changed(self, adjustment):
+        dp = self._get_child('drawing_perspective')
+        dp.zoom = int(adjustment.get_value())
