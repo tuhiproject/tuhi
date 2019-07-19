@@ -963,7 +963,11 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             if packet.bitmask & 0b00111100 == 0:
                 continue
 
-            stroke.new_abs((x, y), p)
+            def normalize(p):
+                NORMALIZED_RANGE = 0x10000
+                return NORMALIZED_RANGE * p / self.pressure
+
+            stroke.new_abs((x, y), normalize(p))
 
         drawing.seal()
         return drawing
