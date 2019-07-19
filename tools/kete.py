@@ -629,7 +629,8 @@ class Fetcher(Worker):
                 elif self.orientation == 'Reverse-Landscape':
                     x, y = width - x, height - y
 
-                delta = (p['pressure'] - 1000.0) / 1000.0
+                # Pressure normalized range is [0, 0xffff]
+                delta = (p['pressure'] - 0x8000) / 0x8000
                 stroke_width = 0.4 + 0.20 * delta
                 points_with_sk_width.append((x, y, stroke_width))
 
