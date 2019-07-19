@@ -139,7 +139,7 @@
         <property name="can_focus">False</property>
         <property name="stock">gtk-missing-image</property>
         <style>
-          <class name="bg-white"/>
+          <class name="bg-paper"/>
         </style>
       </object>
       <packing>
