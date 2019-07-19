@@ -131,6 +131,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.maximize()
         self._tuhi = TuhiKeteManager()
 
         action = Gio.SimpleAction.new_stateful('orientation', GLib.VariantType('s'),
