@@ -12,7 +12,7 @@
 #
 
 from gettext import gettext as _
-from gi.repository import GObject, Gtk
+from gi.repository import GObject, Gtk, GdkPixbuf
 
 from .config import Config
 from .svg import JsonSvg
@@ -54,13 +54,12 @@ class Drawing(Gtk.Box):
         Config.instance().connect('notify::orientation', self._on_orientation_changed)
 
         self.json_data = json_data
-        self.svg = svg = JsonSvg(json_data, orientation=self.orientation)
-        day = relative_date(svg.timestamp)
-        hour = time.strftime('%H:%M', time.localtime(svg.timestamp))
+        self.refresh()  # sets self.svg
 
+        day = relative_date(self.svg.timestamp)
+        hour = time.strftime('%H:%M', time.localtime(self.svg.timestamp))
         self.label_timestamp.set_text(f'{day} {hour}')
-        self.image_svg.set_from_file(svg.filename)
-        self.timestamp = svg.timestamp
+        self.timestamp = self.svg.timestamp
 
     def _on_orientation_changed(self, config, pspec):
         self.orientation = config.orientation
@@ -68,7 +67,12 @@ class Drawing(Gtk.Box):
 
     def refresh(self):
         self.svg = svg = JsonSvg(self.json_data, self.orientation)
-        self.image_svg.set_from_file(svg.filename)
+
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(filename=svg.filename,
+                                                         width=250,
+                                                         height=250,
+                                                         preserve_aspect_ratio=True)
+        self.image_svg.set_from_pixbuf(pixbuf)
 
     @GObject.Property
     def name(self):
