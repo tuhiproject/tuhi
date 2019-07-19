@@ -30,8 +30,7 @@ def gtk_style():
       background-color: #ebe9e8;
     }
     .drawing {
-      border: 2px outset #0d0d0d;
-      background-color: #c4dbff;
+      background-color: white;
       border-radius: 5px;
     }
     """
