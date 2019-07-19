@@ -22,44 +22,119 @@
     <property name="can_focus">False</property>
     <property name="icon_name">object-rotate-right-symbolic</property>
   </object>
-  <template class="Drawing" parent="GtkBox">
+  <template class="Drawing" parent="GtkEventBox">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="margin_left">20</property>
-    <property name="margin_right">20</property>
-    <property name="orientation">vertical</property>
+    <signal name="enter-notify-event" handler="_on_enter" swapped="no"/>
+    <signal name="leave-notify-event" handler="_on_leave" swapped="no"/>
     <child>
-      <object class="GtkBox" id="box_toolbar">
+      <object class="GtkBox" id="box_drawing">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="halign">center</property>
-        <property name="valign">start</property>
-        <property name="margin_left">10</property>
-        <property name="margin_right">10</property>
-        <property name="margin_top">10</property>
-        <property name="margin_bottom">10</property>
-        <property name="hexpand">True</property>
+        <property name="margin_left">20</property>
+        <property name="margin_right">20</property>
+        <property name="orientation">vertical</property>
         <child>
-          <object class="GtkButton" id="btn_rotate_left">
+          <object class="GtkBox" id="box_toolbar">
+            <property name="height_request">20</property>
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image">image_rotate_left</property>
-            <signal name="clicked" handler="_on_rotate_button_clicked" swapped="no"/>
+            <property name="can_focus">False</property>
+            <property name="halign">center</property>
+            <property name="valign">start</property>
+            <property name="margin_left">10</property>
+            <property name="margin_right">10</property>
+            <property name="margin_top">10</property>
+            <property name="margin_bottom">10</property>
+            <property name="hexpand">True</property>
+            <child>
+              <object class="GtkButton" id="btn_rotate_left">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="image">image_rotate_left</property>
+                <signal name="clicked" handler="_on_rotate_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="btn_rotate_right">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="image">image_rotate_right</property>
+                <signal name="clicked" handler="_on_rotate_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="btn_download">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="halign">center</property>
+                <property name="image">icon_download</property>
+                <signal name="clicked" handler="_on_download_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">10</property>
+                <property name="margin_right">10</property>
+                <property name="orientation">vertical</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">4</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="btn_remove">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="image">icon_remove</property>
+                <signal name="clicked" handler="_on_delete_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">6</property>
+              </packing>
+            </child>
           </object>
           <packing>
-            <property name="expand">False</property>
+            <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="btn_rotate_right">
+          <object class="GtkImage" id="image_svg">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image">image_rotate_right</property>
-            <signal name="clicked" handler="_on_rotate_button_clicked" swapped="no"/>
+            <property name="can_focus">False</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="margin_bottom">10</property>
+            <property name="stock">gtk-missing-image</property>
+            <style>
+              <class name="bg-paper"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -67,76 +142,10 @@
             <property name="position">2</property>
           </packing>
         </child>
-        <child>
-          <object class="GtkButton" id="btn_download">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="halign">center</property>
-            <property name="image">icon_download</property>
-            <signal name="clicked" handler="_on_download_button_clicked" swapped="no"/>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">3</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkSeparator">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_left">10</property>
-            <property name="margin_right">10</property>
-            <property name="orientation">vertical</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">4</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="btn_remove">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image">icon_remove</property>
-            <signal name="clicked" handler="_on_delete_button_clicked" swapped="no"/>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">6</property>
-          </packing>
-        </child>
-      </object>
-      <packing>
-        <property name="expand">True</property>
-        <property name="fill">True</property>
-        <property name="position">1</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkImage" id="image_svg">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="halign">center</property>
-        <property name="valign">center</property>
-        <property name="margin_bottom">10</property>
-        <property name="stock">gtk-missing-image</property>
         <style>
-          <class name="bg-paper"/>
+          <class name="drawing"/>
         </style>
       </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">2</property>
-      </packing>
     </child>
-    <style>
-      <class name="drawing"/>
-    </style>
   </template>
 </interface>

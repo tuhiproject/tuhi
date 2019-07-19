@@ -12,7 +12,7 @@
 #
 
 from gettext import gettext as _
-from gi.repository import GObject, Gtk, GdkPixbuf
+from gi.repository import GObject, Gtk, GdkPixbuf, Gdk
 
 from .config import Config
 from .svg import JsonSvg
@@ -24,7 +24,7 @@ gi.require_version("Gtk", "3.0")
 
 
 @Gtk.Template(resource_path='/org/freedesktop/Tuhi/ui/Drawing.ui')
-class Drawing(Gtk.Box):
+class Drawing(Gtk.EventBox):
     __gtype_name__ = "Drawing"
 
     box_toolbar = Gtk.Template.Child()
@@ -42,6 +42,7 @@ class Drawing(Gtk.Box):
         self.refresh()  # sets self.svg
 
         self.timestamp = self.svg.timestamp
+        self.box_toolbar.set_opacity(0)
 
     def _on_orientation_changed(self, config, pspec):
         self.orientation = config.orientation
@@ -123,3 +124,13 @@ class Drawing(Gtk.Box):
         o = orientations[orientations.index(self.orientation) + advance]
         self.orientation = o
         self.refresh()
+
+    @Gtk.Template.Callback('_on_enter')
+    def _on_enter(self, *args):
+        self.box_toolbar.set_opacity(100)
+
+    @Gtk.Template.Callback('_on_leave')
+    def _on_leave(self, drawing, event):
+        if event.detail == Gdk.NotifyType.INFERIOR:
+            return
+        self.box_toolbar.set_opacity(0)
