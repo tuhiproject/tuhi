@@ -51,18 +51,56 @@ def relative_time(seconds):
     return _('a long time ago')
 
 
+@Gtk.Template(resource_path="/org/freedesktop/Tuhi/ui/Flowbox.ui")
+class Flowbox(Gtk.Box):
+    __gtype_name__ = "Flowbox"
+
+    label_date = Gtk.Template.Child()
+    flowbox_drawings = Gtk.Template.Child()
+
+    def __init__(self, timestruct, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.time = timestruct
+        self.label_date.set_text(time.strftime('%B %Y', self.time))
+
+    def insert(self, drawing):
+        # We don't know which order we get drawings from the device, so
+        # let's do a sorted insert here
+        index = 0
+        child = self.flowbox_drawings.get_child_at_index(index)
+        while child is not None:
+            if child.get_child().timestamp < drawing.timestamp:
+                break
+            index += 1
+            child = self.flowbox_drawings.get_child_at_index(index)
+
+        self.flowbox_drawings.insert(drawing, index)
+
+    def delete(self, drawing):
+        def delete_matching_child(child, drawing):
+            if child.get_child() == drawing:
+                self.flowbox_drawings.remove(child)
+        self.flowbox_drawings.foreach(delete_matching_child, drawing)
+
+    @GObject.property
+    def is_empty(self):
+        return not self.flowbox_drawings.get_children()
+
+
 @Gtk.Template(resource_path="/org/freedesktop/Tuhi/ui/DrawingPerspective.ui")
 class DrawingPerspective(Gtk.Stack):
     __gtype_name__ = "DrawingPerspective"
 
-    flowbox_drawings = Gtk.Template.Child()
+    viewport = Gtk.Template.Child()
     overlay_undo = Gtk.Template.Child()
     notification_delete_undo = Gtk.Template.Child()
     notification_delete_close = Gtk.Template.Child()
+    box_all_drawings = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.known_drawings = []
+        self.known_drawings = {}  # type {timestamp: Drawing()}
+        self.flowboxes = {}
 
     def _cache_drawings(self, device, pspec):
         # The config backend filters duplicates anyway, so don't care here
@@ -71,36 +109,41 @@ class DrawingPerspective(Gtk.Stack):
             Config.instance().add_drawing(ts, json_string)
 
     def _update_drawings(self, config, pspec):
+        def _hash(drawing):
+            return time.strftime('Y%m', time.gmtime(drawing.timestamp))
+
         for js in config.drawings:
-            if js in self.known_drawings:
+            ts = js['timestamp']
+            if ts in self.known_drawings:
                 continue
 
-            self.known_drawings.append(js)
-
             drawing = Drawing(js)
+            self.known_drawings[ts] = drawing
 
-            # We don't know which order we get drawings from the device, so
-            # let's do a sorted insert here
-            index = 0
-            child = self.flowbox_drawings.get_child_at_index(index)
-            while child is not None:
-                if child.get_child().timestamp < drawing.timestamp:
-                    break
-                index += 1
-                child = self.flowbox_drawings.get_child_at_index(index)
+            # Now pick the right monthly flowbox to insert into
+            key = _hash(drawing)
+            try:
+                fb = self.flowboxes[key]
+            except KeyError:
+                fb = Flowbox(time.gmtime(drawing.timestamp))
+                self.flowboxes[key] = fb
+                self.box_all_drawings.add(fb)
+            finally:
+                fb.insert(drawing)
 
-            self.flowbox_drawings.insert(drawing, index)
-
-        # Remove deleted ones
-        deleted = [d for d in self.known_drawings if d not in config.drawings]
-        for d in deleted:
-            def delete_matching_child(child, drawing):
-                if child.get_child().timestamp == drawing['timestamp']:
-                    self.flowbox_drawings.remove(child)
-                    self.known_drawings.remove(drawing)
-                    self.notification_delete_undo.deleted_drawing = drawing['timestamp']
-                    self.overlay_undo.set_reveal_child(True)
-            self.flowbox_drawings.foreach(delete_matching_child, d)
+        # Remove deleted drawings
+        deleted = [ts for ts in self.known_drawings if ts not in
+                        [ js['timestamp'] for js in config.drawings]]
+        for ts in deleted:
+            drawing = self.known_drawings[ts]
+            fb = self.flowboxes[_hash(drawing)]
+            fb.delete(drawing)
+            if fb.is_empty:
+                del self.flowboxes[_hash(drawing)]
+                self.box_all_drawings.remove(fb)
+            del self.known_drawings[ts]
+            self.notification_delete_undo.deleted_drawing = drawing.timestamp
+            self.overlay_undo.set_reveal_child(True)
 
     @GObject.Property
     def device(self):

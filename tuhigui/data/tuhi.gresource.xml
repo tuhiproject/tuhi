@@ -4,6 +4,7 @@
         <file preprocess="xml-stripblanks">AboutDialog.ui</file>
         <file preprocess="xml-stripblanks">ui/Drawing.ui</file>
         <file preprocess="xml-stripblanks">ui/DrawingPerspective.ui</file>
+        <file preprocess="xml-stripblanks">ui/Flowbox.ui</file>
         <file preprocess="xml-stripblanks">ui/MainWindow.ui</file>
         <file preprocess="xml-stripblanks">ui/SetupPerspective.ui</file>
         <file preprocess="xml-stripblanks">ui/ErrorPerspective.ui</file>
