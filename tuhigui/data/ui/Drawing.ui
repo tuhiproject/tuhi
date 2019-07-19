@@ -25,6 +25,8 @@
   <template class="Drawing" parent="GtkBox">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
+    <property name="margin_left">20</property>
+    <property name="margin_right">20</property>
     <property name="orientation">vertical</property>
     <child>
       <object class="GtkBox">
