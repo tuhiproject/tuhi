@@ -42,6 +42,7 @@ def relative_date(timestamp):
 class Drawing(Gtk.Box):
     __gtype_name__ = "Drawing"
 
+    box_toolbar = Gtk.Template.Child()
     label_timestamp = Gtk.Template.Child()
     image_svg = Gtk.Template.Child()
     btn_rotate_left = Gtk.Template.Child()
