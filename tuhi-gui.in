@@ -27,6 +27,7 @@ def gtk_style():
       background-color: white;
     }
     .bg-paper {
+      border-radius: 5px;
       background-color: #ebe9e8;
     }
     .drawing {
