@@ -32,27 +32,12 @@
       <object class="GtkBox" id="box_toolbar">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="halign">center</property>
+        <property name="margin_left">10</property>
         <property name="margin_right">10</property>
         <property name="margin_top">10</property>
         <property name="margin_bottom">10</property>
         <property name="hexpand">True</property>
-        <child>
-          <object class="GtkLabel" id="label_timestamp">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_left">20</property>
-            <property name="margin_right">20</property>
-            <property name="label" translatable="yes">Wed 09:55 07/07/2019</property>
-            <attributes>
-              <attribute name="weight" value="semibold"/>
-            </attributes>
-          </object>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
         <child>
           <object class="GtkButton" id="btn_rotate_left">
             <property name="visible">True</property>

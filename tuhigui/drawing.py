@@ -23,27 +23,11 @@ import gi
 gi.require_version("Gtk", "3.0")
 
 
-def relative_date(timestamp):
-    t = datetime.date.fromtimestamp(timestamp)
-    today = datetime.date.today()
-    diff = t - today
-
-    if diff.days == 0:
-        return _('Today')
-    if diff.days == -1:
-        return _('Yesterday')
-    if diff.days > -4:  # last 4 days we convert to weekdays
-        return t.strftime('%A')
-
-    return t.strftime('%x')
-
-
 @Gtk.Template(resource_path='/org/freedesktop/Tuhi/ui/Drawing.ui')
 class Drawing(Gtk.Box):
     __gtype_name__ = "Drawing"
 
     box_toolbar = Gtk.Template.Child()
-    label_timestamp = Gtk.Template.Child()
     image_svg = Gtk.Template.Child()
     btn_rotate_left = Gtk.Template.Child()
     btn_rotate_right = Gtk.Template.Child()
@@ -56,9 +40,6 @@ class Drawing(Gtk.Box):
         self.json_data = json_data
         self.refresh()  # sets self.svg
 
-        day = relative_date(self.svg.timestamp)
-        hour = time.strftime('%H:%M', time.localtime(self.svg.timestamp))
-        self.label_timestamp.set_text(f'{day} {hour}')
         self.timestamp = self.svg.timestamp
 
     def _on_orientation_changed(self, config, pspec):
