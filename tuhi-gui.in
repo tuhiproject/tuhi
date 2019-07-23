@@ -23,6 +23,9 @@ def install_excepthook():
 
 def gtk_style():
     css = b"""
+    flowboxchild:selected {
+      background-color: white;
+    }
     .bg-white {
       background-color: white;
     }
