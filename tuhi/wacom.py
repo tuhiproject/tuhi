@@ -287,6 +287,10 @@ class WacomEEAGAINException(WacomException):
     errno = errno.EAGAIN
 
 
+class WacomUnsupportedCommandException(WacomException):
+    errno = errno.ENOMSG
+
+
 class WacomWrongModeException(WacomException):
     errno = errno.EBADE
 
@@ -515,7 +519,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
         elif data[0] == 0x02:
             raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
         elif data[0] == 0x05:
-            raise WacomCorruptDataException(f'invalid opcode')
+            raise WacomUnsupportedCommandException(f'invalid opcode')
         elif data[0] == 0x07:
             raise WacomNotRegisteredException(f'wrong device, please re-register')
         elif data[0] != 0x00:
