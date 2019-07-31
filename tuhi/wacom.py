@@ -28,15 +28,15 @@ from .uhid import UHIDDevice
 
 logger = logging.getLogger('tuhi.wacom')
 
-NORDIC_UART_SERVICE_UUID             = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
-NORDIC_UART_CHRC_TX_UUID             = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
-NORDIC_UART_CHRC_RX_UUID             = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
-WACOM_LIVE_SERVICE_UUID              = '00001523-1212-efde-1523-785feabcd123'  # NOQA
-WACOM_CHRC_LIVE_PEN_DATA_UUID        = '00001524-1212-efde-1523-785feabcd123'  # NOQA
-WACOM_OFFLINE_SERVICE_UUID           = 'ffee0001-bbaa-9988-7766-554433221100'  # NOQA
-WACOM_OFFLINE_CHRC_PEN_DATA_UUID     = 'ffee0003-bbaa-9988-7766-554433221100'  # NOQA
-MYSTERIOUS_NOTIFICATION_SERVICE_UUID = '3a340720-c572-11e5-86c5-0002a5d5c51b'  # NOQA
-MYSTERIOUS_NOTIFICATION_CHRC_UUID    = '3a340721-c572-11e5-86c5-0002a5d5c51b'  # NOQA
+NORDIC_UART_SERVICE_UUID           = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
+NORDIC_UART_CHRC_TX_UUID           = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
+NORDIC_UART_CHRC_RX_UUID           = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
+WACOM_LIVE_SERVICE_UUID            = '00001523-1212-efde-1523-785feabcd123'  # NOQA
+WACOM_CHRC_LIVE_PEN_DATA_UUID      = '00001524-1212-efde-1523-785feabcd123'  # NOQA
+WACOM_OFFLINE_SERVICE_UUID         = 'ffee0001-bbaa-9988-7766-554433221100'  # NOQA
+WACOM_OFFLINE_CHRC_PEN_DATA_UUID   = 'ffee0003-bbaa-9988-7766-554433221100'  # NOQA
+SYSEVENT_NOTIFICATION_SERVICE_UUID = '3a340720-c572-11e5-86c5-0002a5d5c51b'  # NOQA
+SYSEVENT_NOTIFICATION_CHRC_UUID    = '3a340721-c572-11e5-86c5-0002a5d5c51b'  # NOQA
 
 
 @enum.unique
@@ -160,8 +160,8 @@ class DataLogger(object):
         def recv(self, data):
             return self.parent._recv(self.source, data)
 
-    class _Mysterious(object):
-        source = 'MYSTERIOUS'
+    class _SysEvent(object):
+        source = 'SYSEVENT'
 
         def __init__(self, parent):
             self.parent = parent
@@ -201,7 +201,7 @@ class DataLogger(object):
 
         self.nordic = DataLogger._Nordic(self)
         self.pen = DataLogger._Pen(self)
-        self.mysterious = DataLogger._Mysterious(self)
+        self.sysevent = DataLogger._SysEvent(self)
         self.logfile = None
 
     def _on_bluez_connected(self, bluez_device):
@@ -557,7 +557,7 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
 
     @classmethod
     def is_spark(cls, device):
-        return MYSTERIOUS_NOTIFICATION_CHRC_UUID not in device.characteristics
+        return SYSEVENT_NOTIFICATION_CHRC_UUID not in device.characteristics
 
     def register_device(self, uuid):
         protocol = Protocol.UNKNOWN
@@ -1058,8 +1058,8 @@ class WacomProtocolSlate(WacomProtocolSpark):
     def __init__(self, device, uuid):
         super().__init__(device, uuid)
 
-        device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
-                                  self._on_mysterious_data_received)
+        device.connect_gatt_value(SYSEVENT_NOTIFICATION_CHRC_UUID,
+                                  self._on_sysevent_data_received)
 
     def live_mode(self, mode, uhid):
         # Slate tablet has two models A5 and A4
@@ -1072,8 +1072,8 @@ class WacomProtocolSlate(WacomProtocolSpark):
 
         return super().live_mode(mode, uhid)
 
-    def _on_mysterious_data_received(self, name, value):
-        self.fw_logger.mysterious.recv(value)
+    def _on_sysevent_data_received(self, name, value):
+        self.fw_logger.sysevent.recv(value)
 
     def ack_transaction(self):
         self.send_nordic_command_sync(command=0xca)
