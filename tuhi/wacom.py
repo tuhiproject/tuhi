@@ -485,12 +485,12 @@ class WacomProtocolLowLevelComm(GObject.Object):
         self.fw_logger.nordic.send(data)
         chrc.write_value(data)
 
-    def check_nordic_incoming(self):
+    def pop_next_message(self):
         answer = self.nordic_answer
         length = answer[1]
         args = answer[2:]
         if length > len(args):
-            raise WacomException(f'error while processing answer, should get an answer of size {length} instead of {len(args)}')
+            raise WacomException(f'Invalid answer message length: expected {length}, got {len(args)}')
         self.nordic_answer = self.nordic_answer[length + 2:]  # opcode + len
         return NordicData(answer)
 
@@ -499,7 +499,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
             # timeout
             raise WacomTimeoutException(f'{self.device.name}: Timeout while reading data')
 
-        data = self.check_nordic_incoming()
+        data = self.pop_next_message()
 
         # logger.debug(f'received {data.opcode:02x} / {data.length:02x} / {b2hex(bytes(data))}')
 
