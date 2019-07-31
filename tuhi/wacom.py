@@ -501,12 +501,11 @@ class WacomProtocolLowLevelComm(GObject.Object):
 
         # logger.debug(f'received {data.opcode:02x} / {data.length:02x} / {b2hex(bytes(data))}')
 
-        if isinstance(expected_opcode, list):
-            if data.opcode not in expected_opcode:
-                raise WacomException(f'unexpected opcode: {data.opcode:02x}')
-        else:
-            if data.opcode != expected_opcode:
-                raise WacomException(f'unexpected opcode: {data.opcode:02x}')
+        if not isinstance(expected_opcode, list):
+            expected_opcode = [expected_opcode]
+
+        if data.opcode not in expected_opcode:
+            raise WacomException(f'unexpected opcode: {data.opcode:02x}')
 
         return data
 
