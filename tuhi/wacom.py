@@ -138,6 +138,8 @@ class DataLogger(object):
     This uses a logger for stdout, but it also writes the log files to disk
     for future re-use.
 
+    Targets for log are $HOME/.share/tuhi/12:AB:23:CD:.../<timestamp>.yml
+
     '''
     class _Nordic(object):
         source = 'NORDIC'
@@ -450,8 +452,8 @@ class WacomPacketHandlerUnknownFixedStrokeDataIntuosPro(WacomPacketHandler):
 class WacomProtocolLowLevelComm(GObject.Object):
     '''
     Internal class to handle the communication with the Wacom device.
-    No-one should directly instanciate this.
-
+    No-one should directly instanciate this, use the device-specific
+    subclass instead (e.g. WacomProtocolIntuosPro).
 
     :param device: the BlueZDevice object that is this wacom device
     '''
