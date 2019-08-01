@@ -254,7 +254,7 @@ class DataLogger(object):
 
     def _send(self, source, data):
         command = data[0]
-        arguments = data[1:]
+        arguments = data[2:]
 
         if data[0] in self.commands:
             self.logger.debug(f'command: {self.commands[data[0]]}')
