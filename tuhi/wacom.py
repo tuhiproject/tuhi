@@ -25,6 +25,7 @@ import errno
 from gi.repository import GObject
 from .drawing import Drawing
 from .uhid import UHIDDevice
+from tuhi.protocol import NordicData
 
 logger = logging.getLogger('tuhi.wacom')
 
@@ -266,19 +267,6 @@ class DataLogger(object):
         self.logfile.write(f'  - send: {list2hexlist(data)}\n')
         if source != 'NORDIC':
             self.logfile.write(f'  source: {source}')
-
-
-class NordicData(list):
-    '''A set of bytes as expected by the Nordic controller on the device.
-    First byte is the opcode, second byte is the length, rest is data.
-
-    This is an abstraction of a list. Instantiate with the full raw data,
-    the list contents will just be the data bytes.
-    '''
-    def __init__(self, bs):
-        super().__init__(bs[2:])
-        self.opcode = bs[0]
-        self.length = bs[1]
 
 
 class WacomException(Exception):
