@@ -292,7 +292,6 @@ class TuhiKeteDevice(_DBusObject):
             else:
                 logger.debug(f'{self}: Download done')
 
-
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
         if changed_props is None:
             return
