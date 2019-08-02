@@ -172,21 +172,21 @@ class DataLogger(object):
             return self.parent._recv(self.source, data)
 
     commands = {
-            0xb1: 'start/stop live',
-            0xb6: 'set time',
-            0xb7: 'get firmware',
-            0xb9: 'read battery info',
-            0xbb: 'get/set name',
-            0xc1: 'check for data',
-            0xc3: 'start reading',
-            0xc5: 'fetch data',
-            0xc8: 'end of data',
-            0xca: 'ack transaction',
-            0xcc: 'fetch data',
-            0xea: 'get dimensions',
-            0xe5: 'finish registering',
-            0xe6: 'check connection',
-            0xdb: 'get name',
+        0xb1: 'start/stop live',
+        0xb6: 'set time',
+        0xb7: 'get firmware',
+        0xb9: 'read battery info',
+        0xbb: 'get/set name',
+        0xc1: 'check for data',
+        0xc3: 'start reading',
+        0xc5: 'fetch data',
+        0xc8: 'end of data',
+        0xca: 'ack transaction',
+        0xcc: 'fetch data',
+        0xea: 'get dimensions',
+        0xe5: 'finish registering',
+        0xe6: 'check connection',
+        0xdb: 'get name',
     }
 
     def __init__(self, bluez_device):
@@ -236,10 +236,12 @@ class DataLogger(object):
 
     def _recv(self, source, data):
         if source in ['NORDIC', 'PEN']:
-            def _convert(values): return list2hex(values)
+            def _convert(values):
+                return list2hex(values)
             convert = _convert
         else:
-            def _convert(values): return binascii.hexlify(bytes(values))
+            def _convert(values):
+                return binascii.hexlify(bytes(values))
             convert = _convert
 
         self.logger.debug(f'{self.btaddr}: RX {source} <-- {convert(data)}')
@@ -1004,7 +1006,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                       arguments=None)
         self.set_time()
         self.read_time()
-        name = self.get_name()
+        self.get_name()
         self.get_firmware_version()
 
     def live_mode(self, mode, uhid):
@@ -1102,7 +1104,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         self.set_time()
         self.read_time()
         self.ec_command()
-        name = self.get_name()
+        self.get_name()
 
         w, h = self.get_dimensions()
         if self.width != w or self.height != h:
@@ -1124,7 +1126,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
             self.height = h
             self.notify('dimensions')
 
-            fw = self.get_firmware_version()
+            self.get_firmware_version()
             self.ec_command()
             if self.read_offline_data() == 0:
                 logger.info('no data to retrieve')
@@ -1310,9 +1312,9 @@ class WacomDevice(GObject.Object):
 
     def _init_protocol(self, protocol):
         protocols = {
-                Protocol.SPARK: WacomProtocolSpark,
-                Protocol.SLATE: WacomProtocolSlate,
-                Protocol.INTUOS_PRO: WacomProtocolIntuosPro,
+            Protocol.SPARK: WacomProtocolSpark,
+            Protocol.SLATE: WacomProtocolSlate,
+            Protocol.INTUOS_PRO: WacomProtocolIntuosPro,
         }
 
         if protocol not in protocols:
