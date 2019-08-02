@@ -492,7 +492,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
         if length > len(args):
             raise WacomException(f'Invalid answer message length: expected {length}, got {len(args)}')
         self.nordic_answer = self.nordic_answer[length + 2:]  # opcode + len
-        return NordicData(answer)
+        return NordicData(answer[:length + 2])
 
     def wait_nordic_data(self, expected_opcode, timeout=None):
         if not self.nordic_event.acquire(timeout=timeout):
