@@ -86,7 +86,7 @@ class DrawingPerspective(Gtk.Stack):
 
     def _update_drawings(self, config, pspec):
         def _hash(drawing):
-            return time.strftime('Y%m', time.gmtime(drawing.timestamp))
+            return time.strftime('%Y%m', time.gmtime(drawing.timestamp))
 
         for js in config.drawings:
             ts = js['timestamp']
