@@ -26,31 +26,6 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('tuhi.gui.drawingperspective')
 
 
-def relative_time(seconds):
-    MIN = 60
-    H = 60 * MIN
-    DAY = 24 * H
-    WEEK = 7 * DAY
-
-    if seconds < 30:
-        return _('just now')
-    if seconds < 5 * MIN:
-        return _('a few minutes ago')
-    if seconds < H:
-        minutes = int(seconds / MIN / 10) * 10
-        return _(f'{minutes} minutes ago')
-    if seconds < DAY:
-        hours = int(seconds / H)
-        return _(f'{hours} hours ago')
-    if seconds < 4 * WEEK:
-        days = int(seconds / DAY)
-        return _(f'{days} days ago')
-    if seconds > 10 * 365 * DAY:
-        return _('not yet')
-
-    return _('a long time ago')
-
-
 @Gtk.Template(resource_path="/org/freedesktop/Tuhi/ui/Flowbox.ui")
 class Flowbox(Gtk.Box):
     __gtype_name__ = "Flowbox"

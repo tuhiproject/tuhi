@@ -17,8 +17,6 @@ from gi.repository import GObject, Gtk, GdkPixbuf, Gdk
 from .config import Config
 from .svg import JsonSvg
 
-import datetime
-import time
 import gi
 gi.require_version("Gtk", "3.0")
 
