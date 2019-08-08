@@ -88,7 +88,7 @@ class DrawingPerspective(Gtk.Stack):
         def _hash(drawing):
             return time.strftime('%Y%m', time.gmtime(drawing.timestamp))
 
-        for js in config.drawings:
+        for js in sorted(config.drawings, reverse=True, key=lambda j: j['timestamp']):
             ts = js['timestamp']
             if ts in self.known_drawings:
                 continue
