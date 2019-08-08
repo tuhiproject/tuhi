@@ -14,11 +14,14 @@
 import subprocess
 from multiprocessing import Process
 
+
 def start_tuhi():
     subprocess.run('tuhi')
 
+
 def start_tuhigui():
     subprocess.run('tuhi-gui')
+
 
 if __name__ == '__main__':
     tuhi = Process(target=start_tuhi)

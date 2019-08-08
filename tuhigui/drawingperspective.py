@@ -11,7 +11,6 @@
 #  GNU General Public License for more details.
 #
 
-from gettext import gettext as _
 from gi.repository import GObject, Gtk
 from .drawing import Drawing
 from .config import Config
@@ -108,8 +107,7 @@ class DrawingPerspective(Gtk.Stack):
                 fb.insert(drawing)
 
         # Remove deleted drawings
-        deleted = [ts for ts in self.known_drawings if ts not in
-                        [ js['timestamp'] for js in config.drawings]]
+        deleted = [ts for ts in self.known_drawings if ts not in [js['timestamp'] for js in config.drawings]]
         for ts in deleted:
             drawing = self.known_drawings[ts]
             fb = self.flowboxes[_hash(drawing)]

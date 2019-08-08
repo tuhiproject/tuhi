@@ -179,7 +179,6 @@ class MainWindow(Gtk.ApplicationWindow):
         device.connect('notify::battery-state', self._on_battery_changed)
         self._on_battery_changed(device, None)
 
-
     def _on_battery_changed(self, device, pspec):
         if device.battery_percent > 80:
             fill = 'full'
