@@ -6,12 +6,12 @@
     <property name="can_focus">False</property>
     <property name="modal">True</property>
     <property name="type_hint">normal</property>
-    <property name="program_name">TuhiGUI</property>
+    <property name="program_name">Tuhi</property>
     <property name="version">@version@</property>
     <property name="copyright">Copyright © 2019 Tuhi Developers</property>
     <property name="website">@url@</property>
     <property name="website_label" translatable="yes">Visit Tuhi’s website</property>
-    <property name="logo_icon_name">org.freedesktop.TuhiGui</property>
+    <property name="logo_icon_name">org.freedesktop.Tuhi</property>
     <property name="license_type">gpl-2-0</property>
     <child internal-child="vbox">
       <object class="GtkBox">
