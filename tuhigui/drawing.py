@@ -48,16 +48,27 @@ class Drawing(Gtk.EventBox):
 
     def refresh(self):
         self.svg = JsonSvg(self.json_data, self.orientation)
+        width, height = -1, -1
+        if 'portrait' in self.orientation:
+            height = 1000
+        else:
+            width = 1000
         self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(filename=self.svg.filename,
-                                                              width=1000,
-                                                              height=1000,
+                                                              width=width,
+                                                              height=height,
                                                               preserve_aspect_ratio=True)
         self.redraw()
 
     def redraw(self):
-        pb = self.pixbuf.scale_simple(250 + (self.zoom * 50),
-                                 250 + (self.zoom * 50),
-                                 GdkPixbuf.InterpType.BILINEAR)
+        ratio = self.pixbuf.get_height() / self.pixbuf.get_width()
+        base = 250 + self.zoom * 50
+        if 'portrait' in self.orientation:
+            width = base / ratio
+            height = base
+        else:
+            width = base
+            height = base * ratio
+        pb = self.pixbuf.scale_simple(width, height, GdkPixbuf.InterpType.BILINEAR)
         self.image_svg.set_from_pixbuf(pb)
 
     @GObject.Property
