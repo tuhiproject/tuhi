@@ -1026,19 +1026,6 @@ class WacomProtocolSlate(WacomProtocolSpark):
     def _on_sysevent_data_received(self, name, value):
         self.fw_logger.sysevent.recv(value)
 
-    def ack_transaction(self):
-        self.p.execute(Interactions.ACK_TRANSACTION)
-
-    def is_data_available(self):
-        n = self.p.execute(Interactions.GET_DATA_AVAILABLE).count
-        logger.debug(f'Drawings available: {n}')
-        return n > 0
-
-    def get_stroke_data(self):
-        msg = self.p.execute(Interactions.GET_STROKES)
-        # logger.debug(f'cc returned {data} ')
-        return msg.count, msg.timestamp
-
     def register_device_finish(self):
         self.set_time()
         self.read_time()
@@ -1120,28 +1107,6 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     def time_from_bytes(self, data):
         seconds = int.from_bytes(data[0:4], byteorder='little')
         return time.gmtime(seconds)
-
-    # set_time is identical to spark/slate except the timestamp format
-
-    def read_time(self):
-        timestamp = self.p.execute(Interactions.GET_TIME).timestamp
-
-        t = time.strftime('%y-%m-%d %H:%M:%S', time.localtime(timestamp))
-        logger.debug(f'device time: {t}')
-
-    def get_firmware_version(self):
-        fw = self.p.execute(Interactions.GET_FIRMWARE).firmware
-        logger.info(f'firmware is {fw}')
-
-    def get_name(self):
-        name = self.p.execute(Interactions.GET_NAME).name
-        logger.info(f'device name is {name}')
-
-    def set_name(self, name):
-        self.p.execute(Interactions.SET_NAME, name)
-
-    def check_connection(self):
-        self.p.execute(Interactions.CONNECT, self._uuid)
 
     def parse_pen_data_prefix(self, data):
         expected_prefix = b'\x67\x82\x69\x65'
