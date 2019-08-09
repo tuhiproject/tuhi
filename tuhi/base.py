@@ -370,7 +370,7 @@ class Tuhi(GObject.Object):
             config = self.config.devices[bluez_device.address]
             uuid = config['uuid']
         except KeyError:
-            return
+            uuid = None
 
         # if we got here from a currently live BlueZ device,
         # ManufacturerData is reliable. Else, consider the device not in
