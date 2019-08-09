@@ -41,14 +41,6 @@ SYSEVENT_NOTIFICATION_CHRC_UUID    = '3a340721-c572-11e5-86c5-0002a5d5c51b'  # N
 
 
 @enum.unique
-class Protocol(enum.Enum):
-    UNKNOWN = 'unknown'
-    SPARK = 'spark'
-    SLATE = 'slate'
-    INTUOS_PRO = 'intuos-pro'
-
-
-@enum.unique
 class DeviceMode(enum.Enum):
     REGISTER = 1
     LISTEN = 2
@@ -544,8 +536,6 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
         return SYSEVENT_NOTIFICATION_CHRC_UUID not in device.characteristics
 
     def register_device(self, uuid):
-        protocol = Protocol.UNKNOWN
-
         if self.is_spark(self.device):
             self.p = tuhi.protocol.Protocol(ProtocolVersion.SPARK, self.nordic_data_exchange)
             # The spark replies with b3 01 01 when in pairing mode
@@ -571,15 +561,9 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
         protocol_version = self.p.execute(Interactions.REGISTER_WAIT_FOR_BUTTON).protocol_version
 
         if protocol_version == ProtocolVersion.ANY:
-                raise WacomException(f'Unknown protocol version: {protocol_version}')
+            raise WacomException(f'Unknown protocol version: {protocol_version}')
 
-        pvmap = {
-            ProtocolVersion.SPARK: Protocol.SPARK,
-            ProtocolVersion.SLATE: Protocol.SLATE,
-            ProtocolVersion.INTUOS_PRO: Protocol.INTUOS_PRO,
-        }
-
-        return pvmap[protocol_version]
+        return protocol_version
 
 
 class WacomProtocolBase(WacomProtocolLowLevelComm):
@@ -591,7 +575,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     :param device: the BlueZDevice object that is this wacom device
     :param uuid: the UUID {to be} assigned to the device
     '''
-    protocol = Protocol.UNKNOWN
+    protocol = ProtocolVersion.ANY
 
     __gsignals__ = {
         # Signal sent for each single drawing that becomes available. The
@@ -956,7 +940,7 @@ class WacomProtocolSpark(WacomProtocolBase):
     y_max = 14300
 
     pressure = 2047
-    protocol = Protocol.SPARK
+    protocol = ProtocolVersion.SPARK
     packet_handlers = [WacomPacketHandlerEndOfStroke,
                        WacomPacketHandlerEndOfSequence]
 
@@ -982,7 +966,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
     y_max = 14300
 
     pressure = 2047
-    protocol = Protocol.SLATE
+    protocol = ProtocolVersion.SLATE
     packet_handlers = [WacomPacketHandlerStrokePrefixSlate]
 
     def __init__(self, device, uuid, protocol_version=ProtocolVersion.SLATE):
@@ -1069,7 +1053,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     y_max = 29600
 
     pressure = 4095
-    protocol = Protocol.INTUOS_PRO
+    protocol = ProtocolVersion.INTUOS_PRO
     packet_handlers = [WacomPacketHandlerStrokePrefixIntuosPro,
                        WacomPacketHandlerStrokeTimestampIntuosPro,
                        WacomPacketHandlerUnknownFixedStrokeDataIntuosPro]
@@ -1161,24 +1145,21 @@ class WacomDevice(GObject.Object):
         else:
             self._uuid = self._config['uuid']
 
-            # retrieve the protocol from the config file
-            protocol = Protocol.UNKNOWN
             try:
-                protocol = next(p for p in Protocol if p.value == self._config['Protocol'])
-            except StopIteration:
+                protocol = ProtocolVersion.from_string(self._config['Protocol'])
+            except KeyError:
+                raise WacomCorruptDataException(f'Missing Protocol entry from config file. Please delete config file and re-register device')
+            except ValueError:
                 logger.error(f'Unknown protocol in configuration: {self._config["Protocol"]}')
                 raise WacomCorruptDataException(f'Unknown Protocol {self._config["Protocol"]}')
-
-            if protocol == Protocol.UNKNOWN:
-                raise WacomCorruptDataException(f'Missing Protocol entry from config file. Please delete config file and re-register device')
 
             self._init_protocol(protocol)
 
     def _init_protocol(self, protocol):
         protocols = {
-            Protocol.SPARK: WacomProtocolSpark,
-            Protocol.SLATE: WacomProtocolSlate,
-            Protocol.INTUOS_PRO: WacomProtocolIntuosPro,
+            ProtocolVersion.SPARK: WacomProtocolSpark,
+            ProtocolVersion.SLATE: WacomProtocolSlate,
+            ProtocolVersion.INTUOS_PRO: WacomProtocolIntuosPro,
         }
 
         if protocol not in protocols:
@@ -1186,7 +1167,7 @@ class WacomDevice(GObject.Object):
 
         pclass = protocols[protocol]
         self._wacom_protocol = pclass(self._device, self._uuid)
-        logger.debug(f'{self._device.name} is using protocol {protocol}')
+        logger.debug(f'{self._device.name} is using protocol {protocol.name}')
 
         self._wacom_protocol.connect(
             'drawing',
