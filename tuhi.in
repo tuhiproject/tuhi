@@ -11,6 +11,7 @@
 #  GNU General Public License for more details.
 #
 
+import sys
 import os
 import subprocess
 
@@ -21,9 +22,10 @@ tuhi_gui = os.path.join('@libexecdir@', 'tuhi-gui')
 @devel@  # NOQA
 
 if __name__ == '__main__':
-    tuhi = subprocess.Popen(tuhi_server)
+    args = sys.argv[1:]
+    tuhi = subprocess.Popen([tuhi_server] + args)
     try:
-        subprocess.run(tuhi_gui)
+        subprocess.run([tuhi_gui] + args)
     except KeyboardInterrupt:
         pass
     tuhi.terminate()

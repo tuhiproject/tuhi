@@ -13,6 +13,7 @@
 
 from gi.repository import Gio, GLib, Gtk
 from .window import MainWindow
+from .config import Config
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -22,8 +23,13 @@ gi.require_version("Gtk", "3.0")
 class Application(Gtk.Application):
     def __init__(self):
         super().__init__(application_id='org.freedesktop.Tuhi',
-                         flags=Gio.ApplicationFlags.FLAGS_NONE)
+                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         GLib.set_application_name('Tuhi')
+        self.add_main_option('config-dir', 0,
+                             GLib.OptionFlags.NONE,
+                             GLib.OptionArg.STRING,
+                             'path to configuration directory',
+                             '/path/to/config-dir')
         self._tuhi = None
 
     def do_startup(self):
@@ -33,6 +39,19 @@ class Application(Gtk.Application):
     def do_activate(self):
         window = MainWindow(application=self)
         window.present()
+
+    def do_command_line(self, command_line):
+        options = command_line.get_options_dict()
+        # convert GVariantDict -> GVariant -> dict
+        options = options.end().unpack()
+
+        try:
+            Config.set_base_path(options['config-dir'])
+        except KeyError:
+            pass
+
+        self.activate()
+        return 0
 
     def _build_app_menu(self):
         actions = [('about', self._about),

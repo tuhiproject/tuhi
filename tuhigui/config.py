@@ -22,15 +22,17 @@ from pathlib import Path
 
 logger = logging.getLogger('tuhi.gui.config')
 
-ROOT_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
+DEFAULT_CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
 
 
 class Config(GObject.Object):
     _config_obj = None
+    _base_path = DEFAULT_CONFIG_PATH
 
     def __init__(self):
         super().__init__()
-        self.path = Path(ROOT_PATH, 'tuhigui.ini')
+        self.path = Path(self._base_path, 'tuhigui.ini')
+        self.base_path = self._base_path
         self.config = configparser.ConfigParser()
         # Don't lowercase options
         self.config.optionxform = str
@@ -46,10 +48,10 @@ class Config(GObject.Object):
         self.config.read(self.path)
 
     def _load_cached_drawings(self):
-        if not ROOT_PATH.exists():
+        if not self.base_path.exists():
             return
 
-        for filename in ROOT_PATH.glob('*.json'):
+        for filename in self.base_path.glob('*.json'):
             with open(filename) as fd:
                 self._drawings.append(json.load(fd))
         self.notify('drawings')
@@ -84,15 +86,15 @@ class Config(GObject.Object):
     def add_drawing(self, timestamp, json_string):
         '''Add a drawing JSON with the given timestamp to the backend
         storage. This will update self.drawings.'''
-        ROOT_PATH.mkdir(parents=True, exist_ok=True)
+        self.base_path.mkdir(parents=True, exist_ok=True)
 
-        path = Path(ROOT_PATH, f'{timestamp}.json')
+        path = Path(self.base_path, f'{timestamp}.json')
         if path.exists():
             return
 
         # Tuhi may still cache files we've 'deleted' locally. These need to
         # be ignored because they're still technically deleted.
-        deleted = Path(ROOT_PATH, f'{timestamp}.json.deleted')
+        deleted = Path(self.base_path, f'{timestamp}.json.deleted')
         if deleted.exists():
             return
 
@@ -105,21 +107,29 @@ class Config(GObject.Object):
     def delete_drawing(self, timestamp):
         # We don't delete json files immediately, we just rename them
         # so we can resurrect them in the future if need be.
-        path = Path(ROOT_PATH, f'{timestamp}.json')
-        target = Path(ROOT_PATH, f'{timestamp}.json.deleted')
+        path = Path(self.base_path, f'{timestamp}.json')
+        target = Path(self.base_path, f'{timestamp}.json.deleted')
         path.rename(target)
 
         self._drawings = [d for d in self._drawings if d['timestamp'] != timestamp]
         self.notify('drawings')
 
     def undelete_drawing(self, timestamp):
-        path = Path(ROOT_PATH, f'{timestamp}.json')
-        target = Path(ROOT_PATH, f'{timestamp}.json.deleted')
+        path = Path(self.base_path, f'{timestamp}.json')
+        target = Path(self.base_path, f'{timestamp}.json.deleted')
         target.rename(path)
 
         with open(path) as fd:
             self._drawings.append(json.load(fd))
         self.notify('drawings')
+
+    @classmethod
+    def set_base_path(cls, path):
+        if cls._config_obj is not None:
+            logger.error('Trying to set config base path but we already have the singleton object')
+            return
+
+        cls._base_path = Path(path)
 
     @classmethod
     def instance(cls):
