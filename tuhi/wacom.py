@@ -564,41 +564,41 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
 
     def register_device(self, uuid):
         protocol = Protocol.UNKNOWN
-        args = [int(i) for i in binascii.unhexlify(uuid)]
 
         if self.is_spark(self.device):
+            self.p = tuhi.protocol.Protocol(ProtocolVersion.SPARK, self.nordic_data_exchange)
             # The spark replies with b3 01 01 when in pairing mode
             # Usually that triggers a WacomWrongModeException but here it's
             # expected
             try:
-                self.send_nordic_command_sync(command=0xe6, arguments=args)
-            except WacomWrongModeException:
+                self.p.execute(Interactions.CONNECT, uuid)
+            except tuhi.protocol.DeviceError:
                 # this is expected
                 pass
 
             # The "press button now command" on the spark
-            self.send_nordic_command(command=0xe3,
-                                     arguments=[0x01])
-            protocol = Protocol.SPARK
+            self.p.execute(Interactions.REGISTER_PRESS_BUTTON)
         else:
-            # Slate requires a button press in response to e7 directly
-            self.send_nordic_command(command=0xe7, arguments=args)
+            # Default to Slate for now, it will handle the IntuosPro too
+            self.p = tuhi.protocol.Protocol(ProtocolVersion.SLATE, self.nordic_data_exchange)
+            self.p.execute(Interactions.REGISTER_PRESS_BUTTON, uuid)
 
         logger.info('Press the button now to confirm')
         self.emit('button-press-required')
 
         # Wait for the button confirmation event, or any error
-        data = self.wait_nordic_data([0xe4, 0xb3, 0x53], 10)
+        protocol_version = self.p.execute(Interactions.REGISTER_WAIT_FOR_BUTTON).protocol_version
 
-        if protocol == Protocol.UNKNOWN:
-            if data.opcode == 0xe4:
-                protocol = Protocol.SLATE
-            elif data.opcode == 0x53:
-                protocol = Protocol.INTUOS_PRO
-            else:
-                raise WacomException(f'unexpected opcode to register reply: {data.opcode:02x}')
+        if protocol_version == ProtocolVersion.ANY:
+                raise WacomException(f'Unknown protocol version: {protocol_version}')
 
-        return protocol
+        pvmap = {
+            ProtocolVersion.SPARK: Protocol.SPARK,
+            ProtocolVersion.SLATE: Protocol.SLATE,
+            ProtocolVersion.INTUOS_PRO: Protocol.INTUOS_PRO,
+        }
+
+        return pvmap[protocol_version]
 
 
 class WacomProtocolBase(WacomProtocolLowLevelComm):

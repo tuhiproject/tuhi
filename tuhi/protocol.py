@@ -72,6 +72,7 @@ class Interactions(enum.Enum):
     START_READING = enum.auto()
     ACK_TRANSACTION = enum.auto()
     REGISTER_PRESS_BUTTON = enum.auto()
+    REGISTER_WAIT_FOR_BUTTON = enum.auto()
     REGISTER_COMPLETE = enum.auto()
 
     UNKNOWN_B1 = enum.auto()
@@ -996,29 +997,74 @@ class MsgRegisterCompleteSlate(Msg):
 class MsgRegisterPressButtonSpark(Msg):
     interaction = Interactions.REGISTER_PRESS_BUTTON
     opcode = 0xe3
-    protocol = ProtocolVersion.SLATE
+    protocol = ProtocolVersion.ANY
+    # Does not require a reply, the reply is sent in response to the
+    # physical button press.
+    requires_reply = False
 
-    # FIXME: this is almost certainly incomplete
-    def _handle_reply(self, reply):
-        if reply.opcode != 0xb3:
-            raise UnexpectedReply(reply)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = [0x01]
 
 
-class MsgRegisterPressButtonSlate(Msg):
+class MsgRegisterPressButtonSlateOrIntuosPro(Msg):
     interaction = Interactions.REGISTER_PRESS_BUTTON
     opcode = 0xe7
     protocol = ProtocolVersion.SLATE
+    # Does not require a reply, the reply is sent in response to the
+    # physical button press.
+    requires_reply = False
 
-    # FIXME: this is almost certainly incomplete
+    def __init__(self, uuid, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.uuid = uuid
+        self.args = [int(i) for i in binascii.unhexlify(uuid)]
+
+
+class MsgRegisterWaitForButtonSpark(Msg):
+    '''
+    .. attribute:: protocol_version
+
+    The protocol version used by this device, according to this message.
+
+    '''
+    interaction = Interactions.REGISTER_WAIT_FOR_BUTTON
+    requires_request = False
+    opcode = 0x00  # unused
+    protocol = ProtocolVersion.ANY
+
+    def __init__(self, *args, **kwargs):
+        kwargs['timeout'] = 10
+        super().__init__(*args, **kwargs)
+        self.protocol_version = ProtocolVersion.ANY
+
     def _handle_reply(self, reply):
         if reply.opcode != 0xe4:
             raise UnexpectedReply(reply)
+        self.protocol_version = ProtocolVersion.SPARK
 
 
-class MsgRegisterPressButtonIntuosPro(Msg):
-    interaction = Interactions.REGISTER_PRESS_BUTTON
-    opcode = 0xe7
+class MsgRegisterWaitForButtonSlateOrIntuosPro(Msg):
+    '''
+    .. attribute:: protocol_version
+
+    The protocol version used by this device, according to this message.
+
+    '''
+    interaction = Interactions.REGISTER_WAIT_FOR_BUTTON
+    requires_request = False
+    opcode = 0x00  # unused
+    protocol = ProtocolVersion.SLATE
+
+    def __init__(self, *args, **kwargs):
+        kwargs['timeout'] = 10
+        super().__init__(*args, **kwargs)
+        self.protocol_version = ProtocolVersion.ANY
 
     def _handle_reply(self, reply):
-        if reply.opcode != 0x53:
+        if reply.opcode == 0xe4:
+            self.protocol_version =  ProtocolVersion.SLATE
+        elif reply.opcode == 0x53:
+            self.protocol_version =  ProtocolVersion.INTUOS_PRO
+        else:
             raise UnexpectedReply(reply)
