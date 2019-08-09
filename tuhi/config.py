@@ -23,7 +23,7 @@ from .wacom import Protocol
 
 logger = logging.getLogger('tuhi.config')
 
-ROOT_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi')
+DEFAULT_CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi')
 
 
 def is_btaddr(addr):
@@ -31,10 +31,14 @@ def is_btaddr(addr):
 
 
 class TuhiConfig(GObject.Object):
-    def __init__(self):
+    def __init__(self, config_dir=None):
         GObject.Object.__init__(self)
+        if config_dir is None:
+            config_dir = DEFAULT_CONFIG_PATH
+        self.config_dir = config_dir
+        logger.debug(f'Using config directory: {self.config_dir}')
         try:
-            os.mkdir(ROOT_PATH)
+            os.mkdir(config_dir)
         except FileExistsError:
             pass
 
@@ -49,7 +53,7 @@ class TuhiConfig(GObject.Object):
         return self._devices
 
     def _scan_config_dir(self):
-        with os.scandir(ROOT_PATH) as it:
+        with os.scandir(self.config_dir) as it:
             for entry in it:
                 if entry.is_file():
                     continue
@@ -78,7 +82,7 @@ class TuhiConfig(GObject.Object):
         assert protocol != Protocol.UNKNOWN
 
         logger.debug(f'{address}: adding new config, UUID {uuid}')
-        path = os.path.join(ROOT_PATH, address)
+        path = os.path.join(self.config_dir, address)
         try:
             os.mkdir(path)
         except FileExistsError:
@@ -115,7 +119,7 @@ class TuhiConfig(GObject.Object):
             return
 
         logger.debug(f'{address}: adding new drawing, timestamp {drawing.timestamp}')
-        path = os.path.join(ROOT_PATH, address, f'{drawing.timestamp}.json')
+        path = os.path.join(self.config_dir, address, f'{drawing.timestamp}.json')
 
         with open(path, 'w') as f:
             f.write(drawing.to_json())
@@ -127,7 +131,7 @@ class TuhiConfig(GObject.Object):
         if address not in self.devices:
             return drawings
 
-        configdir = os.path.join(ROOT_PATH, address)
+        configdir = os.path.join(self.config_dir, address)
         with os.scandir(configdir) as it:
             for entry in it:
                 if not entry.is_file():

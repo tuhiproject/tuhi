@@ -288,7 +288,7 @@ class Tuhi(GObject.Object):
             (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
-    def __init__(self):
+    def __init__(self, config_dir=None):
         GObject.Object.__init__(self)
         self.server = TuhiDBusServer()
         self.server.connect('bus-name-acquired', self._on_tuhi_bus_name_acquired)
@@ -299,7 +299,7 @@ class Tuhi(GObject.Object):
         self.bluez.connect('discovery-started', self._on_bluez_discovery_started)
         self.bluez.connect('discovery-stopped', self._on_bluez_discovery_stopped)
 
-        self.config = TuhiConfig()
+        self.config = TuhiConfig(config_dir)
 
         self.devices = {}
 
@@ -427,6 +427,10 @@ def main(args=sys.argv):
                         help='Show some debugging informations',
                         action='store_true',
                         default=False)
+    parser.add_argument('--config-dir',
+                        help='Base directory for configuration',
+                        type=str,
+                        default=None)
 
     ns = parser.parse_args(args[1:])
     if ns.verbose:
@@ -434,7 +438,7 @@ def main(args=sys.argv):
 
     try:
         mainloop = GLib.MainLoop()
-        tuhi = Tuhi()
+        tuhi = Tuhi(config_dir=ns.config_dir)
         tuhi.connect('terminate', lambda tuhi: mainloop.quit())
         mainloop.run()
     except KeyboardInterrupt:
