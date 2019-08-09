@@ -166,6 +166,29 @@ class ProtocolVersion(enum.IntEnum):
     SLATE = 2
     INTUOS_PRO = 3
 
+    @classmethod
+    def from_string(cls, string):
+        '''
+        Return the Enum value for the given string, allowing for different
+        spellings. Specifically: INTUOS_PRO, intuos_pro and intuos-pro are
+        all allowed for the ``INTUOS_PRO`` enum value.
+
+        :raise ValueError: if the name cannot be mapped.
+        '''
+        names = {e.name: e for e in cls}
+        if string in names:
+            return names[string]
+
+        names = {e.name.lower(): e for e in cls}
+        if string in names:
+            return names[string]
+
+        names = {e.name.lower().replace('_', '-'): e for e in cls}
+        if string in names:
+            return names[string]
+
+        raise ValueError(string)
+
 
 class Mode(enum.IntEnum):
     '''
@@ -1065,8 +1088,8 @@ class MsgRegisterWaitForButtonSlateOrIntuosPro(Msg):
 
     def _handle_reply(self, reply):
         if reply.opcode == 0xe4:
-            self.protocol_version =  ProtocolVersion.SLATE
+            self.protocol_version = ProtocolVersion.SLATE
         elif reply.opcode == 0x53:
-            self.protocol_version =  ProtocolVersion.INTUOS_PRO
+            self.protocol_version = ProtocolVersion.INTUOS_PRO
         else:
             raise UnexpectedReply(reply)
