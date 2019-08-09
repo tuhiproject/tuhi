@@ -864,13 +864,11 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
     def parse_pen_data(self, data, timestamp):
         '''
-        :param timestamp: a tuple with 9 entries, corresponding to the
-        local time
+        :param timestamp: seconds since UNIX epoch
         '''
         x, y, p = 0, 0, 0
         dx, dy, dp = 0, 0, 0
 
-        timestamp = int(calendar.timegm(timestamp))
         stroke = None
 
         success, offset = self.parse_pen_data_prefix(data)
@@ -926,13 +924,12 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         transaction_count = 0
         while self.is_data_available():
             count, timestamp = self.get_stroke_data()
-            t = time.gmtime(timestamp)
-            logger.info(f'receiving {count} bytes drawn on UTC {time.strftime("%y%m%d%H%M%S", t)}')
+            logger.info(f'receiving {count} bytes drawn on UTC {time.strftime("%y%m%d%H%M%S", time.gmtime(timestamp))}')
             self.start_reading()
             pen_data = self.wait_for_end_read()
             str_pen = binascii.hexlify(bytes(pen_data))
             logger.info(f'received {str_pen}')
-            drawing = self.parse_pen_data(pen_data, t)
+            drawing = self.parse_pen_data(pen_data, timestamp)
             if drawing:
                 self.emit('drawing', drawing)
             self.ack_transaction()
