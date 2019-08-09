@@ -534,11 +534,12 @@ class WacomProtocolLowLevelComm(GObject.Object):
         return args
 
     # The callback used by the protocol messages
-    def nordic_data_exchange(self, request, requires_reply=False, userdata=None):
+    def nordic_data_exchange(self, request, requires_reply=False,
+                             userdata=None, timeout=None):
         if request is not None:
             self.send_nordic_command(request.opcode, request)
         if requires_reply:
-            return self.wait_nordic_data(expected_opcode=None, timeout=5)
+            return self.wait_nordic_data(expected_opcode=None, timeout=timeout or 5)
 
 
 class WacomRegisterHelper(WacomProtocolLowLevelComm):
