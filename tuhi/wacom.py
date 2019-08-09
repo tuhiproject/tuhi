@@ -514,25 +514,6 @@ class WacomProtocolLowLevelComm(GObject.Object):
         elif data[0] != 0x00:
             raise WacomException(f'unknown error: {data[0]:02x}')
 
-    def send_nordic_command_sync(self,
-                                 command,
-                                 expected_opcode=0xb3,
-                                 arguments=None):
-        if arguments is None:
-            arguments = [0x00]
-
-        self.send_nordic_command(command, arguments)
-
-        if expected_opcode is None:
-            return None
-
-        args = self.wait_nordic_data(expected_opcode, 5)
-
-        if expected_opcode == 0xb3:  # generic ACK
-            self.check_ack(args)
-
-        return args
-
     # The callback used by the protocol messages
     def nordic_data_exchange(self, request, requires_reply=False,
                              userdata=None, timeout=None):
