@@ -28,18 +28,15 @@ from .uhid import UHIDDevice
 
 logger = logging.getLogger('tuhi.wacom')
 
-NORDIC_UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
-NORDIC_UART_CHRC_TX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
-NORDIC_UART_CHRC_RX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
-
-WACOM_LIVE_SERVICE_UUID = '00001523-1212-efde-1523-785feabcd123'
-WACOM_CHRC_LIVE_PEN_DATA_UUID = '00001524-1212-efde-1523-785feabcd123'
-
-WACOM_OFFLINE_SERVICE_UUID = 'ffee0001-bbaa-9988-7766-554433221100'
-WACOM_OFFLINE_CHRC_PEN_DATA_UUID = 'ffee0003-bbaa-9988-7766-554433221100'
-
-MYSTERIOUS_NOTIFICATION_SERVICE_UUID = '3a340720-c572-11e5-86c5-0002a5d5c51b'
-MYSTERIOUS_NOTIFICATION_CHRC_UUID = '3a340721-c572-11e5-86c5-0002a5d5c51b'
+NORDIC_UART_SERVICE_UUID           = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
+NORDIC_UART_CHRC_TX_UUID           = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
+NORDIC_UART_CHRC_RX_UUID           = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'  # NOQA
+WACOM_LIVE_SERVICE_UUID            = '00001523-1212-efde-1523-785feabcd123'  # NOQA
+WACOM_CHRC_LIVE_PEN_DATA_UUID      = '00001524-1212-efde-1523-785feabcd123'  # NOQA
+WACOM_OFFLINE_SERVICE_UUID         = 'ffee0001-bbaa-9988-7766-554433221100'  # NOQA
+WACOM_OFFLINE_CHRC_PEN_DATA_UUID   = 'ffee0003-bbaa-9988-7766-554433221100'  # NOQA
+SYSEVENT_NOTIFICATION_SERVICE_UUID = '3a340720-c572-11e5-86c5-0002a5d5c51b'  # NOQA
+SYSEVENT_NOTIFICATION_CHRC_UUID    = '3a340721-c572-11e5-86c5-0002a5d5c51b'  # NOQA
 
 
 @enum.unique
@@ -141,6 +138,8 @@ class DataLogger(object):
     This uses a logger for stdout, but it also writes the log files to disk
     for future re-use.
 
+    Targets for log are $HOME/.share/tuhi/12:AB:23:CD:.../<timestamp>.yml
+
     '''
     class _Nordic(object):
         source = 'NORDIC'
@@ -163,8 +162,8 @@ class DataLogger(object):
         def recv(self, data):
             return self.parent._recv(self.source, data)
 
-    class _Mysterious(object):
-        source = 'MYSTERIOUS'
+    class _SysEvent(object):
+        source = 'SYSEVENT'
 
         def __init__(self, parent):
             self.parent = parent
@@ -173,21 +172,21 @@ class DataLogger(object):
             return self.parent._recv(self.source, data)
 
     commands = {
-            0xb1: 'start/stop live',
-            0xb6: 'set time',
-            0xb7: 'get firmware',
-            0xb9: 'read battery info',
-            0xbb: 'get/set name',
-            0xc1: 'check for data',
-            0xc3: 'start reading',
-            0xc5: 'fetch data',
-            0xc8: 'end of data',
-            0xca: 'ack transaction',
-            0xcc: 'fetch data',
-            0xea: 'get dimensions',
-            0xe5: 'finish registering',
-            0xe6: 'check connection',
-            0xdb: 'get name',
+        0xb1: 'start/stop live',
+        0xb6: 'set time',
+        0xb7: 'get firmware',
+        0xb9: 'read battery info',
+        0xbb: 'get/set name',
+        0xc1: 'check for data',
+        0xc3: 'start reading',
+        0xc5: 'fetch data',
+        0xc8: 'end of data',
+        0xca: 'ack transaction',
+        0xcc: 'fetch data',
+        0xea: 'get dimensions',
+        0xe5: 'finish registering',
+        0xe6: 'check connection',
+        0xdb: 'get name',
     }
 
     def __init__(self, bluez_device):
@@ -204,7 +203,7 @@ class DataLogger(object):
 
         self.nordic = DataLogger._Nordic(self)
         self.pen = DataLogger._Pen(self)
-        self.mysterious = DataLogger._Mysterious(self)
+        self.sysevent = DataLogger._SysEvent(self)
         self.logfile = None
 
     def _on_bluez_connected(self, bluez_device):
@@ -237,10 +236,12 @@ class DataLogger(object):
 
     def _recv(self, source, data):
         if source in ['NORDIC', 'PEN']:
-            def _convert(values): return list2hex(values)
+            def _convert(values):
+                return list2hex(values)
             convert = _convert
         else:
-            def _convert(values): return binascii.hexlify(bytes(values))
+            def _convert(values):
+                return binascii.hexlify(bytes(values))
             convert = _convert
 
         self.logger.debug(f'{self.btaddr}: RX {source} <-- {convert(data)}')
@@ -253,7 +254,7 @@ class DataLogger(object):
 
     def _send(self, source, data):
         command = data[0]
-        arguments = data[1:]
+        arguments = data[2:]
 
         if data[0] in self.commands:
             self.logger.debug(f'command: {self.commands[data[0]]}')
@@ -286,6 +287,10 @@ class WacomException(Exception):
 
 class WacomEEAGAINException(WacomException):
     errno = errno.EAGAIN
+
+
+class WacomUnsupportedCommandException(WacomException):
+    errno = errno.ENOMSG
 
 
 class WacomWrongModeException(WacomException):
@@ -453,8 +458,8 @@ class WacomPacketHandlerUnknownFixedStrokeDataIntuosPro(WacomPacketHandler):
 class WacomProtocolLowLevelComm(GObject.Object):
     '''
     Internal class to handle the communication with the Wacom device.
-    No-one should directly instanciate this.
-
+    No-one should directly instanciate this, use the device-specific
+    subclass instead (e.g. WacomProtocolIntuosPro).
 
     :param device: the BlueZDevice object that is this wacom device
     '''
@@ -480,30 +485,29 @@ class WacomProtocolLowLevelComm(GObject.Object):
         self.fw_logger.nordic.send(data)
         chrc.write_value(data)
 
-    def check_nordic_incoming(self):
+    def pop_next_message(self):
         answer = self.nordic_answer
         length = answer[1]
         args = answer[2:]
         if length > len(args):
-            raise WacomException(f'error while processing answer, should get an answer of size {length} instead of {len(args)}')
+            raise WacomException(f'Invalid answer message length: expected {length}, got {len(args)}')
         self.nordic_answer = self.nordic_answer[length + 2:]  # opcode + len
-        return NordicData(answer)
+        return NordicData(answer[:length + 2])
 
     def wait_nordic_data(self, expected_opcode, timeout=None):
         if not self.nordic_event.acquire(timeout=timeout):
             # timeout
             raise WacomTimeoutException(f'{self.device.name}: Timeout while reading data')
 
-        data = self.check_nordic_incoming()
+        data = self.pop_next_message()
 
         # logger.debug(f'received {data.opcode:02x} / {data.length:02x} / {b2hex(bytes(data))}')
 
-        if isinstance(expected_opcode, list):
-            if data.opcode not in expected_opcode:
-                raise WacomException(f'unexpected opcode: {data.opcode:02x}')
-        else:
-            if data.opcode != expected_opcode:
-                raise WacomException(f'unexpected opcode: {data.opcode:02x}')
+        if not isinstance(expected_opcode, list):
+            expected_opcode = [expected_opcode]
+
+        if data.opcode not in expected_opcode:
+            raise WacomException(f'unexpected opcode: {data.opcode:02x}')
 
         return data
 
@@ -516,7 +520,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
         elif data[0] == 0x02:
             raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
         elif data[0] == 0x05:
-            raise WacomCorruptDataException(f'invalid opcode')
+            raise WacomUnsupportedCommandException(f'invalid opcode')
         elif data[0] == 0x07:
             raise WacomNotRegisteredException(f'wrong device, please re-register')
         elif data[0] != 0x00:
@@ -560,7 +564,7 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
 
     @classmethod
     def is_spark(cls, device):
-        return MYSTERIOUS_NOTIFICATION_CHRC_UUID not in device.characteristics
+        return SYSEVENT_NOTIFICATION_CHRC_UUID not in device.characteristics
 
     def register_device(self, uuid):
         protocol = Protocol.UNKNOWN
@@ -1002,7 +1006,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                                       arguments=None)
         self.set_time()
         self.read_time()
-        name = self.get_name()
+        self.get_name()
         self.get_firmware_version()
 
     def live_mode(self, mode, uhid):
@@ -1061,8 +1065,8 @@ class WacomProtocolSlate(WacomProtocolSpark):
     def __init__(self, device, uuid):
         super().__init__(device, uuid)
 
-        device.connect_gatt_value(MYSTERIOUS_NOTIFICATION_CHRC_UUID,
-                                  self._on_mysterious_data_received)
+        device.connect_gatt_value(SYSEVENT_NOTIFICATION_CHRC_UUID,
+                                  self._on_sysevent_data_received)
 
     def live_mode(self, mode, uhid):
         # Slate tablet has two models A5 and A4
@@ -1075,8 +1079,8 @@ class WacomProtocolSlate(WacomProtocolSpark):
 
         return super().live_mode(mode, uhid)
 
-    def _on_mysterious_data_received(self, name, value):
-        self.fw_logger.mysterious.recv(value)
+    def _on_sysevent_data_received(self, name, value):
+        self.fw_logger.sysevent.recv(value)
 
     def ack_transaction(self):
         self.send_nordic_command_sync(command=0xca)
@@ -1100,7 +1104,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         self.set_time()
         self.read_time()
         self.ec_command()
-        name = self.get_name()
+        self.get_name()
 
         w, h = self.get_dimensions()
         if self.width != w or self.height != h:
@@ -1122,7 +1126,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
             self.height = h
             self.notify('dimensions')
 
-            fw = self.get_firmware_version()
+            self.get_firmware_version()
             self.ec_command()
             if self.read_offline_data() == 0:
                 logger.info('no data to retrieve')
@@ -1308,9 +1312,9 @@ class WacomDevice(GObject.Object):
 
     def _init_protocol(self, protocol):
         protocols = {
-                Protocol.SPARK: WacomProtocolSpark,
-                Protocol.SLATE: WacomProtocolSlate,
-                Protocol.INTUOS_PRO: WacomProtocolIntuosPro,
+            Protocol.SPARK: WacomProtocolSpark,
+            Protocol.SLATE: WacomProtocolSlate,
+            Protocol.INTUOS_PRO: WacomProtocolIntuosPro,
         }
 
         if protocol not in protocols:

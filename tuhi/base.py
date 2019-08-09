@@ -241,6 +241,7 @@ class TuhiDevice(GObject.Object):
         self.mode = DeviceMode.LISTEN
 
     def _on_listening_updated(self, dbus_device, pspec):
+        # Callback when a DBus client calls Start/Stop listening
         self.notify('listening')
 
     def _on_live_updated(self, dbus_device, pspec):
@@ -274,6 +275,10 @@ class TuhiDevice(GObject.Object):
 
 
 class Tuhi(GObject.Object):
+    '''
+    The Tuhi object is the main entry point and glue object between the
+    backend and the DBus server.
+    '''
     __gsignals__ = {
         'device-added':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
@@ -305,8 +310,10 @@ class Tuhi(GObject.Object):
         for dev in self.bluez.devices:
             self._add_device(self.bluez, dev)
 
-        self.bluez.connect('device-added', self._on_bluez_device_updated)
-        self.bluez.connect('device-updated', self._on_bluez_device_updated)
+        self.bluez.connect('device-added',
+                           lambda mgr, dev: self._add_device(mgr, dev, True))
+        self.bluez.connect('device-updated',
+                           lambda mgr, dev: self._add_device(mgr, dev, True))
 
     def _on_tuhi_bus_name_lost(self, dbus_server):
         self.emit('terminate')
@@ -327,14 +334,6 @@ class Tuhi(GObject.Object):
         for addr in unregistered:
             del self.devices[addr]
 
-    @classmethod
-    def _device_in_register_mode(cls, bluez_device):
-        if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
-            return False
-
-        manufacturer_data = bluez_device.manufacturer_data
-        return manufacturer_data is not None and len(manufacturer_data) == 4
-
     def _on_bluez_discovery_started(self, manager):
         # Something else may turn discovery mode on, we don't care about
         # it then
@@ -348,27 +347,40 @@ class Tuhi(GObject.Object):
         # restart discovery if some users are already in the listening mode
         self._on_listening_updated(None, None)
 
-    def _add_device(self, manager, bluez_device, hotplugged=False):
-        # Note: this function gets called every time the bluez device
-        # changes a property too (like signal strength). IOW, it gets called
-        # every second or so.
+    def _add_device(self, manager, bluez_device, from_live_update=False):
+        '''
+        Process a new BlueZ device that may be one of our devices.
 
-        uuid = None
+        This function is called once during intial setup to enumerate the
+        BlueZ devices and for every BlueZ device property change. Including
+        RSSI which will give you a value every second or so.
 
-        # check if the device is already known by us
+        .. :param from_live_update: True if this function was called from a BlueZ
+            device property update. False when called during the initial setup
+            stage.
+        '''
+
+        # We have a reverse-engineered protocol. Let's not talk to anyone
+        # who doesn't look like we know them to avoid potentially bricking a
+        # device.
+        if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
+            return
+
+        # check if the device is already known to us
         try:
             config = self.config.devices[bluez_device.address]
             uuid = config['uuid']
         except KeyError:
-            pass
+            uuid = None
 
-        if uuid is None and bluez_device.vendor_id not in WACOM_COMPANY_IDS:
-            return
-
-        # if the device has been 'hotplugged' in the bluez stack,
+        # if we got here from a currently live BlueZ device,
         # ManufacturerData is reliable. Else, consider the device not in
         # register mode
-        if hotplugged and Tuhi._device_in_register_mode(bluez_device):
+        #
+        # When the device is in register mode (blue light blinking), the
+        # manufacturer is merely 4 bytes. This will reset to 7 bytes even
+        # when the device simply times out and does not register fully.
+        if from_live_update and len(bluez_device.manufacturer_data or []) == 4:
             mode = DeviceMode.REGISTER
         else:
             mode = DeviceMode.LISTEN
@@ -391,9 +403,6 @@ class Tuhi(GObject.Object):
             logger.debug(f'{bluez_device.objpath}: call Register() on device')
         elif d.listening:
             d.listen()
-
-    def _on_bluez_device_updated(self, manager, bluez_device):
-        self._add_device(manager, bluez_device, True)
 
     def _on_listening_updated(self, tuhi_dbus_device, pspec):
         listen = self._search_stop_handler is not None
