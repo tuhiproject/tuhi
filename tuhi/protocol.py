@@ -17,11 +17,11 @@
 # opcodes and message formats. So the entry point is the Protocol class, and
 # the messages can be accessed by key.
 #
-#     def my_callback(request, requires_reply=True, userdata=None):
+#     def my_callback(request, requires_reply=True, userdata=None, timeout=5):
 #        if request is not None:
 #            send_to_device(request)
 #        if requires_reply:
-#            return read_from device()
+#            return read_from device() or eventually_timeout()
 #
 #     p = Protocol(ProtocolVersion.INTUOS_PRO, my_callback, userdata)
 #     m1 = P.get(Interactions.GET_NAME)
@@ -378,7 +378,7 @@ class Msg(object):
        removed in later versions but to keep the caller stack simpler, we
        just provide a noop Msg.'''
 
-    def __init__(self, callback, userdata=None):
+    def __init__(self, callback, userdata=None, timeout=None):
         super().__init__()
         assert self.opcode is not None
         assert self.protocol is not None
@@ -386,6 +386,7 @@ class Msg(object):
         self._callback = callback
         self.errorcode = None
         self.userdata = userdata
+        self.timeout = timeout
         self.args = [0x00]  # Empty messages don't exist
 
     @property
@@ -425,6 +426,7 @@ class Msg(object):
         self.request = NordicData([self.opcode, len(self.args or []), *(self.args or [])])
         self.reply = self._callback(request=self.request if self.requires_request else None,
                                     requires_reply=self.requires_reply,
+                                    timeout=self.timeout or None,
                                     userdata=self.userdata)
         if self.requires_reply:
             try:
