@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+     <gresource prefix="/org/freedesktop/Tuhi">
+        <file preprocess="xml-stripblanks">AboutDialog.ui</file>
+        <file preprocess="xml-stripblanks">ui/Drawing.ui</file>
+        <file preprocess="xml-stripblanks">ui/DrawingPerspective.ui</file>
+        <file preprocess="xml-stripblanks">ui/Flowbox.ui</file>
+        <file preprocess="xml-stripblanks">ui/MainWindow.ui</file>
+        <file preprocess="xml-stripblanks">ui/SetupPerspective.ui</file>
+        <file preprocess="xml-stripblanks">ui/ErrorPerspective.ui</file>
+        <file preprocess="xml-stripblanks">input-tablet-missing-symbolic.svg</file>
+    </gresource>
+</gresources>
