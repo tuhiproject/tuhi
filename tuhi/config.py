@@ -19,7 +19,7 @@ import configparser
 import re
 import logging
 from .drawing import Drawing
-from .wacom import Protocol
+from .protocol import ProtocolVersion
 
 logger = logging.getLogger('tuhi.config')
 
@@ -69,13 +69,13 @@ class TuhiConfig(GObject.Object):
 
                 assert config['Device']['Address'] == entry.name
                 if 'Protocol' not in config['Device']:
-                    config['Device']['Protocol'] = Protocol.UNKNOWN.value
+                    config['Device']['Protocol'] = ProtocolVersion.ANY.name.lower()
                 self._devices[entry.name] = config['Device']
 
     def new_device(self, address, uuid, protocol):
         assert is_btaddr(address)
         assert len(uuid) == 12
-        assert protocol != Protocol.UNKNOWN
+        assert protocol != ProtocolVersion.ANY
 
         logger.debug(f'{address}: adding new config, UUID {uuid}')
         path = os.path.join(ROOT_PATH, address)
@@ -96,7 +96,7 @@ class TuhiConfig(GObject.Object):
         config['Device'] = {
             'Address': address,
             'UUID': uuid,
-            'Protocol': protocol.value,
+            'Protocol': protocol.name.lower(),
         }
 
         with open(path, 'w') as configfile:
