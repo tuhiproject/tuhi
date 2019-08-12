@@ -716,9 +716,10 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         return name
 
     def get_dimensions(self):
-        msg = self.p.execute(Interactions.GET_DIMENSIONS)
-        logger.info(f'dimensions: {msg.width}x{msg.height}')
-        return msg.width, msg.height
+        w = self.p.execute(Interactions.GET_WIDTH).width
+        h = self.p.execute(Interactions.GET_HEIGHT).height
+        logger.info(f'dimensions: {w}x{h}')
+        return w, h
 
     def select_transfer_gatt(self):
         self.p.execute(Interactions.SET_FILE_TRANSFER_REPORTING_TYPE)
