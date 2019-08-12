@@ -40,7 +40,7 @@ class JsonSvg(GObject.Object):
         else:
             # Original dimensions are too big for SVG Standard
             # so we normalize them
-            width, height = dimensions[0] / 100, dimensions[1] / 100
+            width, height = dimensions[0] / 1000, dimensions[1] / 1000
 
         if self.orientation in ['portrait', 'reverse-Portrait']:
             size = (height, width)
@@ -56,7 +56,7 @@ class JsonSvg(GObject.Object):
 
                 x, y = p['position']
                 # Normalize coordinates too
-                x, y = x / 100, y / 100
+                x, y = x / 1000, y / 1000
 
                 if self.orientation == 'reverse-portrait':
                     x, y = y, width - x
