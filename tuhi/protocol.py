@@ -104,6 +104,7 @@ class Interactions(enum.Enum):
     REGISTER_WAIT_FOR_BUTTON = enum.auto()
     REGISTER_COMPLETE = enum.auto()
     SET_FILE_TRANSFER_REPORTING_TYPE = enum.auto()
+    GET_POINT_SIZE = enum.auto()
 
     UNKNOWN_E3 = enum.auto()
 
@@ -799,7 +800,7 @@ class MsgGetWidthSpark(Msg):
 
     .. attribute:: width
 
-        The width of the tablet in points (mm/100)
+        The width of the tablet in points (see :class:`MsgGetPointSize`)
     '''
     interaction = Interactions.GET_WIDTH
     opcode = Msg.OPCODE_NOOP
@@ -814,7 +815,7 @@ class MsgGetWidthSlate(Msg):
     '''
     .. attribute:: width
 
-        The width of the tablet in points (mm/100)
+        The width of the tablet in points (see :class:`MsgGetPointSize`)
     '''
     interaction = Interactions.GET_WIDTH
     opcode = 0xea
@@ -841,7 +842,7 @@ class MsgGetHeightSpark(Msg):
 
     .. attribute:: height
 
-        The height of the tablet in points (mm/100)
+        The height of the tablet in points (see :class:`MsgGetPointSize`)
     '''
     interaction = Interactions.GET_HEIGHT
     opcode = Msg.OPCODE_NOOP
@@ -856,7 +857,7 @@ class MsgGetHeightSlate(Msg):
     '''
     .. attribute:: height
 
-        The height of the tablet in points (mm/100)
+        The height of the tablet in points (see :class:`MsgGetPointSize`)
     '''
     interaction = Interactions.GET_HEIGHT
     opcode = 0xea
@@ -874,6 +875,52 @@ class MsgGetHeightSlate(Msg):
             raise UnexpectedDataError(reply)
 
         self.height = little_u32(reply[2:6])
+
+
+class MsgGetPointSizeSpark(Msg):
+    '''
+    This is a fake message. The Spark and Slate doesn't seem to have a
+    getter for this one, it just times out. We just hardcode the value here.
+
+    .. attribute:: point_size
+
+        The point_size of the tablet in µm
+    '''
+    interaction = Interactions.GET_POINT_SIZE
+    opcode = Msg.OPCODE_NOOP
+    protocol = ProtocolVersion.ANY
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.point_size = 10
+
+
+class MsgGetPointSize(Msg):
+    '''
+    .. attribute:: point_size
+
+        The point size in micrometers
+    '''
+    interaction = Interactions.GET_POINT_SIZE
+    opcode = 0xea
+    protocol = ProtocolVersion.INTUOS_PRO
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = little_u16(0x14)
+
+    def _handle_reply(self, reply):
+        if reply.opcode != 0xeb:
+            raise UnexpectedReply(self)
+
+        if little_u16(reply[0:2]) != 0x14:
+            raise UnexpectedDataError(reply)
+
+        # This is strange. The return value is supposed to be the point size
+        # but it's off by one. The IntuosPro returns 6 but a point size of 5
+        # matches the physical dimensions. So let's assume there's a bug in
+        # the firmware or the specs are wrong or something.
+        self.point_size = little_u32(reply[2:6]) - 1
 
 
 class MsgUnknownE3Command(Msg):
