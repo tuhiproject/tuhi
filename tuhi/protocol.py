@@ -65,7 +65,8 @@ class Interactions(enum.Enum):
     SET_TIME = enum.auto()
     GET_FIRMWARE = enum.auto()
     GET_BATTERY = enum.auto()
-    GET_DIMENSIONS = enum.auto()
+    GET_WIDTH = enum.auto()
+    GET_HEIGHT = enum.auto()
     SET_MODE = enum.auto()
     GET_STROKES = enum.auto()
     GET_DATA_AVAILABLE = enum.auto()
@@ -763,39 +764,52 @@ class MsgGetBattery(Msg):
         self.battery_is_charging = reply[1] == 1
 
 
-class MsgGetDimensions(Msg):
+class MsgGetWidth(Msg):
     '''
     .. attribute:: width
 
         The width of the tablet in points (mm/100)
-
-    .. attribute:: height
-
-        The height of the tablet in points (mm/100)
     '''
-    interaction = Interactions.GET_DIMENSIONS
+    interaction = Interactions.GET_WIDTH
     opcode = 0xea
     protocol = ProtocolVersion.ANY
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = [0x03, 0x00]
 
     def _handle_reply(self, reply):
         if reply.opcode != 0xeb:
             raise UnexpectedReply(self)
 
-        if self.args[0] not in [0x3, 0x4] or len(reply) != 6:
+        if reply[0] != 0x3 or len(reply) != 6:
             raise UnexpectedDataError(reply)
 
-        if self.args[0] == 0x3:
-            self.width = int.from_bytes(reply[2:4], byteorder='little')
-        if self.args[0] == 0x4:
-            self.height = int.from_bytes(reply[2:4], byteorder='little')
+        self.width = int.from_bytes(reply[2:4], byteorder='little')
 
-    def execute(self):
-        # We need two requests with different args to get both w and h
-        self.args = [0x3, 0x00]
-        super().execute()
-        self.args = [0x4, 0x00]
-        super().execute()
-        return self
+
+class MsgGetHeight(Msg):
+    '''
+    .. attribute:: height
+
+        The height of the tablet in points (mm/100)
+    '''
+    interaction = Interactions.GET_HEIGHT
+    opcode = 0xea
+    protocol = ProtocolVersion.ANY
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = [0x04, 0x00]
+
+    def _handle_reply(self, reply):
+        if reply.opcode != 0xeb:
+            raise UnexpectedReply(self)
+
+        if reply[0] != 0x4 or len(reply) != 6:
+            raise UnexpectedDataError(reply)
+
+        self.height = int.from_bytes(reply[2:4], byteorder='little')
 
 
 class MsgUnknownE3Command(Msg):
