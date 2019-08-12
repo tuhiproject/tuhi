@@ -165,7 +165,7 @@ class DataLogger(object):
             return self.parent._recv(self.source, data)
 
     commands = {
-        0xb1: 'start/stop live',
+        0xb1: 'set mode',
         0xb6: 'set time',
         0xb7: 'get firmware',
         0xb9: 'read battery info',
@@ -743,7 +743,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def stop_live(self):
         self.p.execute(Interactions.SET_MODE, Mode.IDLE)
 
-    def b1_command(self):
+    def set_paper_mode(self):
         self.p.execute(Interactions.SET_MODE, Mode.PAPER).execute()
 
     def is_data_available(self):
@@ -886,7 +886,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         return drawing
 
     def read_offline_data(self):
-        self.b1_command()
+        self.set_paper_mode()
         transaction_count = 0
         while self.is_data_available():
             count, timestamp = self.get_stroke_data()
