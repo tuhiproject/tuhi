@@ -250,6 +250,12 @@ class TestProtocolAny(unittest.TestCase):
         msg = p.execute(Interactions.GET_HEIGHT)
         self.assertEqual(msg.height, 14800)
 
+    def test_get_point_size(self, cb=None):
+        # this is hardcoded for the spark
+        p = Protocol(self.protocol_version, callback=None)
+        msg = p.execute(Interactions.GET_POINT_SIZE)
+        self.assertEqual(msg.point_size, 10)
+
     def test_unknown_e3(self, cb=None):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
             self.assertEqual(request.opcode, 0xe3)
@@ -545,6 +551,20 @@ class TestProtocolIntuosPro(TestProtocolSlate):
             return NordicData([0x53, 0x00])
 
         super().test_register_wait_for_button(cb or _cb)
+
+    def test_get_point_size(self, cb=None, pointsize=12):
+        def _cb(request, requires_reply=True, userdata=None, timeout=5):
+            self.assertEqual(request.opcode, 0xea)
+            self.assertEqual(request.length, 2)
+            self.assertEqual(request[0], 0x14)
+            ps = little_u32(pointsize)
+            return NordicData([0xeb, 6, 0x14, 0x00] + list(ps))
+
+        cb = cb or _cb
+
+        p = Protocol(self.protocol_version, callback=cb)
+        msg = p.execute(Interactions.GET_POINT_SIZE)
+        self.assertEqual(msg.point_size, pointsize - 1)
 
 
 if __name__ == "__main__":
