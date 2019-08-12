@@ -711,10 +711,15 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         logger.info(f'device name is {name}')
         return name
 
-    def get_dimensions(self):
+    def update_dimensions(self):
         w = self.p.execute(Interactions.GET_WIDTH).width
         h = self.p.execute(Interactions.GET_HEIGHT).height
-        logger.info(f'dimensions: {w}x{h}')
+        ps = self.p.execute(Interactions.GET_POINT_SIZE).point_size
+        logger.info(f'dimensions: {w}x{h}, point size {ps}µm')
+        self.point_size = ps
+        self.width = w * ps
+        self.height = h * ps
+        self.notify('dimensions')
         return w, h
 
     def select_transfer_gatt(self):
@@ -790,6 +795,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             self.set_time()
             battery, charging = self.get_battery_info()
             self.emit('battery-status', battery, charging)
+            self.update_dimensions()
             if self.read_offline_data() == 0:
                 logger.info('no data to retrieve')
         except WacomEEAGAINException:
@@ -838,6 +844,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             return None
 
         drawing = Drawing(self.device.name, (self.width, self.height), timestamp)
+        ps = self.point_size
 
         while offset < len(data):
             packet = WacomPacket(data[offset:])
@@ -856,6 +863,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             if stroke is None:
                 stroke = drawing.new_stroke()
 
+            # data is in device units
             x, dx, xrel = self.get_coordinate(packet.bitmask, 0, packet.args, x, dx)
             y, dy, yrel = self.get_coordinate(packet.bitmask, 1, packet.args, y, dy)
             p, dp, prel = self.get_coordinate(packet.bitmask, 2, packet.args, p, dp)
@@ -876,7 +884,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                 NORMALIZED_RANGE = 0x10000
                 return NORMALIZED_RANGE * p / self.pressure
 
-            stroke.new_abs((x, y), normalize(p))
+            # now convert to actual µm
+            stroke.new_abs((x * ps, y * ps), normalize(p))
 
         drawing.seal()
         return drawing
@@ -907,6 +916,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         self.read_time()
         self.get_name()
         self.get_firmware_version()
+        self.update_dimensions()
 
     def live_mode(self, mode, uhid):
         try:
@@ -975,8 +985,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         # Slate tablet has two models A5 and A4
         # Here, we read real tablet dimensions before
         # starting live mode
-        self.width, self.height = self.get_dimensions()
-        self.notify('dimensions')
+        self.update_dimensions()
         self.x_max = self.width - 1000
         self.y_max = self.height - 500
 
@@ -990,10 +999,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         self.read_time()
         self.select_transfer_gatt()
         self.get_name()
-
-        w, h = self.get_dimensions()
-        if self.width != w or self.height != h:
-            logger.error(f'incompatible dimensions: {w}x{h}')
+        self.update_dimensions()
         self.notify('dimensions')
 
         self.get_firmware_version()
@@ -1006,9 +1012,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
             self.set_time()
             battery, charging = self.get_battery_info()
             self.emit('battery-status', battery, charging)
-            w, h = self.get_dimensions()
-            self.width = w
-            self.height = h
+            self.update_dimensions()
             self.notify('dimensions')
 
             self.get_firmware_version()

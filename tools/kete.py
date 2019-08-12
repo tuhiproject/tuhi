@@ -623,8 +623,8 @@ class Fetcher(Worker):
             width, height = 100, 100
         else:
             # Original dimensions are too big for SVG Standard
-            # so we normalize them
-            width, height = dimensions[0] / 100, dimensions[1] / 100
+            # so we normalize them to mm
+            width, height = dimensions[0] / 1000, dimensions[1] / 1000
 
         if self.orientation in ['Portrait', 'Reverse-Portrait']:
             svg = svgwrite.Drawing(filename=filename, size=(height, width))
@@ -640,7 +640,7 @@ class Fetcher(Worker):
 
                 x, y = p['position']
                 # Normalize coordinates too
-                x, y = x / 100, y / 100
+                x, y = x / 1000, y / 1000
 
                 if self.orientation == 'Reverse-Portrait':
                     x, y = y, width - x
