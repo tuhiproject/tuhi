@@ -720,8 +720,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         logger.info(f'dimensions: {msg.width}x{msg.height}')
         return msg.width, msg.height
 
-    def ec_command(self):
-        self.p.execute(Interactions.UNKNOWN_EC)
+    def select_transfer_gatt(self):
+        self.p.execute(Interactions.SET_FILE_TRANSFER_REPORTING_TYPE)
 
     def start_live(self, fd):
         self.p.execute(Interactions.SET_MODE, Mode.LIVE)
@@ -992,7 +992,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
     def register_device_finish(self):
         self.set_time()
         self.read_time()
-        self.ec_command()
+        self.select_transfer_gatt()
         self.get_name()
 
         w, h = self.get_dimensions()
@@ -1016,7 +1016,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
             self.notify('dimensions')
 
             self.get_firmware_version()
-            self.ec_command()
+            self.select_transfer_gatt()
             if self.read_offline_data() == 0:
                 logger.info('no data to retrieve')
         except WacomEEAGAINException:

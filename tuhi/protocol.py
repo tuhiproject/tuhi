@@ -74,9 +74,9 @@ class Interactions(enum.Enum):
     REGISTER_PRESS_BUTTON = enum.auto()
     REGISTER_WAIT_FOR_BUTTON = enum.auto()
     REGISTER_COMPLETE = enum.auto()
+    SET_FILE_TRANSFER_REPORTING_TYPE = enum.auto()
 
     UNKNOWN_E3 = enum.auto()
-    UNKNOWN_EC = enum.auto()
 
 
 def as_hex_string(data):
@@ -806,8 +806,12 @@ class MsgUnknownE3Command(Msg):
     # no arguments, uses the default 0xb3 handler
 
 
-class MsgUnknownECCommand(Msg):
-    interaction = Interactions.UNKNOWN_EC
+class MsgSetFileTransferReportingType(Msg):
+    '''
+    Changes where the device needs to send the data to.
+    0x00 is on the FFEE0003 GATT.
+    '''
+    interaction = Interactions.SET_FILE_TRANSFER_REPORTING_TYPE
     opcode = 0xec
     protocol = ProtocolVersion.ANY
 
