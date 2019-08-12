@@ -74,6 +74,38 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(ValueError):
             ProtocolVersion.from_string('IntuosPro')
 
+    def test_little_u16(self):
+        values = [
+            (1, [0x01, 0x00]),
+            (256, [0x00, 0x01]),
+        ]
+
+        for v in values:
+            self.assertEqual(little_u16(v[0]), bytes(v[1]))
+            self.assertEqual(little_u16(v[1]), v[0])
+
+        invalid = [0x10000, -1, [0x00, 0x00, 0x00]]
+        for v in invalid:
+            with self.assertRaises(AssertionError):
+                little_u16(v)
+
+    def test_little_u32(self):
+        values = [
+            (1, [0x01, 0x00, 0x00, 0x00]),
+            (256, [0x00, 0x01, 0x00, 0x00]),
+            (0x10000, [0x00, 0x00, 0x01, 0x00]),
+            (0x1000000, [0x00, 0x00, 0x00, 0x01]),
+        ]
+
+        for v in values:
+            self.assertEqual(little_u32(v[0]), bytes(v[1]))
+            self.assertEqual(little_u32(v[1]), v[0])
+
+        invalid = [0x100000000, -1, [0x00, 0x00, 0x00, 0x00, 0x00]]
+        for v in invalid:
+            with self.assertRaises(AssertionError):
+                little_u32(v)
+
 
 class TestProtocolAny(unittest.TestCase):
     protocol_version = ProtocolVersion.ANY
