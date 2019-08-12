@@ -75,7 +75,6 @@ class Interactions(enum.Enum):
     REGISTER_WAIT_FOR_BUTTON = enum.auto()
     REGISTER_COMPLETE = enum.auto()
 
-    UNKNOWN_B1 = enum.auto()
     UNKNOWN_E3 = enum.auto()
     UNKNOWN_EC = enum.auto()
 
@@ -815,18 +814,6 @@ class MsgUnknownECCommand(Msg):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.args = [0x06, 0x00, 0x00, 0x00, 0x00, 0x00]
-
-    # uses the default 0xb3 handler
-
-
-class MsgUnknownB1Command(Msg):
-    interaction = Interactions.UNKNOWN_B1
-    opcode = 0xb1
-    protocol = ProtocolVersion.ANY
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.args = [0x01]
 
     # uses the default 0xb3 handler
 
