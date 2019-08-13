@@ -4,22 +4,26 @@ import gi
 import sys
 import os
 
-gi.require_version('Gio', '2.0')
-gi.require_version("Gtk", "3.0")
+gi.require_version('Gio', '2.0')  # NOQA
+gi.require_version('Gtk', '3.0')  # NOQA
 from gi.repository import Gio, Gtk, Gdk
 
-@devel@
+
+@devel@  # NOQA
 resource = Gio.resource_load(os.path.join('@pkgdatadir@', 'tuhi.gresource'))
 Gio.Resource._register(resource)
 
+
 def install_excepthook():
     old_hook = sys.excepthook
+
     def new_hook(etype, evalue, etb):
         old_hook(etype, evalue, etb)
         while Gtk.main_level():
             Gtk.main_quit()
         sys.exit()
     sys.excepthook = new_hook
+
 
 def gtk_style():
     css = b"""
@@ -51,6 +55,7 @@ def gtk_style():
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
 
+
 if __name__ == "__main__":
     import gettext
     import locale
@@ -67,4 +72,3 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     exit_status = Application().run(sys.argv)
     sys.exit(exit_status)
-
