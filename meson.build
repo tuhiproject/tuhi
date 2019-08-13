@@ -130,7 +130,8 @@ flake8 = find_program('flake8-3', required: false)
 if flake8.found()
    test('flake8', flake8,
         args: ['--ignore=E501,W504',
-               join_paths(meson.source_root(), 'tuhigui/')])
+               join_paths(meson.source_root(), 'tuhigui/'),
+               join_paths(meson.source_root(), 'tuhi/')])
 endif
 
 desktop_validate = find_program('desktop-file-validate', required: false)
