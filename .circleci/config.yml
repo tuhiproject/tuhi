@@ -8,6 +8,7 @@ jobs:
       - run:
           command: |
             dnf install -y meson gettext python3-devel pygobject3-devel python3-flake8
+      - checkout
       - run:
           command: |
             meson builddir
