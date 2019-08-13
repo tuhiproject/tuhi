@@ -677,11 +677,6 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def e3_command(self):
         self.p.execute(Interactions.UNKNOWN_E3)
 
-    def time_to_bytes(self):
-        # Device time is UTC
-        current_time = time.strftime('%y%m%d%H%M%S', time.gmtime())
-        return [int(i) for i in binascii.unhexlify(current_time)]
-
     @classmethod
     def time_from_bytes(self, data):
         assert len(data) >= 6
@@ -1062,10 +1057,6 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     def __init__(self, device, uuid, protocol_version=ProtocolVersion.INTUOS_PRO):
         assert(protocol_version >= ProtocolVersion.INTUOS_PRO)
         super().__init__(device, uuid, protocol_version=protocol_version)
-
-    def time_to_bytes(self):
-        t = int(time.time())
-        return list(t.to_bytes(length=4, byteorder='little')) + [0x00, 0x00]
 
     @classmethod
     def time_from_bytes(self, data):
