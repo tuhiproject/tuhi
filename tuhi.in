@@ -14,11 +14,11 @@
 import os
 import subprocess
 
-tuhi_server = os.path.join(@libexecdir@, 'tuhi-server')
-tuhi_gui = os.path.join(@libexecdir@, 'tuhi-gui')
+tuhi_server = os.path.join('@libexecdir@', 'tuhi-server')
+tuhi_gui = os.path.join('@libexecdir@', 'tuhi-gui')
 
-@devel@
 
+@devel@  # NOQA
 
 if __name__ == '__main__':
     tuhi = subprocess.Popen(tuhi_server)

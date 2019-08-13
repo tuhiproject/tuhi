@@ -52,11 +52,11 @@ install_subdir('tuhi',
 # use the normal dirs.
 #
 config_tuhi = configuration_data()
-config_tuhi.set_quoted('libexecdir', libexecdir)
+config_tuhi.set('libexecdir', libexecdir)
 config_tuhi.set('devel', '')
 
 config_tuhi_devel = configuration_data()
-config_tuhi_devel.set_quoted('libexecdir', '')
+config_tuhi_devel.set('libexecdir', '')
 config_tuhi_devel.set('devel', '''
 tuhi_gui = '@1@/tuhi-gui.devel'
 tuhi_server = '@0@/tuhi-server.py'
