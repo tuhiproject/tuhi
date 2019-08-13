@@ -928,15 +928,15 @@ class WacomProtocolSpark(WacomProtocolBase):
     :param device: the BlueZDevice object that is this wacom device
     :param uuid: the UUID {to be} assigned to the device
     '''
-    width = 21600
-    x_min = 2500
-    x_max = 20600
+    width = 21000  # physical: 210mm
+    x_min = 2100
+    x_max = 21000
 
-    height = 14800
-    y_min = 800
-    y_max = 14300
+    height = 14800  # physical: 148mm
+    y_min = 0
+    y_max = 14800
 
-    pressure = 2047
+    pressure = 1023
     protocol = ProtocolVersion.SPARK
     packet_handlers = [WacomPacketHandlerEndOfStroke,
                        WacomPacketHandlerEndOfSequence]
