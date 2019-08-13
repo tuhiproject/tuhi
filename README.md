@@ -31,7 +31,7 @@ To build and run Tuhi from the repository directly:
 
 Tuhi requires Python v3.6 or above.
 
-Install Tuhi
+Installing Tuhi
 ---------------
 
 To install and run Tuhi:
