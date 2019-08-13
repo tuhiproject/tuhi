@@ -30,9 +30,6 @@ subdir('data')
 pymod = import('python')
 py3 = pymod.find_installation()
 python_dir = py3.get_install_dir()
-install_subdir('tuhigui',
-               install_dir: python_dir,
-               exclude_directories: ['__pycache__'])
 install_subdir('tuhi',
                install_dir: python_dir,
                exclude_directories: '__pycache__')
@@ -126,8 +123,8 @@ flake8 = find_program('flake8-3', required: false)
 if flake8.found()
    test('flake8', flake8,
         args: ['--ignore=E501,W504',
-               join_paths(meson.source_root(), 'tuhigui/'),
-               join_paths(meson.source_root(), 'tuhi/')])
+               join_paths(meson.source_root(), 'tuhi'),
+               join_paths(meson.source_root(), 'tuhi', 'gui')])
    # the tests need different flake exclusions
    test('flake8-tests', flake8,
         args: ['--ignore=E501,W504,F403,F405',

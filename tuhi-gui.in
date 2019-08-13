@@ -60,7 +60,7 @@ if __name__ == "__main__":
     import gettext
     import locale
     import signal
-    from tuhigui.application import Application
+    from tuhi.gui.application import Application
 
     install_excepthook()
     gtk_style()
