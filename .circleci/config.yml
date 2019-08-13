@@ -7,7 +7,7 @@ jobs:
     steps:
       - run:
           command: |
-            dnf install -y meson gettext python3-devel pygobject3-devel python3-flake8 desktop-file-utils libappstream-glib
+            dnf install -y meson gettext python3-devel pygobject3-devel python3-flake8 desktop-file-utils libappstream-glib python3-pytest
       - checkout
       - run:
           command: |
