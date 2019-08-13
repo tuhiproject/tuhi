@@ -18,7 +18,7 @@
           <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">TuhiGUI is an interactive GUI to download data from Tuhi. 
+            <property name="label" translatable="yes">TuhiGUI is an interactive GUI to download data from Tuhi.
 
 Tuhi connects to tablets of the Wacom Ink range. It allows you to download the drawings stored on those devices as SVGs for processing later.
 

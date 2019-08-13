@@ -24,7 +24,7 @@ libexecdir = join_paths(get_option('prefix'), get_option('libexecdir'), 'tuhi')
 i18n = import('i18n')
 
 subdir('po')
-subdir('tuhigui/data')
+subdir('data')
 
 # Find the directory to install our Python code
 pymod = import('python')
@@ -32,7 +32,7 @@ py3 = pymod.find_installation()
 python_dir = py3.get_install_dir()
 install_subdir('tuhigui',
                install_dir: python_dir,
-               exclude_directories: ['__pycache__', 'data'])
+               exclude_directories: ['__pycache__'])
 install_subdir('tuhi',
                install_dir: python_dir,
                exclude_directories: '__pycache__')
@@ -65,7 +65,7 @@ config_tuhigui.set('localedir', localedir)
 config_tuhigui.set('devel', '')
 
 config_tuhigui_devel = config_tuhigui
-config_tuhigui_devel.set('pkgdatadir', join_paths(meson.build_root(), 'tuhigui', 'data'))
+config_tuhigui_devel.set('pkgdatadir', join_paths(meson.build_root(), 'data'))
 config_tuhigui_devel.set('localedir', join_paths(meson.build_root(), 'po'))
 config_tuhigui_devel.set('devel', '''
 sys.path.insert(1, '@0@')
@@ -97,7 +97,7 @@ configure_file(input: 'tuhi-server.py',
 
 meson.add_install_script('meson_install.sh')
 
-desktop_file = i18n.merge_file(input: 'tuhigui/data/org.freedesktop.Tuhi.desktop.in',
+desktop_file = i18n.merge_file(input: 'data/org.freedesktop.Tuhi.desktop.in',
                                output: 'org.freedesktop.Tuhi.desktop',
                                type: 'desktop',
                                po_dir: podir,
@@ -109,7 +109,7 @@ conf.set('version', meson.project_version())
 conf.set('url', 'https://github.com/tuhiproject/tuhi')
 conf.set('version_date', version_date)
 
-appdata_intl = configure_file(input: 'tuhigui/data/org.freedesktop.Tuhi.appdata.xml.in.in',
+appdata_intl = configure_file(input: 'data/org.freedesktop.Tuhi.appdata.xml.in.in',
                               output: 'org.freedesktop.Tuhi.appdata.xml.in',
                               configuration: conf)
 
@@ -120,7 +120,7 @@ appdata = i18n.merge_file(input: appdata_intl,
                           install: true,
                           install_dir: metainfodir)
 
-install_data('tuhigui/data/org.freedesktop.Tuhi.svg', install_dir: icondir)
+install_data('data/org.freedesktop.Tuhi.svg', install_dir: icondir)
 
 flake8 = find_program('flake8-3', required: false)
 if flake8.found()
