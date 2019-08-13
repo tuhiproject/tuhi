@@ -238,35 +238,17 @@ class TestProtocolAny(unittest.TestCase):
         self.assertEqual(msg.battery_is_charging, battery[0])
         self.assertEqual(msg.battery_percent, battery[1])
 
-    def test_get_width(self, cb=None, width=1234):
-        def _cb(request, requires_reply=True, userdata=None, timeout=5):
-            self.assertEqual(request.opcode, 0xea)
-            self.assertEqual(request.length, 2)
-            self.assertEqual(request[0], 3)
-
-            data = [0x03, 0x00] + list(width.to_bytes(4, byteorder='little'))
-            return NordicData([0xeb, len(data)] + data)
-
-        cb = cb or _cb
-
-        p = Protocol(self.protocol_version, callback=cb)
+    def test_get_width(self, cb=None):
+        # this is hardcoded for the spark
+        p = Protocol(self.protocol_version, callback=None)
         msg = p.execute(Interactions.GET_WIDTH)
-        self.assertEqual(msg.width, width)
+        self.assertEqual(msg.width, 21000)
 
-    def test_get_height(self, cb=None, width=4321):
-        def _cb(request, requires_reply=True, userdata=None, timeout=5):
-            self.assertEqual(request.opcode, 0xea)
-            self.assertEqual(request.length, 2)
-            self.assertEqual(request[0], 4)
-
-            data = [0x04, 0x00] + list(width.to_bytes(4, byteorder='little'))
-            return NordicData([0xeb, len(data)] + data)
-
-        cb = cb or _cb
-
-        p = Protocol(self.protocol_version, callback=cb)
+    def test_get_height(self, cb=None):
+        # this is hardcoded for the spark
+        p = Protocol(self.protocol_version, callback=None)
         msg = p.execute(Interactions.GET_HEIGHT)
-        self.assertEqual(msg.height, width)
+        self.assertEqual(msg.height, 14800)
 
     def test_unknown_e3(self, cb=None):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
@@ -409,6 +391,36 @@ class TestProtocolSpark(TestProtocolAny):
 
 class TestProtocolSlate(TestProtocolSpark):
     protocol_version = ProtocolVersion.SLATE
+
+    def test_get_width(self, cb=None, width=1234):
+        def _cb(request, requires_reply=True, userdata=None, timeout=5):
+            self.assertEqual(request.opcode, 0xea)
+            self.assertEqual(request.length, 2)
+            self.assertEqual(request[0], 3)
+
+            data = [0x03, 0x00] + list(width.to_bytes(4, byteorder='little'))
+            return NordicData([0xeb, len(data)] + data)
+
+        cb = cb or _cb
+
+        p = Protocol(self.protocol_version, callback=cb)
+        msg = p.execute(Interactions.GET_WIDTH)
+        self.assertEqual(msg.width, width)
+
+    def test_get_height(self, cb=None, height=4321):
+        def _cb(request, requires_reply=True, userdata=None, timeout=5):
+            self.assertEqual(request.opcode, 0xea)
+            self.assertEqual(request.length, 2)
+            self.assertEqual(request[0], 4)
+
+            data = [0x04, 0x00] + list(height.to_bytes(4, byteorder='little'))
+            return NordicData([0xeb, len(data)] + data)
+
+        cb = cb or _cb
+
+        p = Protocol(self.protocol_version, callback=cb)
+        msg = p.execute(Interactions.GET_HEIGHT)
+        self.assertEqual(msg.height, height)
 
     def test_get_strokes(self, cb=None, count=1024, ts=time.time()):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):

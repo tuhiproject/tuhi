@@ -792,7 +792,25 @@ class MsgGetBattery(Msg):
         self.battery_is_charging = reply[1] == 1
 
 
-class MsgGetWidth(Msg):
+class MsgGetWidthSpark(Msg):
+    '''
+    This is a fake message. The Spark doesn't seem to have a getter for this
+    one, it just times out. We just hardcode the value here.
+
+    .. attribute:: width
+
+        The width of the tablet in points (mm/100)
+    '''
+    interaction = Interactions.GET_WIDTH
+    opcode = Msg.OPCODE_NOOP
+    protocol = ProtocolVersion.ANY
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.width = 21000
+
+
+class MsgGetWidthSlate(Msg):
     '''
     .. attribute:: width
 
@@ -800,7 +818,7 @@ class MsgGetWidth(Msg):
     '''
     interaction = Interactions.GET_WIDTH
     opcode = 0xea
-    protocol = ProtocolVersion.ANY
+    protocol = ProtocolVersion.SLATE
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -816,7 +834,25 @@ class MsgGetWidth(Msg):
         self.width = little_u32(reply[2:6])
 
 
-class MsgGetHeight(Msg):
+class MsgGetHeightSpark(Msg):
+    '''
+    This is a fake message. The Spark doesn't seem to have a getter for this
+    one, it just times out. We just hardcode the value here.
+
+    .. attribute:: height
+
+        The height of the tablet in points (mm/100)
+    '''
+    interaction = Interactions.GET_HEIGHT
+    opcode = Msg.OPCODE_NOOP
+    protocol = ProtocolVersion.ANY
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.height = 14800
+
+
+class MsgGetHeightSlate(Msg):
     '''
     .. attribute:: height
 
@@ -824,7 +860,7 @@ class MsgGetHeight(Msg):
     '''
     interaction = Interactions.GET_HEIGHT
     opcode = 0xea
-    protocol = ProtocolVersion.ANY
+    protocol = ProtocolVersion.SLATE
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
