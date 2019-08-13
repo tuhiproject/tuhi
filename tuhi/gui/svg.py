@@ -17,6 +17,7 @@ import xdg.BaseDirectory
 import svgwrite
 import os
 from pathlib import Path
+from svgwrite import mm
 
 DATA_PATH = Path(xdg.BaseDirectory.xdg_cache_home, 'tuhi', 'svg')
 
@@ -43,9 +44,9 @@ class JsonSvg(GObject.Object):
             width, height = dimensions[0] / 1000, dimensions[1] / 1000
 
         if self.orientation in ['portrait', 'reverse-Portrait']:
-            size = (height, width)
+            size = (height * mm, width * mm)
         else:
-            size = (width, height)
+            size = (width * mm, height * mm)
         svg = svgwrite.Drawing(filename=self.filename, size=size)
         g = svgwrite.container.Group(id='layer0')
         for stroke_num, s in enumerate(js['strokes']):
@@ -76,8 +77,8 @@ class JsonSvg(GObject.Object):
                     xp, yp, stroke_width_p = points_with_sk_width[i - 1]
                     lines.add(
                         svg.line(
-                            start=(xp, yp),
-                            end=(x, y),
+                            start=(xp * mm, yp * mm),
+                            end=(x * mm, y * mm),
                             stroke_width=stroke_width,
                             style='fill:none'
                         )
