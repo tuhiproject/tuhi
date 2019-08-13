@@ -128,6 +128,10 @@ if flake8.found()
         args: ['--ignore=E501,W504',
                join_paths(meson.source_root(), 'tuhigui/'),
                join_paths(meson.source_root(), 'tuhi/')])
+   # the tests need different flake exclusions
+   test('flake8-tests', flake8,
+        args: ['--ignore=E501,W504,F403,F405',
+               join_paths(meson.source_root(), 'test/')])
 endif
 
 desktop_validate = find_program('desktop-file-validate', required: false)
@@ -139,6 +143,12 @@ appstream_util = find_program('appstream-util', required: false)
 if appstream_util.found()
     test('appstream-util validate-relax', appstream_util,
          args: ['validate-relax', appdata])
+endif
+
+pytest = find_program('pytest-3', required: false)
+if pytest.found()
+    test('unittest', pytest,
+         args: [join_paths(meson.source_root(), 'test')])
 endif
 
 # A wrapper to start tuhi at the same time as tuhigui, used by the flatpak
