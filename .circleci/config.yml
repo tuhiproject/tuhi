@@ -1,0 +1,17 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/tuhi
+    docker:
+      - image: fedora:latest
+    steps:
+      - run:
+          command: |
+            dnf install -y meson gettext python3-devel pygobject3-devel python3-flake8
+      - run:
+          command: |
+            meson builddir
+            ninja -C builddir test
+      - store_artifacts:
+          path: ~/tuhi/builddir/meson-logs
+
