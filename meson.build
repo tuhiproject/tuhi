@@ -9,10 +9,6 @@ version_date='2019-07-10'
 dependency('python3', required: true)
 dependency('pygobject-3.0', required: true)
 
-# Gtk version required
-gtk_major_version = 3
-gtk_minor_version = 22
-
 prefix = get_option('prefix')
 datadir = join_paths(prefix, get_option('datadir'))
 localedir = join_paths(prefix, get_option('localedir'))
