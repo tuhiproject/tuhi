@@ -32,7 +32,7 @@ def is_btaddr(addr):
 
 class TuhiConfig(GObject.Object):
     def __init__(self, config_dir=None):
-        GObject.Object.__init__(self)
+        super().__init__()
         if config_dir is None:
             config_dir = DEFAULT_CONFIG_PATH
         self.config_dir = config_dir
