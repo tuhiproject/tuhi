@@ -282,7 +282,7 @@ class TestProtocolAny(unittest.TestCase):
                 self.assertEqual(request.opcode, 0xc5)
                 self.assertEqual(request.length, 1)
                 self.assertEqual(request[0], 0x00)
-                data = list(count.to_bytes(4, byteorder='little'))
+                data = list(count.to_bytes(4, byteorder='big'))
                 return NordicData([0xc7, len(data)] + data)
             else:
                 t = time.strftime('%y%m%d%H%M%S', time.gmtime(ts))
