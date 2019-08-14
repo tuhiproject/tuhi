@@ -25,10 +25,18 @@ import readline
 import struct
 import threading
 import time
-import svgwrite
 import xdg.BaseDirectory
 import configparser
 from pathlib import Path
+
+try:
+    from tuhi.svg import JsonSvg
+except ModuleNotFoundError:
+    # If PYTHONPATH isn't set up or we never installed Tuhi, the module
+    # isn't available. And since we don't install kete, we can assume that
+    # we're still in the git repo, so messing with the path is "fine".
+    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + '/..')  # noqa
+    from tuhi.svg import JsonSvg
 
 
 CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
@@ -582,7 +590,6 @@ class Fetcher(Worker):
             config[address] = {}
 
         self.orientation = config[address].get('Orientation', 'Landscape')
-        self.handle_pressure = config[address].getboolean('HandlePressure', False)
 
         for d in manager.devices:
             if d.address == address:
@@ -614,73 +621,8 @@ class Fetcher(Worker):
             t = time.localtime(data['timestamp'])
             t = time.strftime('%Y-%m-%d-%H-%M', t)
             path = f'{data["devicename"]}-{t}.svg'
-            self.json_to_svg(data, path)
+            JsonSvg(data, self.orientation, filename=path)
             logger.info(f'{data["devicename"]}: saved file "{path}"')
-
-    def json_to_svg(self, js, filename):
-        dimensions = js['dimensions']
-        if dimensions == [0, 0]:
-            width, height = 100, 100
-        else:
-            # Original dimensions are too big for SVG Standard
-            # so we normalize them to mm
-            width, height = dimensions[0] / 1000, dimensions[1] / 1000
-
-        if self.orientation in ['Portrait', 'Reverse-Portrait']:
-            svg = svgwrite.Drawing(filename=filename, size=(height, width))
-        else:
-            svg = svgwrite.Drawing(filename=filename, size=(width, height))
-
-        g = svgwrite.container.Group(id='layer0')
-        for stroke_num, s in enumerate(js['strokes']):
-
-            points_with_sk_width = []
-
-            for p in s['points']:
-
-                x, y = p['position']
-                # Normalize coordinates too
-                x, y = x / 1000, y / 1000
-
-                if self.orientation == 'Reverse-Portrait':
-                    x, y = y, width - x
-                elif self.orientation == 'Portrait':
-                    x, y = height - y, x
-                elif self.orientation == 'Reverse-Landscape':
-                    x, y = width - x, height - y
-
-                # Pressure normalized range is [0, 0xffff]
-                delta = (p['pressure'] - 0x8000) / 0x8000
-                stroke_width = 0.4 + 0.20 * delta
-                points_with_sk_width.append((x, y, stroke_width))
-
-            if self.handle_pressure:
-                lines = svgwrite.container.Group(id=f'strokes_{stroke_num}', stroke='black')
-                for i, (x, y, stroke_width) in enumerate(points_with_sk_width):
-                    if i != 0:
-                        xp, yp, stroke_width_p = points_with_sk_width[i - 1]
-                        lines.add(
-                            svg.line(
-                                start=(xp, yp),
-                                end=(x, y),
-                                stroke_width=stroke_width,
-                                style='fill:none'
-                            )
-                        )
-            else:
-                lines = svgwrite.path.Path(
-                    d="M",
-                    stroke='black',
-                    stroke_width=0.2,
-                    style='fill:none'
-                )
-                for x, y, stroke_width in points_with_sk_width:
-                    lines.push(x, y)
-
-            g.add(lines)
-
-        svg.add(g)
-        svg.save()
 
 
 class LiveChanger(Worker):
