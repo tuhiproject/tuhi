@@ -1066,32 +1066,24 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     def parse_pen_data_prefix(self, data):
         file_format = b'\x67\x82\x69\x65'
         prefix = data[:4]
-        offset = len(prefix)
         if bytes(prefix) != file_format:
             logger.debug(f'Unsupported file format {prefix} (require {file_format})')
             return False, 0
 
         # This is the time the button was pressed after drawing, i.e. the
         # end of the drawing
-        t = self.time_from_bytes(data[offset:])
-        offset += 6
+        t = self.time_from_bytes(data[4:10])
 
-        # Confirmed it's LE for at least 2 bytes (that was fun...), but
-        # could be 4 or more. Are 0xffff strokes enough for everybody?
-        nstrokes = int.from_bytes(data[offset:offset + 2], byteorder='little')
-        offset += 2
+        # four bytes for the stroke count
+        nstrokes = int.from_bytes(data[10:14], byteorder='little')
 
         timestamp = time.strftime('%Y%m%d-%H%M%S', t)
         logger.debug(f'Drawing timestamp: {timestamp}, {nstrokes} strokes')
 
-        # Can't have enough zeroes. They'll come in handy one day
-        expected_header = b'\x00\x00\x00\x00'
-        data_header = data[offset:offset + len(expected_header)]
-        if bytes(data_header) != expected_header:
-            logger.debug(f'Missing zeroes, got {data_header}')
-        offset += 4
+        # Two trailing zero bytes we don't care about because we know what a
+        # zero looks like.
 
-        return True, offset
+        return True, 16
 
 
 class WacomDevice(GObject.Object):
