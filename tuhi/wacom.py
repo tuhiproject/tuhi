@@ -108,10 +108,16 @@ def b2hex(bs):
     return ' '.join([''.join(s) for s in zip(hx[::2], hx[1::2])])
 
 
-def list2hex(l):
+def list2hex(l, groupsize=8):
     '''Converts a list of integers to a two-letter hex string in the form
     "1a 2b c3"'''
-    return ' '.join([f'{x:02x}' for x in l])
+
+    slices = []
+    for idx in range(0, len(l), groupsize):
+        s = ' '.join([f'{x:02x}' for x in l[idx:idx + groupsize]])
+        slices.append(s)
+
+    return '    '.join(slices)
 
 
 def list2hexlist(l):
