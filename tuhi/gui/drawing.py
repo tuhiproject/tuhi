@@ -15,7 +15,7 @@ from gettext import gettext as _
 from gi.repository import GObject, Gtk, GdkPixbuf, Gdk
 
 from .config import Config
-from .svg import JsonSvg
+from tuhi.svg import JsonSvg
 
 import gi
 gi.require_version("Gtk", "3.0")
