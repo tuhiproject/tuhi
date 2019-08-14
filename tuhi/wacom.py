@@ -1083,7 +1083,8 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
         nstrokes = int.from_bytes(data[offset:offset + 2], byteorder='little')
         offset += 2
 
-        logger.debug(f'Drawing timestamp: {t}, {nstrokes} strokes')
+        timestamp = time.strftime('%Y%m%d-%H%M%S', t)
+        logger.debug(f'Drawing timestamp: {timestamp}, {nstrokes} strokes')
 
         # Can't have enough zeroes. They'll come in handy one day
         expected_header = b'\x00\x00\x00\x00'
