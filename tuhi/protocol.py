@@ -878,7 +878,7 @@ class MsgGetStrokesSpark(Msg):
         # This is an odd message, we have one request but one or two
         # replies. The 0xc7 reply is sometimes missing, unclear though when.
         if reply.opcode == 0xc7:
-            self.count = int.from_bytes(reply[0:4], byteorder='little')
+            self.count = int.from_bytes(reply[0:4], byteorder='big')
 
             # Re-execute the message but this time without a new request
             self.requires_request = False
