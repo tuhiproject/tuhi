@@ -815,12 +815,11 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         return v, dv, is_rel
 
     def parse_pen_data_prefix(self, data):
-        expected_prefix = b'\x62\x38\x62\x74'
+        file_format = b'\x62\x38\x62\x74'
         prefix = data[:4]
         offset = len(prefix)
-        # not sure if we really need this check
-        if bytes(prefix) != expected_prefix:
-            logger.debug(f'Expected pen data prefix {expected_prefix} but got {prefix}')
+        if bytes(prefix) != file_format:
+            logger.debug(f'Unsupported file format {prefix} (require {file_format})')
             return False, 0
 
         return True, offset
@@ -1065,12 +1064,11 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
         return time.gmtime(seconds)
 
     def parse_pen_data_prefix(self, data):
-        expected_prefix = b'\x67\x82\x69\x65'
+        file_format = b'\x67\x82\x69\x65'
         prefix = data[:4]
         offset = len(prefix)
-        # not sure if we really need this check
-        if bytes(prefix) != expected_prefix:
-            logger.debug(f'Expected pen data prefix {expected_prefix} but got {prefix}')
+        if bytes(prefix) != file_format:
+            logger.debug(f'Unsupported file format {prefix} (require {file_format})')
             return False, 0
 
         # This is the time the button was pressed after drawing, i.e. the
