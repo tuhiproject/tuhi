@@ -13,24 +13,17 @@
 
 from gi.repository import GObject
 
-import xdg.BaseDirectory
 import svgwrite
-import os
-from pathlib import Path
 from svgwrite import mm
-
-DATA_PATH = Path(xdg.BaseDirectory.xdg_cache_home, 'tuhi', 'svg')
 
 
 class JsonSvg(GObject.Object):
-    def __init__(self, json, orientation, *args, **kwargs):
+    def __init__(self, json, orientation, filename, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.json = json
-        DATA_PATH.mkdir(parents=True, exist_ok=True)
-
         self.timestamp = json['timestamp']
-        self.filename = os.fspath(Path(DATA_PATH, f'{self.timestamp}.svg'))
-        self.orientation = orientation
+        self.filename = filename
+        self.orientation = orientation.lower()
         self._convert()
 
     def _convert(self):
@@ -43,7 +36,7 @@ class JsonSvg(GObject.Object):
             # so we normalize them
             width, height = dimensions[0] / 1000, dimensions[1] / 1000
 
-        if self.orientation in ['portrait', 'reverse-Portrait']:
+        if self.orientation in ['portrait', 'reverse-portrait']:
             size = (height * mm, width * mm)
         else:
             size = (width * mm, height * mm)

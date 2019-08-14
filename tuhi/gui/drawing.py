@@ -14,11 +14,16 @@
 from gettext import gettext as _
 from gi.repository import GObject, Gtk, GdkPixbuf, Gdk
 
+import xdg.BaseDirectory
+import os
+from pathlib import Path
 from .config import Config
 from tuhi.svg import JsonSvg
 
 import gi
 gi.require_version("Gtk", "3.0")
+
+DATA_PATH = Path(xdg.BaseDirectory.xdg_cache_home, 'tuhi', 'svg')
 
 
 @Gtk.Template(resource_path='/org/freedesktop/Tuhi/ui/Drawing.ui')
@@ -34,6 +39,7 @@ class Drawing(Gtk.EventBox):
         super().__init__()
         self.orientation = Config.instance().orientation
         Config.instance().connect('notify::orientation', self._on_orientation_changed)
+        DATA_PATH.mkdir(parents=True, exist_ok=True)
 
         self.json_data = json_data
         self._zoom = 0
@@ -47,7 +53,8 @@ class Drawing(Gtk.EventBox):
         self.refresh()
 
     def refresh(self):
-        self.svg = JsonSvg(self.json_data, self.orientation)
+        path = os.fspath(Path(DATA_PATH, f'{self.json_data["timestamp"]}.svg'))
+        self.svg = JsonSvg(self.json_data, self.orientation, path)
         width, height = -1, -1
         if 'portrait' in self.orientation:
             height = 1000
