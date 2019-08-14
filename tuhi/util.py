@@ -22,3 +22,12 @@ def list2hex(l, groupsize=8):
         slices.append(s)
 
     return '    '.join(slices)
+
+
+def flatten(items):
+    '''flatten an array of mixed int and arrays into a simple array of int'''
+    for item in items:
+        if isinstance(item, int):
+            yield item
+        else:
+            yield from flatten(item)
