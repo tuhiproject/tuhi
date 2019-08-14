@@ -1020,7 +1020,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
             logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
 
     def wait_for_end_read(self):
-        data = self.wait_nordic_unless_pen_data(0xc8, 5)
+        data = self.wait_nordic_unless_pen_data(0xc8, timeout=5)
         if data[0] != 0xed:
             raise WacomException(f'unexpected answer: {data[0]:02x}')
         crc = data[1:]
