@@ -1049,7 +1049,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     y_min = 0
     y_max = 29600
 
-    pressure = 4095
+    pressure = 8192
     protocol = ProtocolVersion.INTUOS_PRO
     packet_handlers = [WacomPacketHandlerStrokePrefixIntuosPro,
                        WacomPacketHandlerStrokeTimestampIntuosPro,
