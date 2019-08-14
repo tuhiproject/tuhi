@@ -22,6 +22,7 @@ DATA_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi', 'svg')
 
 class JsonSvg(GObject.Object):
     def __init__(self, json, orientation, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.json = json
         try:
             os.mkdir(DATA_PATH)
