@@ -26,6 +26,7 @@ from .drawing import Drawing
 from .uhid import UHIDDevice
 import tuhi.protocol
 from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion
+from .util import list2hex
 
 logger = logging.getLogger('tuhi.wacom')
 
@@ -106,18 +107,6 @@ def b2hex(bs):
     '''Convert bytes() to a two-letter hex string in the form "1a 2b c3"'''
     hx = binascii.hexlify(bs).decode('ascii')
     return ' '.join([''.join(s) for s in zip(hx[::2], hx[1::2])])
-
-
-def list2hex(l, groupsize=8):
-    '''Converts a list of integers to a two-letter hex string in the form
-    "1a 2b c3"'''
-
-    slices = []
-    for idx in range(0, len(l), groupsize):
-        s = ' '.join([f'{x:02x}' for x in l[idx:idx + groupsize]])
-        slices.append(s)
-
-    return '    '.join(slices)
 
 
 def list2hexlist(l):
