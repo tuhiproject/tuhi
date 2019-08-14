@@ -53,6 +53,11 @@
 import binascii
 import enum
 import time
+import logging
+from collections import namedtuple
+from .util import list2hex
+
+logger = logging.getLogger('tuhi.protocol')
 
 
 def little_u16(x):
@@ -80,6 +85,20 @@ def little_u32(x):
         return x.to_bytes(4, byteorder='little')
     else:
         assert(len(x) == 4)
+        return int.from_bytes(x, byteorder='little')
+
+
+def little_u64(x):
+    '''
+    Convert to or from a 64-bit integer to a little-endian 4-byte array. If
+    passed an integer, the return value is a 8-byte array. If passed a
+    4-byte array, the return value is a 64-bit integer.
+    '''
+    if isinstance(x, int):
+        assert(x <= 0xffffffffffffffff and x >= 0x0000000000000000)
+        return x.to_bytes(8, byteorder='little')
+    else:
+        assert(len(x) == 8)
         return int.from_bytes(x, byteorder='little')
 
 
@@ -262,6 +281,18 @@ class Protocol(object):
         that has the attributes you'd expect.
         '''
         return self.get(key, *args, **kwargs).execute()
+
+    def parse_pen_data(self, data):
+        '''
+        Parse the given pen data. Returns a list of :class:`StrokeFile` objects.
+        '''
+        files = []
+        while data:
+            logger.debug(f'... remaining data ({len(data)}): {list2hex(data)}')
+            sf = StrokeFile(data)
+            files.append(sf)
+            data = data[sf.bytesize:]
+        return files
 
 
 class NordicData(list):
@@ -1209,3 +1240,567 @@ class MsgRegisterWaitForButtonSlateOrIntuosPro(Msg):
             self.protocol_version = ProtocolVersion.INTUOS_PRO
         else:
             raise UnexpectedReply(reply)
+
+
+class StrokeParsingError(ProtocolError):
+    def __init__(self, message, data=[]):
+        self.message = message
+        self.data = data
+
+    def __repr__(self):
+        if self.data:
+            datastr = f' data: {list2hex(self.data)}'
+        else:
+            datastr = ''
+        return f'{self.message}{datastr}'
+
+    def __str__(self):
+        return self.__repr__()
+
+
+class StrokeDataType(enum.Enum):
+    UNKNOWN = enum.auto()
+    FILE_HEADER = enum.auto()
+    STROKE_HEADER = enum.auto()
+    STROKE_END = enum.auto()
+    POINT = enum.auto()
+    DELTA = enum.auto()
+    EOF = enum.auto()
+    LOST_POINT = enum.auto()
+
+    @classmethod
+    def identify(cls, data):
+        '''
+        Returns the identified packet type for the next packet.
+        '''
+        header = data[0]
+        nbytes = bin(header).count('1')
+        payload = data[1:1 + nbytes]
+
+        # Note: the order of the checks below matters
+
+        # Known file format headers. This is just a version number, I think.
+        if data[0:4] == [0x67, 0x82, 0x69, 0x65] or \
+           data[0:4] == [0x62, 0x38, 0x62, 0x74]:
+            return StrokeDataType.FILE_HEADER
+
+        # End of stroke, but can sometimes mean end of file too
+        if data[0:7] == [0xfc, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]:
+            return StrokeDataType.STROKE_END
+
+        if payload == [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]:
+            return StrokeDataType.EOF
+
+        # all special headers have the lowest two bits set
+        if header & 0x3 == 0:
+            return StrokeDataType.DELTA
+
+        if not payload:
+            return StrokeDataType.UNKNOWN
+
+        if payload[0] == 0xfa or payload[0:3] == [0xff, 0xee, 0xee]:
+            return StrokeDataType.STROKE_HEADER
+
+        if payload[0:2] == [0xff, 0xff]:
+            return StrokeDataType.POINT
+
+        if payload[0:2] == [0xdd, 0xdd]:
+            return StrokeDataType.LOST_POINT
+
+        return StrokeDataType.UNKNOWN
+
+
+class StrokeFile(object):
+    '''
+    Represents a single file as coming from the device. Note that pen data
+    received from the device may include more than one file, this object is
+    merely the first represented in this file.
+
+    .. attribute:: bytesize
+
+       The length in bytes of the data consumed.
+
+    .. attribute:: timestamp
+
+       Creation time of the drawing (when the button was pressed) or None where
+       this is not supported by the device.
+
+    .. attribute:: strokes
+
+       A list of strokes, each a list of Point(x, y, p) namedtuples.
+       Coordinates for the points are in absolute device units.
+
+    '''
+    def __init__(self, data):
+        self.data = data
+        self.file_header = StrokeFileHeader(data[:16])
+
+        logger.debug(self.file_header)
+
+        self.bytesize = self.file_header.size
+
+        offset = self.file_header.size
+        self.timestamp = self.file_header.timestamp
+        self.bytesize += self._parse_data(data[offset:])
+
+    def _parse_data(self, data):
+        # the data formats we return
+        Stroke = namedtuple('Stroke', ['points'])
+        Point = namedtuple('Point', ['x', 'y', 'p'])
+
+        last_point = None  # abs coords for most recent point
+        last_delta = Point(0, 0, 0)  # delta accumulates
+
+        strokes = []  # all strokes
+        points = []  # Points of current strokes
+
+        consumed = 0
+
+        # Note about the below: this was largely reverse-engineered because
+        # the specs we have access to are either ambiguous or outright wrong.
+        #
+        # First byte is a bitmask that seems to indicate how many bytes.
+        #
+        # Where the header byte has the lowest two bits set, it can be
+        # one of several packages:
+        # - a StrokeHeader [0xfa] to indicate a new stroke
+        # - end of stroke - all payload bytes are 0xff
+        # - lost point [0xdd, 0xdd] - firmware couldn't record a point
+        # - a StrokePoint [0xff, 0xff] a fully specified point. Always
+        #   the first after a StrokeHeader but may also appear elsewhere.
+        #
+        # Where the header byte has the lowest two bits on zero, it is
+        # a StrokeDelta, a variable sized payload following the header,
+        # values depend on the bits set in the header.
+        #
+        # In theory all the header packages should have a header of 0xff,
+        # but they don't. End of stroke may have 0xfc, a StrokePoint
+        # sometimes has 0xbf. It is unknown why.
+        #
+        # The StrokePoint is strange since if can sometimes contain deltas
+        # (bitmask 0xbf). So it's just a delta with an extra two bytes for
+        # headers, so what is the point of it? Presumably a firmware bug or
+        # something.
+        while data:
+            packet_type = StrokeDataType.identify(data)
+            logger.debug(f'Next data packet {packet_type.name}: {list2hex(data[:16])} …')
+
+            packet = None
+            if packet_type == StrokeDataType.UNKNOWN:
+                packet = StrokePacketUnknown(data)
+            elif packet_type == StrokeDataType.FILE_HEADER:
+                # This code shouldn't be triggered, we handle the file
+                # header outside this function.
+                packet = StrokeFileHeader(data)
+                logger.error(f'Unexpected file header at byte {consumed}: {packet}')
+                break
+            elif packet_type == StrokeDataType.STROKE_END:
+                packet = StrokeEndOfStroke(data)
+                if points:
+                    strokes.append(Stroke(points))
+                    points = []
+            elif packet_type == StrokeDataType.EOF:
+                # EOF means pack
+                packet = StrokeEOF(data)
+                if points:
+                    strokes.append(Stroke(points))
+                    points = []
+                data = data[packet.size:]
+                consumed += packet.size
+                break
+            elif packet_type == StrokeDataType.STROKE_HEADER:
+                # New stroke means resetting delta and storing the last
+                # stroke
+                packet = StrokeHeader(data)
+                last_delta = Point(0, 0, 0)
+                if points:
+                    strokes.append(Stroke(points))
+                    points = []
+            elif packet_type == StrokeDataType.LOST_POINT:
+                # We don't yet handle lost points
+                packet = StrokeLostPoint(data)
+            elif (packet_type == StrokeDataType.POINT or
+                  packet_type == StrokeDataType.DELTA):
+                # POINT and DELTA *should* be two different packages but
+                # sometimes a POINT includes a delta for a coordinate. So
+                # all a POINT is is a delta with an added [0xff 0xff] after
+                # the header byte. The StrokePoint packet hides this so we
+                # can process both the same way.
+                if packet_type == StrokeDataType.POINT:
+                    packet = StrokePoint(data)
+                    if last_point is None:
+                        last_point = Point(packet.x, packet.y, packet.p)
+                else:
+                    packet = StrokeDelta(data)
+
+                # Compression algorithm in the device basically keeps a
+                # cumulative delta so that
+                # P0 = absolute x, y, z
+                # P1 = P0 + d1
+                # P2 = P0 + 2*d1 + d2
+                # P3 = P0 + 3*d1 + 2*d2 + d3
+                # And we use that here by just keeping the last delta
+                # around, adding to it where necessary and then adding it to
+                # the last point we have.
+                #
+                # Whenever we get an absolute coordinate, the delta resets
+                # to 0. Since this is per axis, our fictional P4 may be:
+                # P4(x) = P0 + 4*d1 + 3*d2 + 2*d3 + d4
+                # P4(y) = P0 + 4*d1 + 2*d3 ... d2 and d4 are missing (zero)
+                # P4(p) = P4(p) .... absolute
+                dx, dy, dp = last_delta
+                x, y, p = last_point
+                if packet.dx is not None:
+                    dx += packet.dx
+                elif packet.x is not None:
+                    x = packet.x
+                    dx = 0
+
+                if packet.dy is not None:
+                    dy += packet.dy
+                elif packet.y is not None:
+                    y = packet.y
+                    dy = 0
+
+                if packet.dp is not None:
+                    dp += packet.dp
+                elif packet.p is not None:
+                    p = packet.p
+                    dp = 0
+
+                # dx,dy,dp ... are cumulative deltas for this packet
+                # x,y,p    ... most recent known abs coordinates
+                # add those two together and we have the real coordinates
+                # and the baseline for the next point
+                last_delta = Point(dx, dy, dp)
+                current_point = Point(x, y, p)
+                last_point = Point(current_point.x + last_delta.x,
+                                   current_point.y + last_delta.y,
+                                   current_point.p + last_delta.p)
+                logger.debug(f'Calculated point: {last_point}')
+                points.append(last_point)
+            else:
+                # should never get here
+                raise StrokeParsingError(f'Failed to parse', data[:16])
+
+            logger.debug(f'Offset {consumed}: {packet}')
+            consumed += packet.size
+            data = data[packet.size:]
+
+        self.strokes = strokes
+        return consumed
+
+
+class StrokePacket(object):
+    '''
+    .. attribute: size
+
+        Size of the packet in bytes
+    '''
+    def __init__(self):
+        self.size = 0
+
+
+class StrokePacketUnknown(StrokePacket):
+    def __init__(self, data):
+        header = data[0]
+        nbytes = bin(header).count('1')
+        self.size = 1 + nbytes
+        self.data = data[:self.size]
+
+    def __repr__(self):
+        return f'Unknown packet: {list2hex(self.data)}'
+
+
+class StrokeFileHeader(StrokePacket):
+    '''
+    Each data packet has a file header consisting of 4 bytes file version
+    number and optionally extra data.
+
+    .. attribute: timestamp
+
+        The timestamp of this drawing or ``None`` where not available.
+
+    .. attribute: nstrokes
+
+        The count of strokes within this drawing or ``None`` where not
+        available. This count is inaccurate anyway, so it should only be
+        used for basic internal checks.
+
+    '''
+    def __init__(self, data):
+        key = little_u32(data[:4])
+        file_formats = {
+            little_u32([0x67, 0x82, 0x69, 0x65]): self._parse_intuos_pro,
+            little_u32([0x62, 0x38, 0x62, 0x74]): self._parse_spark,
+        }
+
+        self.timestamp = None
+        self.nstrokes = None
+
+        try:
+            func = file_formats[key]
+            func(data)
+        except KeyError:
+            raise StrokeParsingError(f'Unknown file format:', data[:4])
+
+    def __repr__(self):
+        t = time.strftime("%y%m%d%H%M%S", time.gmtime(self.timestamp))
+        return f'FileHeader: time: {t}, stroke count: {self.nstrokes}'
+
+    def _parse_intuos_pro(self, data):
+        self.timestamp = int.from_bytes(data[4:8], byteorder='little')
+        # plus two bytes for ms, always zero
+        self.nstrokes = int.from_bytes(data[10:14], byteorder='little')
+        # plus two bytes always zero
+        self.size = 16
+
+    def _parse_spark(self, data):
+        self.size = 4
+
+
+class StrokeHeader(StrokePacket):
+    '''
+    .. attribute:: pen_id
+
+        The pen serial number or 0 if none is set
+
+    .. attribute:: pen_type
+
+        The pen type
+
+    .. attribute:: timestamp
+
+        The timestamp of this stroke or None if none was recorded
+
+    .. attribute:: time_offset
+
+        The time offset in ms since powerup or None if this stroke has an
+        absolute timestamp.
+
+    .. attribute:: is_new_layer
+
+        True if this stroke is on a new layer
+    '''
+    def __init__(self, data):
+        header = data[0]
+        payload = data[1:]
+        self.size = bin(header).count('1') + 1
+        if payload[0] == 0xfa:
+            self._parse_intuos_pro(data, header, payload)
+        elif payload[0:3] == [0xff, 0xee, 0xee]:
+            self._parse_slate(data, header, payload)
+        else:
+            raise StrokeParsingError(f'Invalid StrokeHeader, expected ff fa or ff ee.', data[:8])
+
+    def _parse_slate(self, data, header, payload):
+        self.pen_id = 0
+        self.pen_type = 0
+        self.is_new_layer = False
+
+        self.timestamp = None
+        self.time_offset = little_u16(payload[4:6]) * 5  # in 5ms resolution
+
+        # On the first stroke after the file header, this packet is 6 bytes
+        # only. Other strokes have 8 bytes but the last two bytes are always
+        # zero.
+
+    def _parse_intuos_pro(self, data, header, payload):
+        flags = payload[1]
+        needs_pen_id = flags & 0x80
+        self.pen_type = flags & 0x3f
+        self.is_new_layer = (flags & 0x40) != 0
+        self.pen_id = 0
+        self.timestamp = int.from_bytes(payload[2:6], byteorder='little')
+        self.time_offset = None
+        # FIXME: plus two bytes for milis
+        self.size = bin(header).count('1') + 1
+
+        # if the pen id flag is set, the pen ID comes in the next 8-byte
+        # packet (plus 0xff header)
+        if needs_pen_id:
+            pen_packet = data[self.size + 1:]
+            if not pen_packet:
+                raise StrokeParsingError('Missing pen ID packet')
+
+            header = data[0]
+            if header != 0xff:
+                raise StrokeParsingError(f'Unexpected pen id packet header: {header}.', data[:9])
+
+            nbytes = bin(header).count('1')
+            self.pen_id = little_u64(pen_packet[:8])
+            self.size += 1 + nbytes
+
+    def __repr__(self):
+        if self.timestamp is not None:
+            t = time.strftime(f'%y%m%d%H%M%S', time.gmtime(self.timestamp))
+        else:
+            t = time.strftime(f'boot+{self.time_offset/1000}s')
+        return f'StrokeHeader: time: {t} new layer: {self.is_new_layer}, pen type: {self.pen_type}, pen id: {self.pen_id:#x}'
+
+
+class StrokeDelta(object):
+    '''
+    .. attribute:: x
+
+        The absolute x coordinate or None if this is packet contains a delta
+
+    .. attribute:: y
+
+        The absolute y coordinate or None if this is packet contains a delta
+
+    .. attribute:: p
+
+        The absolute pressure coordinate or None if this is packet contains a delta
+
+    .. attribute:: dx
+
+        The x delta or None if this is packet contains an absolute
+        coordinate
+
+    .. attribute:: dy
+
+        The y delta or None if this is packet contains an absolute
+        coordinate
+
+    .. attribute:: dp
+
+        The pressure delta or None if this is packet contains an absolute
+        coordinate
+    '''
+    def __init__(self, data):
+        def extract(mask, databytes):
+            value = None
+            delta = None
+            size = 0
+            if mask == 0:
+                # No data for this coordinate
+                pass
+            elif mask == 1:
+                # Supposedly not implemented by any device.
+                #
+                # If this would exist, it would throw off the byte count
+                # anyway, so this cannot ever exist without breaking
+                # everything.
+                raise NotImplementedError('This device is not supposed to be exist')
+            elif mask == 2:
+                # 8 bit delta
+                delta = int.from_bytes(bytes([databytes[0]]), byteorder='little', signed=True)
+                if delta == 0:
+                    raise StrokeParsingError(f'StrokeDelta: invalid delta of zero', data)
+                assert delta != 0
+                size = 1
+            elif mask == 3:
+                # full abs coordinate
+                value = little_u16(databytes[:2])
+                size = 2
+            return value, delta, size
+
+        if (data[0] & 0b11) != 0:
+            raise NotImplementedError(f'LSB two bits set in mask - this is not supposed to happen')
+
+        xmask = (data[0] & 0b00001100) >> 2
+        ymask = (data[0] & 0b00110000) >> 4
+        pmask = (data[0] & 0b11000000) >> 6
+
+        offset = 1
+        x, dx, size = extract(xmask, data[offset:])
+        offset += size
+        y, dy, size = extract(ymask, data[offset:])
+        offset += size
+        p, dp, size = extract(pmask, data[offset:])
+        offset += size
+
+        # Note: any of these will be None depending on the packet
+        self.dx = dx
+        self.dy = dy
+        self.dp = dp
+        self.x = x
+        self.y = y
+        self.p = p
+
+        self.size = offset
+
+    def __repr__(self):
+        def printstring(delta, abs):
+            return f'{delta:+5d}' if delta is not None \
+                        else f'{abs:5d}' if abs is not None \
+                        else '     '  # noqa
+        strx = printstring(self.dx, self.x)
+        stry = printstring(self.dy, self.y)
+        strp = printstring(self.dp, self.p)
+
+        return f'StrokeDelta: {strx}/{stry} pressure: {strp}'
+
+
+class StrokePoint(StrokeDelta):
+    '''
+    A full point identified by three coordinates (x, y, pressure) in
+    absolute coordinates.
+    '''
+    def __init__(self, data):
+        header = data[0]
+        payload = data[1:]
+        if payload[:2] != [0xff, 0xff]:
+            raise StrokeParsingError(f'Invalid StrokePoint, expected ff ff ff', data[:9])
+
+        # This is a wrapper around StrokeDelta which does the mask parsing.
+        # In theory the StrokePoint would be a separate packet but it
+        # occasionally uses a header other than 0xff. Which means the packet
+        # is completely useless and shouldn't exist because now it's just a
+        # StrokeDelta in the form of [header, 0xff, 0xff, payload] and the
+        # 0xff just keep the room warm.
+
+        # StrokeDelta assumes the bottom two bits are unset
+        header &= ~0x3
+        super().__init__([header] + payload[2:])
+        self.size += 2
+
+        # self.x = little_u16(data[2:4])
+        # self.y = little_u16(data[4:6])
+        # self.pressure = little_u16(data[6:8])
+
+    def __repr__(self):
+        return f'StrokePoint: {self.x}/{self.y} pressure: {self.p}'
+
+
+class StrokeEOF(StrokePacket):
+    def __init__(self, data):
+        header = data[0]
+        payload = data[1:]
+        nbytes = bin(header).count('1')
+        if payload[:nbytes] != [0xff] * nbytes:
+            raise StrokeParsingError(f'Invalid EOF, expected 0xff only', data[:9])
+        self.size = nbytes + 1
+
+
+class StrokeEndOfStroke(StrokePacket):
+    def __init__(self, data):
+        header = data[0]
+        payload = data[1:]
+        nbytes = bin(header).count('1')
+        if payload[:nbytes] != [0xff] * nbytes:
+            raise StrokeParsingError(f'Invalid EndOfStroke, expected 0xff only', data[:9])
+        self.size = nbytes + 1
+        self.data = data[:self.size]
+
+    def __repr__(self):
+        return f'EndOfStroke: {list2hex(self.data)}'
+
+
+class StrokeLostPoint(StrokePacket):
+    '''
+    Marker for lost points that the firmware couldn't record coordinates
+    for.
+
+    .. attribute:: nlost
+
+        The number of points not recorded.
+    '''
+    def __init__(self, data):
+        header = data[0]
+        payload = data[1:]
+        if payload[:2] != [0xdd, 0xdd]:
+            raise StrokeParsingError(f'Invalid StrokeLostPoint, expected ff dd dd', data[:9])
+        self.nlost = little_u16(payload[2:4])
+        self.size = bin(header).count('1') + 1

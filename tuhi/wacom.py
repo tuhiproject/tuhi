@@ -26,7 +26,7 @@ from .drawing import Drawing
 from .uhid import UHIDDevice
 import tuhi.protocol
 from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion
-from .util import list2hex
+from .util import list2hex, flatten
 
 logger = logging.getLogger('tuhi.wacom')
 
@@ -88,15 +88,6 @@ wacom_live_rdesc_template = [
     0xc0,                          # .End Collection                     99
     0xc0,                          # End Collection                      100
 ]
-
-
-def flatten(items):
-    '''flatten an array of mixed int and arrays into a simple array of int'''
-    for item in items:
-        if isinstance(item, int):
-            yield item
-        else:
-            yield from flatten(item)
 
 
 def signed_char_to_int(v):
