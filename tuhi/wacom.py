@@ -216,7 +216,7 @@ class DataLogger(object):
 
         self.logfile.write(f'name: {self.device.name}\n')
         self.logfile.write(f'bluetooth: {self.btaddr}\n')
-        self.logfile.write(f'time: {time.strftime("%Y-%m-%d %H:%M:%S")}\n')
+        self.logfile.write(f'time: {int(time.time())} # host time: {time.strftime("%Y-%m-%d %H:%M:%S")}\n')
         self.logfile.write(f'data:\n')
 
     def _close_file(self):
