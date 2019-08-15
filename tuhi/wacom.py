@@ -243,7 +243,7 @@ class DataLogger(object):
             self.logfile.write(f'#         {self.commands[data[0]]}\n')
         self.logfile.write(f'  - recv: {list2hexlist(data)}\n')
         if source != 'NORDIC':
-            self.logfile.write(f'  source: {source}')
+            self.logfile.write(f'    source: {source}\n')
 
     def _send(self, source, data):
         command = data[0]
@@ -258,7 +258,7 @@ class DataLogger(object):
             self.logfile.write(f'#         {self.commands[data[0]]}\n')
         self.logfile.write(f'  - send: {list2hexlist(data)}\n')
         if source != 'NORDIC':
-            self.logfile.write(f'  source: {source}')
+            self.logfile.write(f'    source: {source}\n')
 
 
 class WacomException(Exception):
