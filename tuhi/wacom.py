@@ -188,7 +188,7 @@ class DataLogger(object):
         self.logger = logging.getLogger('tuhi.fw')
         self.device = bluez_device
         self.btaddr = bluez_device.address
-        self.logdir = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi', self.btaddr)
+        self.logdir = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi', self.btaddr, 'raw')
         os.makedirs(self.logdir, exist_ok=True)
 
         bluez_device.connect('connected', self._on_bluez_connected)
