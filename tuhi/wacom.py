@@ -209,14 +209,15 @@ class DataLogger(object):
         if self.logfile is not None:
             return
 
-        timestamp = time.strftime('%Y%m%d-%H%M%S')
-        fname = f'log-{timestamp}.yaml'
+        timestamp = int(time.time())
+        t = time.strftime('%Y-%m-%d-%H:%M:%S')
+        fname = f'log-{timestamp}-{t}.yaml'
         path = os.path.join(self.logdir, fname)
         self.logfile = open(path, 'w+')
 
         self.logfile.write(f'name: {self.device.name}\n')
         self.logfile.write(f'bluetooth: {self.btaddr}\n')
-        self.logfile.write(f'time: {int(time.time())} # host time: {time.strftime("%Y-%m-%d %H:%M:%S")}\n')
+        self.logfile.write(f'time: {timestamp} # host time: {time.strftime("%Y-%m-%d %H:%M:%S")}\n')
         self.logfile.write(f'data:\n')
 
     def _close_file(self):
