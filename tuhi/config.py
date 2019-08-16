@@ -13,7 +13,6 @@
 
 from gi.repository import GObject
 
-import xdg.BaseDirectory
 import configparser
 import re
 import logging
@@ -23,18 +22,14 @@ from .protocol import ProtocolVersion
 
 logger = logging.getLogger('tuhi.config')
 
-DEFAULT_CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
-
 
 def is_btaddr(addr):
     return re.match('^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$', addr) is not None
 
 
 class TuhiConfig(GObject.Object):
-    def __init__(self, config_dir=None):
+    def __init__(self, config_dir):
         super().__init__()
-        if config_dir is None:
-            config_dir = DEFAULT_CONFIG_PATH
         self.config_dir = config_dir
         logger.debug(f'Using config directory: {self.config_dir}')
         Path(config_dir).mkdir(parents=True, exist_ok=True)
