@@ -423,6 +423,19 @@ class Tuhi(GObject.Object):
             self.bluez.stop_discovery()
 
 
+def setup_logging(config_dir):
+    session_log_file = Path(config_dir, 'session-logs', f'tuhi-{time.strftime("%y-%m-%d-%H:%M:%S")}.log')
+    session_log_file.parent.mkdir(parents=True, exist_ok=True)
+    fh = logging.FileHandler(session_log_file)
+    fh.setLevel(logging.DEBUG)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+    logger.info(f'Session log: {session_log_file}')
+
+
 def main(args=sys.argv):
     if sys.version_info < (3, 6):
         sys.exit('Python 3.6 or later required')
@@ -439,6 +452,8 @@ def main(args=sys.argv):
                         default=DEFAULT_CONFIG_PATH)
 
     ns = parser.parse_args(args[1:])
+    setup_logging(ns.config_dir)
+
     if ns.verbose:
         logger.setLevel(logging.DEBUG)
 
