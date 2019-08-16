@@ -1,7 +1,8 @@
 gnome = import('gnome')
 
 desktopdir = join_paths(datadir, 'applications')
-icondir = join_paths(datadir, 'icons', 'hicolor', 'scalable', 'apps')
+icondir_scalable = join_paths(datadir, 'icons', 'hicolor', 'scalable', 'apps')
+icondir_symbolic = join_paths(datadir, 'icons', 'hicolor', 'symbolic', 'apps')
 metainfodir = join_paths(datadir, 'metainfo')
 
 conf = configuration_data()
@@ -13,7 +14,8 @@ about_dialog = configure_file(input: 'ui/AboutDialog.ui.in',
 			      output: 'AboutDialog.ui',
 			      configuration: conf)
 
-install_data('org.freedesktop.Tuhi.svg', install_dir: icondir)
+install_data('org.freedesktop.Tuhi.svg', install_dir: icondir_scalable)
+install_data('org.freedesktop.Tuhi-symbolic.svg', install_dir: icondir_symbolic)
 
 i18n.merge_file(input: 'org.freedesktop.Tuhi.desktop.in',
                 output: 'org.freedesktop.Tuhi.desktop',
