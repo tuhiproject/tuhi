@@ -16,15 +16,20 @@ import logging
 
 from .window import MainWindow
 from .config import Config
+import xdg.BaseDirectory
+from pathlib import Path
 
 import gi
 gi.require_version("Gio", "2.0")
 gi.require_version("Gtk", "3.0")
 
+
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
                     level=logging.INFO,
                     datefmt='%H:%M:%S')
 logger = logging.getLogger('tuhi.gui')
+
+DEFAULT_CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
 
 
 class Application(Gtk.Application):
@@ -59,7 +64,7 @@ class Application(Gtk.Application):
         try:
             Config.set_base_path(options['config-dir'])
         except KeyError:
-            pass
+            Config.set_base_path(DEFAULT_CONFIG_PATH)
 
         if 'verbose' in options:
             logger.setLevel(logging.DEBUG)

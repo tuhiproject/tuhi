@@ -14,7 +14,6 @@
 
 from gi.repository import GObject
 
-import xdg.BaseDirectory
 import configparser
 import logging
 import json
@@ -22,12 +21,10 @@ from pathlib import Path
 
 logger = logging.getLogger('tuhi.gui.config')
 
-DEFAULT_CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
-
 
 class Config(GObject.Object):
     _config_obj = None
-    _base_path = DEFAULT_CONFIG_PATH
+    _base_path = None
 
     def __init__(self):
         super().__init__()

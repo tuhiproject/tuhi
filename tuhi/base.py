@@ -16,6 +16,8 @@ import enum
 import logging
 import sys
 import time
+import xdg.BaseDirectory
+from pathlib import Path
 try:
     from gi.repository import GObject, GLib
 except Exception as e:
@@ -26,11 +28,12 @@ except Exception as e:
     print(f'')
     raise e
 
-
 from tuhi.dbusserver import TuhiDBusServer
 from tuhi.ble import BlueZDeviceManager
 from tuhi.wacom import WacomDevice, DeviceMode
 from tuhi.config import TuhiConfig
+
+DEFAULT_CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
 
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
                     level=logging.INFO,
@@ -433,7 +436,7 @@ def main(args=sys.argv):
     parser.add_argument('--config-dir',
                         help='Base directory for configuration',
                         type=str,
-                        default=None)
+                        default=DEFAULT_CONFIG_PATH)
 
     ns = parser.parse_args(args[1:])
     if ns.verbose:
