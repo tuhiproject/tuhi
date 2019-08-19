@@ -28,9 +28,10 @@ import time
 import svgwrite
 import xdg.BaseDirectory
 import configparser
+from pathlib import Path
 
 
-CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
+CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
 
 
 class ColorFormatter(logging.Formatter):
@@ -759,14 +760,11 @@ class TuhiKeteShell(cmd.Cmd):
         # patching get_names to hide some functions we do not want in the help
         self.get_names = self._filtered_get_names
 
-        try:
-            os.mkdir(CONFIG_PATH)
-        except FileExistsError:
-            pass
+        CONFIG_PATH.mkdir(exist_ok=True)
 
-        self._config_file = os.path.join(CONFIG_PATH, 'settings.ini')
+        self._config_file = Path(CONFIG_PATH, 'settings.ini')
         self._config = configparser.ConfigParser()
-        if os.path.exists(self._config_file):
+        if self._config_file.exists():
             self._config.read(self._config_file)
         else:
             # Populate config file with a configuration example
@@ -791,7 +789,7 @@ HandlePressure = true
 
 ''')
 
-        self._history_file = os.path.join(CONFIG_PATH, 'histfile')
+        self._history_file = Path(CONFIG_PATH, 'histfile')
 
         try:
             readline.read_history_file(self._history_file)
