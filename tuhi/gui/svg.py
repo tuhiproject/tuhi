@@ -18,7 +18,7 @@ import svgwrite
 import os
 from pathlib import Path
 
-DATA_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi', 'svg')
+DATA_PATH = Path(xdg.BaseDirectory.xdg_cache_home, 'tuhi', 'svg')
 
 
 class JsonSvg(GObject.Object):
