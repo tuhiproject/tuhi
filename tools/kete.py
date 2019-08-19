@@ -33,6 +33,27 @@ from pathlib import Path
 
 CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
 
+INI_TEMPLATE = \ # noqa
+'''
+# configuration file for kete
+
+# the file follows a standard .ini format:
+# each device should have its own section like the following
+# [Bluetooth Address]
+# in each section, possible keys are:
+# - Orientation (possible values: Portrait, Landscape,
+#                                 Reverse-Portrait, Reverse-Landscape
+#               defaults to Landscape)
+# - HandlePressure (possible values: true, false
+#                   defaults to false)
+
+
+# Example:
+[11:22:33:44:55:66]
+Orientation = Reverse-Portrait
+HandlePressure = true
+'''
+
 
 class ColorFormatter(logging.Formatter):
     BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, LIGHT_GRAY = range(30, 38)
@@ -769,25 +790,7 @@ class TuhiKeteShell(cmd.Cmd):
         else:
             # Populate config file with a configuration example
             with open(self._config_file, 'w') as f:
-                f.write('''# configuration file for kete
-
-# the file follows a standard .ini format:
-# each device should have its own section like the following
-# [Bluetooth Address]
-# in each section, possible keys are:
-# - Orientation (possible values: Portrait, Landscape,
-#                                 Reverse-Portrait, Reverse-Landscape
-#               defaults to Landscape)
-# - HandlePressure (possible values: true, false
-#                   defaults to false)
-
-
-# Example:
-[11:22:33:44:55:66]
-Orientation = Reverse-Portrait
-HandlePressure = true
-
-''')
+                f.write(INI_TEMPLATE)
 
         self._history_file = Path(CONFIG_PATH, 'histfile')
 
