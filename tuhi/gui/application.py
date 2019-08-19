@@ -12,12 +12,19 @@
 #
 
 from gi.repository import Gio, GLib, Gtk
+import logging
+
 from .window import MainWindow
 from .config import Config
 
 import gi
 gi.require_version("Gio", "2.0")
 gi.require_version("Gtk", "3.0")
+
+logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
+                    level=logging.INFO,
+                    datefmt='%H:%M:%S')
+logger = logging.getLogger('tuhi.gui')
 
 
 class Application(Gtk.Application):
@@ -30,6 +37,10 @@ class Application(Gtk.Application):
                              GLib.OptionArg.STRING,
                              'path to configuration directory',
                              '/path/to/config-dir')
+        self.add_main_option('verbose', 0,
+                             GLib.OptionFlags.NONE,
+                             GLib.OptionArg.NONE,
+                             'enable verbose output')
         self._tuhi = None
 
     def do_startup(self):
@@ -49,6 +60,9 @@ class Application(Gtk.Application):
             Config.set_base_path(options['config-dir'])
         except KeyError:
             pass
+
+        if 'verbose' in options:
+            logger.setLevel(logging.DEBUG)
 
         self.activate()
         return 0

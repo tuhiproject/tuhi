@@ -21,7 +21,6 @@ import logging
 
 gi.require_version("Gtk", "3.0")
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('tuhi.gui.drawingperspective')
 
 

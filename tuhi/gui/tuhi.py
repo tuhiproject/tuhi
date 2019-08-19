@@ -19,7 +19,6 @@ import logging
 import re
 import xdg.BaseDirectory
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('tuhi.gui.dbus')
 
 CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
