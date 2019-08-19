@@ -17,11 +17,8 @@ import errno
 import os
 import logging
 import re
-import xdg.BaseDirectory
 
 logger = logging.getLogger('tuhi.gui.dbus')
-
-CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
 
 TUHI_DBUS_NAME = 'org.freedesktop.tuhi1'
 ORG_FREEDESKTOP_TUHI1_MANAGER = 'org.freedesktop.tuhi1.Manager'
