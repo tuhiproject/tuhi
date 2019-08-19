@@ -136,7 +136,7 @@ class MainWindow(Gtk.ApplicationWindow):
         action = Gio.SimpleAction.new_stateful('orientation', GLib.VariantType('s'),
                                                GLib.Variant('s', 'landscape'))
         action.connect('activate', self._on_orientation_changed)
-        action.set_state(GLib.Variant.new_string(Config.instance().orientation))
+        action.set_state(GLib.Variant.new_string(Config().orientation))
         self.add_action(action)
 
         builder = Gtk.Builder.new_from_string(MENU_XML, -1)
@@ -234,7 +234,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _on_orientation_changed(self, action, label):
         action.set_state(label)
-        Config.instance().orientation = label.get_string()  # this is a GVariant
+        Config().orientation = label.get_string()  # this is a GVariant
 
     @Gtk.Template.Callback('_on_zoom_changed')
     def _on_zoom_changed(self, adjustment):

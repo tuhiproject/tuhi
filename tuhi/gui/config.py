@@ -23,19 +23,24 @@ logger = logging.getLogger('tuhi.gui.config')
 
 
 class Config(GObject.Object):
-    _config_obj = None
+    _instance = None
     _base_path = None
 
-    def __init__(self):
-        super().__init__()
-        self.path = Path(self._base_path, 'tuhigui.ini')
-        self.base_path = self._base_path
-        self.config = configparser.ConfigParser()
-        # Don't lowercase options
-        self.config.optionxform = str
-        self._drawings = []
-        self._load()
-        self._load_cached_drawings()
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Config, cls).__new__(cls)
+
+            self = cls._instance
+            self.__init__()  # for GObject to initialize
+            self.path = Path(self._base_path, 'tuhigui.ini')
+            self.base_path = self._base_path
+            self.config = configparser.ConfigParser()
+            # Don't lowercase options
+            self.config.optionxform = str
+            self._drawings = []
+            self._load()
+            self._load_cached_drawings()
+        return cls._instance
 
     def _load(self):
         if not self.path.exists():
@@ -122,14 +127,8 @@ class Config(GObject.Object):
 
     @classmethod
     def set_base_path(cls, path):
-        if cls._config_obj is not None:
+        if cls._instance is not None:
             logger.error('Trying to set config base path but we already have the singleton object')
             return
 
         cls._base_path = Path(path)
-
-    @classmethod
-    def instance(cls):
-        if cls._config_obj is None:
-            cls._config_obj = Config()
-        return cls._config_obj
