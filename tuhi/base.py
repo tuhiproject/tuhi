@@ -362,8 +362,9 @@ class Tuhi(GObject.Object):
 
         # We have a reverse-engineered protocol. Let's not talk to anyone
         # who doesn't look like we know them to avoid potentially bricking a
-        # device.
-        if bluez_device.vendor_id not in WACOM_COMPANY_IDS:
+        # device. If the vendor id is None it may still be one of our
+        # devices, provided it's been registered previously.
+        if bluez_device.vendor_id is not None and bluez_device.vendor_id not in WACOM_COMPANY_IDS:
             return
 
         # check if the device is already known to us
@@ -371,6 +372,8 @@ class Tuhi(GObject.Object):
             config = self.config.devices[bluez_device.address]
             uuid = config['uuid']
         except KeyError:
+            if bluez_device.vendor_id is None:
+                return
             uuid = None
 
         # if we got here from a currently live BlueZ device,
