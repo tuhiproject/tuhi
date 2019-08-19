@@ -37,8 +37,8 @@ class Drawing(Gtk.EventBox):
 
     def __init__(self, json_data, *args, **kwargs):
         super().__init__()
-        self.orientation = Config.instance().orientation
-        Config.instance().connect('notify::orientation', self._on_orientation_changed)
+        self.orientation = Config().orientation
+        Config().connect('notify::orientation', self._on_orientation_changed)
         DATA_PATH.mkdir(parents=True, exist_ok=True)
 
         self.json_data = json_data
@@ -127,7 +127,7 @@ class Drawing(Gtk.EventBox):
 
     @Gtk.Template.Callback('_on_delete_button_clicked')
     def _on_delete_button_clicked(self, button):
-        Config.instance().delete_drawing(self.timestamp)
+        Config().delete_drawing(self.timestamp)
 
     @Gtk.Template.Callback('_on_rotate_button_clicked')
     def _on_rotate_button_clicked(self, button):

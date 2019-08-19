@@ -80,7 +80,7 @@ class DrawingPerspective(Gtk.Stack):
         # The config backend filters duplicates anyway, so don't care here
         for ts in self.device.drawings_available:
             json_string = self.device.json(ts)
-            Config.instance().add_drawing(ts, json_string)
+            Config().add_drawing(ts, json_string)
 
     def _update_drawings(self, config, pspec):
         def _hash(drawing):
@@ -137,9 +137,9 @@ class DrawingPerspective(Gtk.Stack):
         # json itself (once cached) that we then actually use for SVG
         # generation.
         device.connect('notify::drawings-available', self._cache_drawings)
-        Config.instance().connect('notify::drawings', self._update_drawings)
+        Config().connect('notify::drawings', self._update_drawings)
 
-        self._update_drawings(Config.instance(), None)
+        self._update_drawings(Config(), None)
 
         # We always want to sync on startup
         logger.debug(f'{device.name} - starting to listen')
@@ -179,5 +179,5 @@ class DrawingPerspective(Gtk.Stack):
 
     @Gtk.Template.Callback('_on_undo_clicked')
     def _on_undo_clicked(self, button):
-        Config.instance().undelete_drawing(button.deleted_drawing)
+        Config().undelete_drawing(button.deleted_drawing)
         self.overlay_undo.set_reveal_child(False)
