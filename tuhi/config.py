@@ -14,16 +14,16 @@
 from gi.repository import GObject
 
 import xdg.BaseDirectory
-import os
 import configparser
 import re
 import logging
+from pathlib import Path
 from .drawing import Drawing
 from .protocol import ProtocolVersion
 
 logger = logging.getLogger('tuhi.config')
 
-DEFAULT_CONFIG_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi')
+DEFAULT_CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
 
 
 def is_btaddr(addr):
@@ -37,10 +37,7 @@ class TuhiConfig(GObject.Object):
             config_dir = DEFAULT_CONFIG_PATH
         self.config_dir = config_dir
         logger.debug(f'Using config directory: {self.config_dir}')
-        try:
-            os.mkdir(config_dir)
-        except FileExistsError:
-            pass
+        Path(config_dir).mkdir(parents=True, exist_ok=True)
 
         self._devices = {}
         self._scan_config_dir()
@@ -53,28 +50,23 @@ class TuhiConfig(GObject.Object):
         return self._devices
 
     def _scan_config_dir(self):
-        with os.scandir(self.config_dir) as it:
-            for entry in it:
-                if entry.is_file():
-                    continue
+        dirs = [d for d in Path(self.config_dir).iterdir() if d.is_dir() and is_btaddr(d.name)]
+        for directory in dirs:
+            settings = Path(directory, 'settings.ini')
+            if not settings.is_file():
+                continue
 
-                if not is_btaddr(entry.name):
-                    continue
+            logger.debug(f'{directory}: configuration found')
+            config = configparser.ConfigParser()
+            config.read(settings)
 
-                path = os.path.join(entry, 'settings.ini')
-                if not os.path.isfile(path):
-                    continue
+            self._purge_drawings(directory)
 
-                logger.debug(f'{entry.name}: configuration found')
-                config = configparser.ConfigParser()
-                config.read(path)
-
-                self._purge_drawings(entry)
-
-                assert config['Device']['Address'] == entry.name
-                if 'Protocol' not in config['Device']:
-                    config['Device']['Protocol'] = ProtocolVersion.ANY.name.lower()
-                self._devices[entry.name] = config['Device']
+            btaddr = directory.name
+            assert config['Device']['Address'] == btaddr
+            if 'Protocol' not in config['Device']:
+                config['Device']['Protocol'] = ProtocolVersion.ANY.name.lower()
+            self._devices[btaddr] = config['Device']
 
     def new_device(self, address, uuid, protocol):
         assert is_btaddr(address)
@@ -82,17 +74,14 @@ class TuhiConfig(GObject.Object):
         assert protocol != ProtocolVersion.ANY
 
         logger.debug(f'{address}: adding new config, UUID {uuid}')
-        path = os.path.join(self.config_dir, address)
-        try:
-            os.mkdir(path)
-        except FileExistsError:
-            pass
+        path = Path(self.config_dir, address)
+        path.mkdir(exist_ok=True)
 
         # The ConfigParser default is to write out options as lowercase, but
         # the ini standard is Capitalized. But it's convenient to have
         # write-out nice but read-in flexible. So have two different config
         # parsers for writing and then for handling the reads later
-        path = os.path.join(path, 'settings.ini')
+        path = Path(path, 'settings.ini')
         config = configparser.ConfigParser()
         config.optionxform = str
         config.read(path)
@@ -119,7 +108,7 @@ class TuhiConfig(GObject.Object):
             return
 
         logger.debug(f'{address}: adding new drawing, timestamp {drawing.timestamp}')
-        path = os.path.join(self.config_dir, address, f'{drawing.timestamp}.json')
+        path = Path(self.config_dir, address, f'{drawing.timestamp}.json')
 
         with open(path, 'w') as f:
             f.write(drawing.to_json())
@@ -127,39 +116,29 @@ class TuhiConfig(GObject.Object):
     def load_drawings(self, address):
         assert is_btaddr(address)
 
-        drawings = []
         if address not in self.devices:
-            return drawings
+            return []
 
-        configdir = os.path.join(self.config_dir, address)
-        with os.scandir(configdir) as it:
-            for entry in it:
-                if not entry.is_file():
-                    continue
-
-                if not entry.name.endswith('.json'):
-                    continue
-
-                d = Drawing.from_json(entry)
-                drawings.append(d)
-
-        return drawings
+        configdir = Path(self.config_dir, address)
+        return [Drawing.from_json(f) for f in configdir.glob('*.json')]
 
     def _purge_drawings(self, directory):
         '''Removes all but the most recent 10 files from the config
         directory. This is primarily done so that no-one relies on the tuhi
         daemon for permanent storage.'''
 
-        files = []
-        with os.scandir(directory) as it:
-            for entry in it:
-                if entry.is_file() and entry.name.endswith('.json'):
-                    files.append(entry)
+        files = [x for x in Path(directory).glob('*.json')]
 
-        if len(files) <= 10:
+        if len(files) > 10:
+            files.sort(key=lambda e: e.name)
+            for f in files[:-10]:
+                logger.debug(f'{directory.name}: purging {f.name}')
+                f.unlink()
+
+    @classmethod
+    def set_base_path(cls, path):
+        if cls._instance is not None:
+            logger.error('Trying to set config base path but we already have the singleton object')
             return
 
-        files.sort(key=lambda e: e.name)
-        for f in files[:-10]:
-            logger.debug(f'{directory.name}: purging {f.name}')
-            os.remove(f)
+        cls._base_path = Path(path)

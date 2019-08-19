@@ -16,21 +16,19 @@ from gi.repository import GObject
 import xdg.BaseDirectory
 import svgwrite
 import os
+from pathlib import Path
 
-DATA_PATH = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi', 'svg')
+DATA_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi', 'svg')
 
 
 class JsonSvg(GObject.Object):
     def __init__(self, json, orientation, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.json = json
-        try:
-            os.mkdir(DATA_PATH)
-        except FileExistsError:
-            pass
+        DATA_PATH.mkdir(parents=True, exist_ok=True)
 
         self.timestamp = json['timestamp']
-        self.filename = os.path.join(DATA_PATH, f'{self.timestamp}.svg')
+        self.filename = os.fspath(Path(DATA_PATH, f'{self.timestamp}.svg'))
         self.orientation = orientation
         self._convert()
 

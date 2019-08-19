@@ -12,11 +12,11 @@
 #
 
 import sys
-import os
 import subprocess
+from pathlib import Path
 
-tuhi_server = os.path.join('@libexecdir@', 'tuhi-server')
-tuhi_gui = os.path.join('@libexecdir@', 'tuhi-gui')
+tuhi_server = Path('@libexecdir@', 'tuhi-server')
+tuhi_gui = Path('@libexecdir@', 'tuhi-gui')
 
 
 @devel@  # NOQA

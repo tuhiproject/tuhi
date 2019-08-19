@@ -16,11 +16,11 @@ import binascii
 import enum
 import inspect
 import logging
-import os
 import threading
 import time
 import uuid
 import errno
+from pathlib import Path
 from gi.repository import GObject
 from .drawing import Drawing
 from .uhid import UHIDDevice
@@ -188,8 +188,8 @@ class DataLogger(object):
         self.logger = logging.getLogger('tuhi.fw')
         self.device = bluez_device
         self.btaddr = bluez_device.address
-        self.logdir = os.path.join(xdg.BaseDirectory.xdg_data_home, 'tuhi', self.btaddr, 'raw')
-        os.makedirs(self.logdir, exist_ok=True)
+        self.logdir = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi', self.btaddr, 'raw')
+        self.logdir.mkdir(exist_ok=True)
 
         bluez_device.connect('connected', self._on_bluez_connected)
         bluez_device.connect('disconnected', self._on_bluez_disconnected)
@@ -212,7 +212,7 @@ class DataLogger(object):
         timestamp = int(time.time())
         t = time.strftime('%Y-%m-%d-%H:%M:%S')
         fname = f'log-{timestamp}-{t}.yaml'
-        path = os.path.join(self.logdir, fname)
+        path = Path(self.logdir, fname)
         self.logfile = open(path, 'w+')
 
         self.logfile.write(f'name: {self.device.name}\n')
