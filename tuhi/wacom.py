@@ -936,6 +936,8 @@ class WacomProtocolSpark(WacomProtocolBase):
     packet_handlers = [WacomPacketHandlerEndOfStroke,
                        WacomPacketHandlerEndOfSequence]
 
+    orientation = 'portrait'
+
     def __init__(self, device, uuid, protocol_version=ProtocolVersion.SPARK):
         assert(protocol_version >= ProtocolVersion.SPARK)
         super().__init__(device, uuid, protocol_version=protocol_version)
@@ -960,6 +962,8 @@ class WacomProtocolSlate(WacomProtocolSpark):
     pressure = 2047
     protocol = ProtocolVersion.SLATE
     packet_handlers = [WacomPacketHandlerStrokePrefixSlate]
+
+    orientation = 'portrait'
 
     def __init__(self, device, uuid, protocol_version=ProtocolVersion.SLATE):
         assert(protocol_version >= ProtocolVersion.SLATE)
@@ -1043,6 +1047,8 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     packet_handlers = [WacomPacketHandlerStrokePrefixIntuosPro,
                        WacomPacketHandlerStrokeTimestampIntuosPro,
                        WacomPacketHandlerUnknownFixedStrokeDataIntuosPro]
+
+    orientation = 'landscape'
 
     def __init__(self, device, uuid, protocol_version=ProtocolVersion.INTUOS_PRO):
         assert(protocol_version >= ProtocolVersion.INTUOS_PRO)
