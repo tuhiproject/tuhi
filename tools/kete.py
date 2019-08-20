@@ -33,8 +33,7 @@ from pathlib import Path
 
 CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
 
-INI_TEMPLATE = \ # noqa
-'''
+INI_TEMPLATE = '''
 # configuration file for kete
 
 # the file follows a standard .ini format:
