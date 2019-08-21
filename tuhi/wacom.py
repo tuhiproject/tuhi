@@ -26,6 +26,7 @@ from .uhid import UHIDDevice
 import tuhi.protocol
 from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile
 from .util import list2hex, flatten
+from tuhi.config import TuhiConfig
 
 logger = logging.getLogger('tuhi.wacom')
 
@@ -745,7 +746,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def read_offline_data(self):
         self.set_paper_mode()
         transaction_count = 0
-        while self.count_available_files():
+        file_count = self.count_available_files()
+        while file_count > 0:
             count, timestamp = self.get_stroke_data()
             logger.info(f'receiving {count} bytes drawn on UTC {time.strftime("%y%m%d%H%M%S", time.gmtime(timestamp))}')
             self.start_downloading_oldest_file()
@@ -755,6 +757,12 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             drawing = self.parse_pen_data(pen_data, timestamp)
             if drawing:
                 self.emit('drawing', drawing)
+            file_count -= 1
+            if TuhiConfig().peek_at_drawing:
+                logger.info(f'Not deleting drawing from device')
+                if file_count > 0:
+                    logger.info(f'{file_count} more files on device but I can only download the oldest one')
+                break
             self.delete_oldest_file()
             transaction_count += 1
         return transaction_count

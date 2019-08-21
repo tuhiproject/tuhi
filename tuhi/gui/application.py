@@ -46,6 +46,12 @@ class Application(Gtk.Application):
                              GLib.OptionFlags.NONE,
                              GLib.OptionArg.NONE,
                              'enable verbose output')
+        # unused, just here to have option compatibility with the tuhi
+        # server but we could add some GUI feedback here
+        self.add_main_option('peek', 0,
+                             GLib.OptionFlags.NONE,
+                             GLib.OptionArg.NONE,
+                             'download first drawing only but do not remove it from the device')
         self._tuhi = None
 
     def do_startup(self):
