@@ -429,9 +429,12 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
             # expected
             try:
                 self.p.execute(Interactions.CONNECT, uuid)
-            except tuhi.protocol.DeviceError:
-                # this is expected
-                pass
+            except tuhi.protocol.DeviceError as e:
+                if e.errorcode == tuhi.protocol.DeviceError.ErrorCode.GENERAL_ERROR:
+                    # this is expected
+                    pass
+                else:
+                    raise e
 
             # The "press button now command" on the spark
             self.p.execute(Interactions.REGISTER_PRESS_BUTTON)
