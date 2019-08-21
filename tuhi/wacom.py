@@ -18,7 +18,6 @@ import logging
 import threading
 import time
 import uuid
-import errno
 from pathlib import Path
 from gi.repository import GObject
 from .drawing import Drawing
@@ -246,10 +245,6 @@ class DataLogger(object):
             self.logfile.write(f'    source: {source}\n')
 
 
-class WacomException(Exception):
-    errno = errno.ENOSYS
-
-
 class WacomPacket(GObject.Object):
     '''
     A single protocol packet of variable length. The protocol format is a
@@ -421,7 +416,7 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
         protocol_version = self.p.execute(Interactions.REGISTER_WAIT_FOR_BUTTON).protocol_version
 
         if protocol_version == ProtocolVersion.ANY:
-            raise WacomException(f'Unknown protocol version: {protocol_version}')
+            raise tuhi.protocol.ProtocolError(f'Unknown protocol version: {protocol_version}')
 
         return protocol_version
 
@@ -1020,7 +1015,7 @@ class WacomDevice(GObject.Object):
                 self.sync_state = 1
                 self._wacom_protocol.retrieve_data()
                 self.sync_state = 0
-        except WacomException as e:
+        except DeviceError as e:
             logger.error(f'**** Exception: {e} ****')
             exception = e
             self.sync_state = 0
