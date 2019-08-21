@@ -256,18 +256,6 @@ class WacomEEAGAINException(WacomException):
     errno = errno.EAGAIN
 
 
-class WacomUnsupportedCommandException(WacomException):
-    errno = errno.ENOMSG
-
-
-class WacomWrongModeException(WacomException):
-    errno = errno.EBADE
-
-
-class WacomNotRegisteredException(WacomException):
-    errno = errno.EACCES
-
-
 class WacomTimeoutException(WacomException):
     errno = errno.ETIME
 
@@ -404,21 +392,6 @@ class WacomProtocolLowLevelComm(GObject.Object):
 
         return data
 
-    def check_ack(self, data):
-        if len(data) != 1:
-            str_b = binascii.hexlify(bytes(data))
-            raise WacomException(f'unexpected data: {str_b}')
-        if data[0] == 0x01:
-            raise WacomWrongModeException(f'wrong device mode')
-        elif data[0] == 0x02:
-            raise WacomEEAGAINException(f'unexpected answer: {data[0]:02x}')
-        elif data[0] == 0x05:
-            raise WacomUnsupportedCommandException(f'invalid opcode')
-        elif data[0] == 0x07:
-            raise WacomNotRegisteredException(f'wrong device, please re-register')
-        elif data[0] != 0x00:
-            raise WacomException(f'unknown error: {data[0]:02x}')
-
     # The callback used by the protocol messages
     def nordic_data_exchange(self, request, requires_reply=False,
                              userdata=None, timeout=None):
@@ -452,7 +425,7 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
         if self.is_spark(self.device):
             self.p = tuhi.protocol.Protocol(ProtocolVersion.SPARK, self.nordic_data_exchange)
             # The spark replies with b3 01 01 when in pairing mode
-            # Usually that triggers a WacomWrongModeException but here it's
+            # Usually that triggers a DeviceError but here it's
             # expected
             try:
                 self.p.execute(Interactions.CONNECT, uuid)
