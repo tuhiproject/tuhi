@@ -41,6 +41,7 @@ class TuhiConfig(GObject.Object):
 
             self._devices = {}
             self._scan_config_dir()
+            self.peek_at_drawing = False
         return cls._instance
 
     @GObject.Property

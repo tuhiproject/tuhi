@@ -450,9 +450,14 @@ def main(args=sys.argv):
                         help='Base directory for configuration',
                         type=str,
                         default=DEFAULT_CONFIG_PATH)
+    parser.add_argument('--peek',
+                        help='Download first drawing only but do not remove it from the device',
+                        action='store_true',
+                        default=False)
 
     ns = parser.parse_args(args[1:])
     TuhiConfig.set_base_path(ns.config_dir)
+    TuhiConfig().peek_at_drawing = ns.peek
     setup_logging(ns.config_dir)
 
     if ns.verbose:
