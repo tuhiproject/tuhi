@@ -91,7 +91,7 @@ class DrawingPerspective(Gtk.Stack):
             if ts in self.known_drawings:
                 continue
 
-            drawing = Drawing(js)
+            drawing = Drawing(js, self._zoom)
             self.known_drawings[ts] = drawing
 
             # Now pick the right monthly flowbox to insert into
