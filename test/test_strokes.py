@@ -449,6 +449,8 @@ def search_for_tests():
         with open(logfile) as fd:
             try:
                 yml = yaml.load(fd, Loader=yaml.Loader)
+                if not yml:
+                    continue
                 timestamp = yml['time']
                 test_name = f'test_log_{timestamp}'
                 test = generator(logfile)
