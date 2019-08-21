@@ -189,7 +189,7 @@ class DataLogger(object):
         self.device = bluez_device
         self.btaddr = bluez_device.address
         self.logdir = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi', self.btaddr, 'raw')
-        self.logdir.mkdir(exist_ok=True)
+        self.logdir.mkdir(parents=True, exist_ok=True)
 
         bluez_device.connect('connected', self._on_bluez_connected)
         bluez_device.connect('disconnected', self._on_bluez_disconnected)
