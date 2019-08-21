@@ -24,7 +24,7 @@ from gi.repository import GObject
 from .drawing import Drawing
 from .uhid import UHIDDevice
 import tuhi.protocol
-from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile
+from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile, UnexpectedDataError
 from .util import list2hex, flatten
 from tuhi.config import TuhiConfig
 
@@ -865,7 +865,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
         pen_data = self.pen_data_buffer
         self.pen_data_buffer = []
         if crc != binascii.crc32(bytes(pen_data)):
-            raise WacomCorruptDataException("CRCs don't match")
+            raise UnexpectedDataError(pen_data, message='CRCs do not match')
         return pen_data
 
 
@@ -983,7 +983,7 @@ class WacomDevice(GObject.Object):
         }
 
         if protocol not in protocols:
-            raise WacomCorruptDataException(f'Protocol "{protocol}" not implemented')
+            raise NotImplementedError(f'Protocol "{protocol}" not implemented')
 
         pclass = protocols[protocol]
         self._wacom_protocol = pclass(self._device, self._uuid)
