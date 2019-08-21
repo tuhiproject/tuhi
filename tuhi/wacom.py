@@ -24,7 +24,7 @@ from gi.repository import GObject
 from .drawing import Drawing
 from .uhid import UHIDDevice
 import tuhi.protocol
-from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile, UnexpectedDataError
+from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile, UnexpectedDataError, DeviceError
 from .util import list2hex, flatten
 from tuhi.config import TuhiConfig
 
@@ -248,10 +248,6 @@ class DataLogger(object):
 
 class WacomException(Exception):
     errno = errno.ENOSYS
-
-
-class WacomEEAGAINException(WacomException):
-    errno = errno.EAGAIN
 
 
 class WacomTimeoutException(WacomException):
@@ -660,8 +656,11 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             self.update_dimensions()
             if not self.read_offline_data():
                 logger.info('no data to retrieve')
-        except WacomEEAGAINException:
-            logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
+        except DeviceError as e:
+            if e.errorcode == DeviceError.ErrorCode.INVALID_STATE:
+                logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
+            else:
+                raise e
 
     def delete_oldest_file(self):
         self.p.execute(Interactions.DELETE_OLDEST_FILE)
@@ -754,8 +753,11 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                 self.start_live(uhid)
             else:
                 self.stop_live()
-        except WacomEEAGAINException:
-            logger.warning("no data, please make sure the LED is blue and the button is pressed to switch it back to green")
+        except DeviceError as e:
+            if e.errorcode == DeviceError.ErrorCode.INVALID_STATE:
+                logger.warning("no data, please make sure the LED is blue and the button is pressed to switch it back to green")
+            else:
+                raise e
 
 
 class WacomProtocolSpark(WacomProtocolBase):
@@ -849,8 +851,11 @@ class WacomProtocolSlate(WacomProtocolSpark):
             self.select_transfer_gatt()
             if not self.read_offline_data():
                 logger.info('no data to retrieve')
-        except WacomEEAGAINException:
-            logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
+        except DeviceError as e:
+            if e.errorcode == DeviceError.ErrorCode.INVALID_STATE:
+                logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
+            else:
+                raise e
 
     def wait_for_end_read(self):
         data = self.wait_nordic_unless_pen_data(0xc8, timeout=5)
