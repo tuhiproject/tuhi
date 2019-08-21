@@ -447,11 +447,15 @@ def search_for_tests():
     basedir = Path(xdg.BaseDirectory.xdg_data_home) / 'tuhi'
     for logfile in basedir.glob('**/raw/log-*.yaml'):
         with open(logfile) as fd:
-            yml = yaml.load(fd, Loader=yaml.Loader)
-            timestamp = yml['time']
-            test_name = f'test_log_{timestamp}'
-            test = generator(logfile)
-            setattr(TestLogFiles, test_name, test)
+            try:
+                yml = yaml.load(fd, Loader=yaml.Loader)
+                timestamp = yml['time']
+                test_name = f'test_log_{timestamp}'
+                test = generator(logfile)
+                setattr(TestLogFiles, test_name, test)
+            except Exception as e:
+                logger.error(f'Exception triggered by file {logfile}')
+                raise e
 
 
 search_for_tests()
