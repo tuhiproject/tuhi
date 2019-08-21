@@ -633,17 +633,21 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
         return data
 
-    def wait_for_end_read(self):
-        data = self.wait_nordic_unless_pen_data(0xc8, 5)
-        if data[0] != 0xed:
-            raise WacomException(f'unexpected answer: {data[0]:02x}')
-        data = self.wait_nordic_data(0xc9, 5)
-        crc = data
-        crc = int(binascii.hexlify(bytes(crc)), 16)
+    def wait_for_end_read(self, timeout=5):
+        msg = None
+        while True:
+            try:
+                msg = self.p.execute(Interactions.WAIT_FOR_END_READ)
+                break
+            except WacomTimeoutException as e:
+                # if we're still reading pen data, try again
+                if time.time() - self._last_pen_data_time > timeout:
+                    raise e
+
         pen_data = self.pen_data_buffer
         self.pen_data_buffer = []
-        if crc != binascii.crc32(bytes(pen_data)):
-            logger.error("CRCs don't match")
+        if msg.crc != binascii.crc32(bytes(pen_data)):
+            raise UnexpectedDataError(pen_data, message='CRCs do not match')
         return pen_data
 
     def retrieve_data(self):
@@ -856,19 +860,6 @@ class WacomProtocolSlate(WacomProtocolSpark):
                 logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
             else:
                 raise e
-
-    def wait_for_end_read(self):
-        data = self.wait_nordic_unless_pen_data(0xc8, timeout=5)
-        if data[0] != 0xed:
-            raise WacomException(f'unexpected answer: {data[0]:02x}')
-        crc = data[1:]
-        crc.reverse()
-        crc = int(binascii.hexlify(bytes(crc)), 16)
-        pen_data = self.pen_data_buffer
-        self.pen_data_buffer = []
-        if crc != binascii.crc32(bytes(pen_data)):
-            raise UnexpectedDataError(pen_data, message='CRCs do not match')
-        return pen_data
 
 
 class WacomProtocolIntuosPro(WacomProtocolSlate):
