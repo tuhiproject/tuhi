@@ -1,3 +1,5 @@
+![tuhi-logo](data/org.freedesktop.Tuhi.svg)
+
 Tuhi
 =====
 
