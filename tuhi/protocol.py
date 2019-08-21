@@ -344,6 +344,18 @@ class ProtocolError(Exception):
         self.message = message
 
 
+class MissingReplyError(ProtocolError):
+    '''
+    Thrown when we expected a reply but never got one. Usually caused by a
+    timeout.
+    '''
+    def __init__(self, request, message=None):
+        self.request = request
+
+    def __repr__(self):
+        return f'Missing reply for request {self.request}. {self.message}'
+
+
 class AuthorizationError(ProtocolError):
     '''
     The device does not recognize our UUID.
@@ -514,6 +526,8 @@ class Msg(object):
                                     timeout=self.timeout or None,
                                     userdata=self.userdata)
         if self.requires_reply:
+            if self.reply is None:
+                raise MissingReplyError(self.request)
             try:
                 self._handle_reply(self.reply)
                 # no exception? we can assume success

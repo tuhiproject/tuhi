@@ -24,7 +24,7 @@ from gi.repository import GObject
 from .drawing import Drawing
 from .uhid import UHIDDevice
 import tuhi.protocol
-from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile, UnexpectedDataError, DeviceError
+from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile, UnexpectedDataError, DeviceError, MissingReplyError
 from .util import list2hex, flatten
 from tuhi.config import TuhiConfig
 
@@ -250,10 +250,6 @@ class WacomException(Exception):
     errno = errno.ENOSYS
 
 
-class WacomTimeoutException(WacomException):
-    errno = errno.ETIME
-
-
 class WacomPacket(GObject.Object):
     '''
     A single protocol packet of variable length. The protocol format is a
@@ -367,8 +363,8 @@ class WacomProtocolLowLevelComm(GObject.Object):
 
     def wait_nordic_data(self, expected_opcode, timeout=None):
         if not self.nordic_event.acquire(timeout=timeout):
-            # timeout
-            raise WacomTimeoutException(f'{self.device.name}: Timeout while reading data')
+            logger.error(f'{self.device.name}: Timeout while reading data')
+            return None
 
         data = self.pop_next_message()
 
@@ -622,14 +618,12 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def wait_nordic_unless_pen_data(self, opcode, timeout=None):
         data = None
         while data is None:
-            try:
-                data = self.wait_nordic_data(opcode, timeout)
-            except WacomTimeoutException:
-                # timeout is a time in seconds here
-                if time.time() - self._last_pen_data_time < timeout:
-                    # we timed out, but we are still fetching offline pen data
-                    continue
-                raise
+            data = self.wait_nordic_data(opcode, timeout)
+            # timeout is a time in seconds here
+            # if we exceeded the timeout, we return None, otherwise we keep
+            # looping until we have what we want
+            if time.time() - self._last_pen_data_time > timeout:
+                break
 
         return data
 
@@ -639,7 +633,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             try:
                 msg = self.p.execute(Interactions.WAIT_FOR_END_READ)
                 break
-            except WacomTimeoutException as e:
+            except MissingReplyError as e:
                 # if we're still reading pen data, try again
                 if time.time() - self._last_pen_data_time > timeout:
                     raise e
