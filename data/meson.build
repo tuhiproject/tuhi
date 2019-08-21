@@ -1,8 +1,5 @@
 gnome = import('gnome')
 
-desktopdir = join_paths(datadir, 'applications')
-icondir_scalable = join_paths(datadir, 'icons', 'hicolor', 'scalable', 'apps')
-icondir_symbolic = join_paths(datadir, 'icons', 'hicolor', 'symbolic', 'apps')
 metainfodir = join_paths(datadir, 'metainfo')
 
 conf = configuration_data()
