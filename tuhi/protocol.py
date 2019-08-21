@@ -116,9 +116,9 @@ class Interactions(enum.Enum):
     GET_HEIGHT = enum.auto()
     SET_MODE = enum.auto()
     GET_STROKES = enum.auto()
-    GET_DATA_AVAILABLE = enum.auto()
-    START_READING = enum.auto()
-    ACK_TRANSACTION = enum.auto()
+    AVAILABLE_FILES_COUNT = enum.auto()
+    DOWNLOAD_OLDEST_FILE = enum.auto()
+    DELETE_OLDEST_FILE = enum.auto()
     REGISTER_PRESS_BUTTON = enum.auto()
     REGISTER_WAIT_FOR_BUTTON = enum.auto()
     REGISTER_COMPLETE = enum.auto()
@@ -1087,13 +1087,13 @@ class MsgGetStrokesIntuosPro(Msg):
         self.timestamp = seconds
 
 
-class MsgGetDataAvailable(Msg):
+class MsgAvailableFilesCount(Msg):
     '''
     .. attribute:: count
 
         The number of drawings available
     '''
-    interaction = Interactions.GET_DATA_AVAILABLE
+    interaction = Interactions.AVAILABLE_FILES_COUNT
     opcode = 0xc1
     protocol = ProtocolVersion.ANY
 
@@ -1104,13 +1104,13 @@ class MsgGetDataAvailable(Msg):
         self.count = int.from_bytes(reply[0:2], byteorder='big')
 
 
-class MsgGetDataAvailableSlate(Msg):
+class MsgAvailableFilesCountSlate(Msg):
     '''
     .. attribute:: count
 
         The number of drawings available
     '''
-    interaction = Interactions.GET_DATA_AVAILABLE
+    interaction = Interactions.AVAILABLE_FILES_COUNT
     opcode = 0xc1
     protocol = ProtocolVersion.SLATE
 
@@ -1121,8 +1121,8 @@ class MsgGetDataAvailableSlate(Msg):
         self.count = little_u16(reply[0:2])
 
 
-class MsgStartReading(Msg):
-    interaction = Interactions.START_READING
+class MsgDownloadOldestFile(Msg):
+    interaction = Interactions.DOWNLOAD_OLDEST_FILE
     opcode = 0xc3
     protocol = ProtocolVersion.ANY
 
@@ -1134,15 +1134,15 @@ class MsgStartReading(Msg):
             raise UnexpectedDataError(reply)
 
 
-class MsgAckTransaction(Msg):
-    interaction = Interactions.ACK_TRANSACTION
+class MsgDeleteOldestFile(Msg):
+    interaction = Interactions.DELETE_OLDEST_FILE
     opcode = 0xca
     protocol = ProtocolVersion.ANY
     requires_reply = False
 
 
-class MsgAckTransactionSlate(Msg):
-    interaction = Interactions.ACK_TRANSACTION
+class MsgDeleteOldestFileSlate(Msg):
+    interaction = Interactions.DELETE_OLDEST_FILE
     opcode = 0xca
     protocol = ProtocolVersion.SLATE
 

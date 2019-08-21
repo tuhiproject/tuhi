@@ -316,7 +316,7 @@ class TestProtocolAny(unittest.TestCase):
         self.assertEqual(msg.count, count)
         self.assertEqual(msg.timestamp, int(ts))
 
-    def test_get_data_available(self, cb=None, ndata=1234):
+    def test_available_files_count(self, cb=None, ndata=1234):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
             self.assertEqual(request.opcode, 0xc1)
             self.assertEqual(request.length, 1)
@@ -327,10 +327,10 @@ class TestProtocolAny(unittest.TestCase):
         cb = cb or _cb
 
         p = Protocol(self.protocol_version, callback=cb)
-        msg = p.execute(Interactions.GET_DATA_AVAILABLE)
+        msg = p.execute(Interactions.AVAILABLE_FILES_COUNT)
         self.assertEqual(msg.count, ndata)
 
-    def test_start_reading(self, cb=None):
+    def test_download_oldest_file(self, cb=None):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
             self.assertEqual(request.opcode, 0xc3)
             self.assertEqual(request.length, 1)
@@ -340,9 +340,9 @@ class TestProtocolAny(unittest.TestCase):
         cb = cb or _cb
 
         p = Protocol(self.protocol_version, callback=cb)
-        p.execute(Interactions.START_READING)
+        p.execute(Interactions.DOWNLOAD_OLDEST_FILE)
 
-    def test_ack_transaction(self, cb=None):
+    def test_delete_oldest_file(self, cb=None):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
             self.assertEqual(request.opcode, 0xca)
             self.assertEqual(request.length, 1)
@@ -352,7 +352,7 @@ class TestProtocolAny(unittest.TestCase):
         cb = cb or _cb
 
         p = Protocol(self.protocol_version, callback=cb)
-        p.execute(Interactions.ACK_TRANSACTION)
+        p.execute(Interactions.DELETE_OLDEST_FILE)
 
     def test_register_complete(self, cb=None):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
@@ -441,7 +441,7 @@ class TestProtocolSlate(TestProtocolSpark):
 
         super().test_get_strokes(cb or _cb, count=count, ts=ts)
 
-    def test_get_data_available(self, cb=None, ndata=1234):
+    def test_available_files_count(self, cb=None, ndata=1234):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
             self.assertEqual(request.opcode, 0xc1)
             self.assertEqual(request.length, 1)
@@ -449,16 +449,16 @@ class TestProtocolSlate(TestProtocolSpark):
             data = list(ndata.to_bytes(2, byteorder='little'))
             return NordicData([0xc2, len(data)] + data)
 
-        super().test_get_data_available(cb or _cb, ndata=ndata)
+        super().test_available_files_count(cb or _cb, ndata=ndata)
 
-    def test_ack_transaction(self, cb=None):
+    def test_delete_oldest_file(self, cb=None):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
             self.assertEqual(request.opcode, 0xca)
             self.assertEqual(request.length, 1)
             self.assertEqual(request[0], 0x00)
             return SUCCESS
 
-        super().test_ack_transaction(cb or _cb)
+        super().test_delete_oldest_file(cb or _cb)
 
     def test_register_press_button(self, cb=None, uuid='abcdef123456'):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
