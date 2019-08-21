@@ -260,10 +260,6 @@ class WacomTimeoutException(WacomException):
     errno = errno.ETIME
 
 
-class WacomCorruptDataException(WacomException):
-    errno = errno.EPROTO
-
-
 class WacomPacket(GObject.Object):
     '''
     A single protocol packet of variable length. The protocol format is a
@@ -970,13 +966,10 @@ class WacomDevice(GObject.Object):
 
             try:
                 protocol = ProtocolVersion.from_string(self._config['Protocol'])
-            except KeyError:
-                raise WacomCorruptDataException(f'Missing Protocol entry from config file. Please delete config file and re-register device')
-            except ValueError:
-                logger.error(f'Unknown protocol in configuration: {self._config["Protocol"]}')
-                raise WacomCorruptDataException(f'Unknown Protocol {self._config["Protocol"]}')
-
-            self._init_protocol(protocol)
+                self._init_protocol(protocol)
+            except (KeyError, ValueError):
+                logger.error(f'Missing or invalid Protocol entry in config file. Treating this device as unregistered')
+                self._uuid = None
 
     def _init_protocol(self, protocol):
         protocols = {
