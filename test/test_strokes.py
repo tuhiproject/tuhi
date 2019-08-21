@@ -445,7 +445,7 @@ def generator(logfile):
 
 def search_for_tests():
     basedir = Path(xdg.BaseDirectory.xdg_data_home) / 'tuhi'
-    for idx, logfile in enumerate(basedir.glob('**/raw/log-*.yaml')):
+    for logfile in basedir.glob('**/raw/log-*.yaml'):
         with open(logfile) as fd:
             yml = yaml.load(fd, Loader=yaml.Loader)
             timestamp = yml['time']
