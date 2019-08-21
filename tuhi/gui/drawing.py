@@ -35,14 +35,14 @@ class Drawing(Gtk.EventBox):
     btn_rotate_left = Gtk.Template.Child()
     btn_rotate_right = Gtk.Template.Child()
 
-    def __init__(self, json_data, *args, **kwargs):
+    def __init__(self, json_data, zoom, *args, **kwargs):
         super().__init__()
         self.orientation = Config().orientation
         Config().connect('notify::orientation', self._on_orientation_changed)
         DATA_PATH.mkdir(parents=True, exist_ok=True)
 
         self.json_data = json_data
-        self._zoom = 0
+        self._zoom = zoom
         self.refresh()  # sets self.svg
 
         self.timestamp = self.svg.timestamp
