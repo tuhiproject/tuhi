@@ -28,14 +28,20 @@ def is_btaddr(addr):
 
 
 class TuhiConfig(GObject.Object):
-    def __init__(self, config_dir):
-        super().__init__()
-        self.config_dir = config_dir
-        logger.debug(f'Using config directory: {self.config_dir}')
-        Path(config_dir).mkdir(parents=True, exist_ok=True)
+    _instance = None
+    _base_path = None
 
-        self._devices = {}
-        self._scan_config_dir()
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(TuhiConfig, cls).__new__(cls)
+            self = cls._instance
+            self.__init__()  # for GObject to initialize
+            logger.debug(f'Using config directory: {self._base_path}')
+            Path(self._base_path).mkdir(parents=True, exist_ok=True)
+
+            self._devices = {}
+            self._scan_config_dir()
+        return cls._instance
 
     @GObject.Property
     def devices(self):
@@ -45,7 +51,7 @@ class TuhiConfig(GObject.Object):
         return self._devices
 
     def _scan_config_dir(self):
-        dirs = [d for d in Path(self.config_dir).iterdir() if d.is_dir() and is_btaddr(d.name)]
+        dirs = [d for d in Path(self._base_path).iterdir() if d.is_dir() and is_btaddr(d.name)]
         for directory in dirs:
             settings = Path(directory, 'settings.ini')
             if not settings.is_file():
@@ -69,7 +75,7 @@ class TuhiConfig(GObject.Object):
         assert protocol != ProtocolVersion.ANY
 
         logger.debug(f'{address}: adding new config, UUID {uuid}')
-        path = Path(self.config_dir, address)
+        path = Path(self._base_path, address)
         path.mkdir(exist_ok=True)
 
         # The ConfigParser default is to write out options as lowercase, but
@@ -103,7 +109,7 @@ class TuhiConfig(GObject.Object):
             return
 
         logger.debug(f'{address}: adding new drawing, timestamp {drawing.timestamp}')
-        path = Path(self.config_dir, address, f'{drawing.timestamp}.json')
+        path = Path(self._base_path, address, f'{drawing.timestamp}.json')
 
         with open(path, 'w') as f:
             f.write(drawing.to_json())
@@ -114,7 +120,7 @@ class TuhiConfig(GObject.Object):
         if address not in self.devices:
             return []
 
-        configdir = Path(self.config_dir, address)
+        configdir = Path(self._base_path, address)
         return [Drawing.from_json(f) for f in configdir.glob('*.json')]
 
     def _purge_drawings(self, directory):
