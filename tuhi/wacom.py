@@ -639,18 +639,18 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def set_paper_mode(self):
         self.p.execute(Interactions.SET_MODE, Mode.PAPER).execute()
 
-    def is_data_available(self):
-        n = self.p.execute(Interactions.GET_DATA_AVAILABLE).count
+    def count_available_files(self):
+        n = self.p.execute(Interactions.AVAILABLE_FILES_COUNT).count
         logger.debug(f'Drawings available: {n}')
-        return n > 0
+        return n
 
     def get_stroke_data(self):
         msg = self.p.execute(Interactions.GET_STROKES)
         # logger.debug(f'cc returned {data} ')
         return msg.count, msg.timestamp
 
-    def start_reading(self):
-        self.p.execute(Interactions.START_READING)
+    def start_downloading_oldest_file(self):
+        self.p.execute(Interactions.DOWNLOAD_OLDEST_FILE)
 
     def wait_nordic_unless_pen_data(self, opcode, timeout=None):
         data = None
@@ -692,8 +692,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         except WacomEEAGAINException:
             logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
 
-    def ack_transaction(self):
-        self.p.execute(Interactions.ACK_TRANSACTION)
+    def delete_oldest_file(self):
+        self.p.execute(Interactions.DELETE_OLDEST_FILE)
 
     def get_coordinate(self, bitmask, n, data, v, dv):
         # drop the first 2 bytes as they are not valuable here
@@ -745,17 +745,17 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
     def read_offline_data(self):
         self.set_paper_mode()
         transaction_count = 0
-        while self.is_data_available():
+        while self.count_available_files():
             count, timestamp = self.get_stroke_data()
             logger.info(f'receiving {count} bytes drawn on UTC {time.strftime("%y%m%d%H%M%S", time.gmtime(timestamp))}')
-            self.start_reading()
+            self.start_downloading_oldest_file()
             pen_data = self.wait_for_end_read()
             str_pen = binascii.hexlify(bytes(pen_data))
             logger.info(f'received {str_pen}')
             drawing = self.parse_pen_data(pen_data, timestamp)
             if drawing:
                 self.emit('drawing', drawing)
-            self.ack_transaction()
+            self.delete_oldest_file()
             transaction_count += 1
         return transaction_count
 
