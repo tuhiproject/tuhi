@@ -361,30 +361,15 @@ class WacomProtocolLowLevelComm(GObject.Object):
         self.nordic_answer = self.nordic_answer[length + 2:]  # opcode + len
         return NordicData(answer[:length + 2])
 
-    def wait_nordic_data(self, expected_opcode, timeout=None):
-        if not self.nordic_event.acquire(timeout=timeout):
-            logger.error(f'{self.device.name}: Timeout while reading data')
-            return None
-
-        data = self.pop_next_message()
-
-        # logger.debug(f'received {data.opcode:02x} / {data.length:02x} / {b2hex(bytes(data))}')
-
-        if expected_opcode is not None:
-            if not isinstance(expected_opcode, list):
-                expected_opcode = [expected_opcode]
-            if data.opcode not in expected_opcode:
-                raise WacomException(f'unexpected opcode: {data.opcode:02x}')
-
-        return data
-
     # The callback used by the protocol messages
     def nordic_data_exchange(self, request, requires_reply=False,
                              userdata=None, timeout=None):
         if request is not None:
             self.send_nordic_command(request.opcode, request)
         if requires_reply:
-            return self.wait_nordic_data(expected_opcode=None, timeout=timeout or 5)
+            if not self.nordic_event.acquire(timeout=timeout or 5):
+                return None
+            return self.pop_next_message()
 
 
 class WacomRegisterHelper(WacomProtocolLowLevelComm):
@@ -614,18 +599,6 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
     def start_downloading_oldest_file(self):
         self.p.execute(Interactions.DOWNLOAD_OLDEST_FILE)
-
-    def wait_nordic_unless_pen_data(self, opcode, timeout=None):
-        data = None
-        while data is None:
-            data = self.wait_nordic_data(opcode, timeout)
-            # timeout is a time in seconds here
-            # if we exceeded the timeout, we return None, otherwise we keep
-            # looping until we have what we want
-            if time.time() - self._last_pen_data_time > timeout:
-                break
-
-        return data
 
     def wait_for_end_read(self, timeout=5):
         msg = None
