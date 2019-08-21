@@ -688,7 +688,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             battery, charging = self.get_battery_info()
             self.emit('battery-status', battery, charging)
             self.update_dimensions()
-            if self.read_offline_data() == 0:
+            if not self.read_offline_data():
                 logger.info('no data to retrieve')
         except WacomEEAGAINException:
             logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
@@ -745,8 +745,8 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
     def read_offline_data(self):
         self.set_paper_mode()
-        transaction_count = 0
         file_count = self.count_available_files()
+        rc = file_count > 0
         while file_count > 0:
             count, timestamp = self.get_stroke_data()
             logger.info(f'receiving {count} bytes drawn on UTC {time.strftime("%y%m%d%H%M%S", time.gmtime(timestamp))}')
@@ -764,8 +764,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                     logger.info(f'{file_count} more files on device but I can only download the oldest one')
                 break
             self.delete_oldest_file()
-            transaction_count += 1
-        return transaction_count
+        return rc
 
     def set_name(self, name):
         self.p.execute(Interactions.SET_NAME, name)
@@ -878,7 +877,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
 
             self.get_firmware_version()
             self.select_transfer_gatt()
-            if self.read_offline_data() == 0:
+            if not self.read_offline_data():
                 logger.info('no data to retrieve')
         except WacomEEAGAINException:
             logger.warning('no data, please make sure the LED is blue and the button is pressed to switch it back to green')
