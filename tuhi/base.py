@@ -302,7 +302,7 @@ class Tuhi(GObject.Object):
         self.bluez.connect('discovery-started', self._on_bluez_discovery_started)
         self.bluez.connect('discovery-stopped', self._on_bluez_discovery_stopped)
 
-        self.config = TuhiConfig(config_dir)
+        self.config = TuhiConfig()
 
         self.devices = {}
 
@@ -452,6 +452,7 @@ def main(args=sys.argv):
                         default=DEFAULT_CONFIG_PATH)
 
     ns = parser.parse_args(args[1:])
+    TuhiConfig.set_base_path(ns.config_dir)
     setup_logging(ns.config_dir)
 
     if ns.verbose:
