@@ -343,7 +343,7 @@ class ProtocolError(Exception):
         self.message = message
 
 
-class AuthorizationError(Exception):
+class AuthorizationError(ProtocolError):
     '''
     The device does not recognize our UUID.
     '''
