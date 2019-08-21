@@ -119,6 +119,7 @@ class Interactions(enum.Enum):
     AVAILABLE_FILES_COUNT = enum.auto()
     DOWNLOAD_OLDEST_FILE = enum.auto()
     DELETE_OLDEST_FILE = enum.auto()
+    WAIT_FOR_END_READ = enum.auto()
     REGISTER_PRESS_BUTTON = enum.auto()
     REGISTER_WAIT_FOR_BUTTON = enum.auto()
     REGISTER_COMPLETE = enum.auto()
@@ -1132,6 +1133,62 @@ class MsgDownloadOldestFile(Msg):
 
         if reply[0] != 0xbe:
             raise UnexpectedDataError(reply)
+
+
+class MsgWaitForEndRead(Msg):
+    '''
+    .. attribute:: crc
+
+        The checksum provided for the (out of band) pen data.
+    '''
+    interaction = Interactions.WAIT_FOR_END_READ
+    requires_request = False
+    opcode = 0x00  # unused
+    protocol = ProtocolVersion.ANY
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(timeout=5, *args, **kwargs)
+
+    def _handle_reply(self, reply):
+        if reply.opcode == 0xc8:
+            if reply[0] != 0xed:
+                raise UnexpectedDataError(reply, 'Expected c8 ed')
+            pass  # nothing to do here
+        elif reply.opcode == 0xc9:
+            self.crc = int(binascii.hexlify(bytes(reply)), 16)
+        else:
+            raise UnexpectedReply(reply)
+
+    def execute(self):
+        # This is a double-reply , once c8, then c9
+        super().execute()
+        super().execute()
+        return self
+
+
+class MsgWaitForEndReadSlate(Msg):
+    '''
+    .. attribute:: crc
+
+        The checksum provided for the (out of band) pen data.
+    '''
+    interaction = Interactions.WAIT_FOR_END_READ
+    requires_request = False
+    opcode = 0x00  # unused
+    protocol = ProtocolVersion.SLATE
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(timeout=5, *args, **kwargs)
+
+    def _handle_reply(self, reply):
+        if reply.opcode == 0xc8:
+            if reply[0] != 0xed:
+                raise UnexpectedDataError(reply, 'Expected c8 ed')
+            crc = reply[1:]
+            crc.reverse()
+            self.crc = int(binascii.hexlify(bytes(crc)), 16)
+        else:
+            raise UnexpectedReply(reply)
 
 
 class MsgDeleteOldestFile(Msg):
