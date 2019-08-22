@@ -156,7 +156,7 @@ class TuhiKeteDevice(_DBusObject):
         'registered':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
         'device-error':
-            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, int)),
+            (GObject.SignalFlags.RUN_FIRST, None, (int,)),
     }
 
     def __init__(self, manager, objpath):
@@ -248,7 +248,7 @@ class TuhiKeteDevice(_DBusObject):
                 logger.error(f'{self}: wrong device, please re-register.')
             elif err < 0:
                 logger.error(f'{self}: an error occured: {os.strerror(-err)}')
-            self.emit('device-error', self, err)
+            self.emit('device-error', err)
             self.notify('listening')
         elif signal == 'SyncState':
             self._sync_state = parameters[0]

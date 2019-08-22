@@ -126,6 +126,7 @@ class MainWindow(Gtk.ApplicationWindow):
     spinner_sync = Gtk.Template.Child()
     image_battery = Gtk.Template.Child()
     image_missing_tablet = Gtk.Template.Child()
+    overlay_reauth = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -147,11 +148,19 @@ class MainWindow(Gtk.ApplicationWindow):
         self._add_perspective(ep)
         self.stack_perspectives.set_visible_child_name(ep.name)
 
+        self._signals = []
+
         # the dbus bindings need more async...
         if not self._tuhi.online:
             self._tuhi.connect('notify::online', self._on_dbus_online)
         else:
             self._on_dbus_online()
+
+    def _register_device(self):
+        dialog = SetupDialog(self._tuhi)
+        dialog.set_transient_for(self)
+        dialog.connect('response', self._on_setup_dialog_closed)
+        dialog.show()
 
     def _on_dbus_online(self, *args, **kwargs):
         logger.debug('dbus is online')
@@ -162,10 +171,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.stack_perspectives.set_visible_child_name(dp.name)
 
         if not self._tuhi.devices:
-            dialog = SetupDialog(self._tuhi)
-            dialog.set_transient_for(self)
-            dialog.connect('response', self._on_setup_dialog_closed)
-            dialog.show()
+            self._register_device()
         else:
             device = self._tuhi.devices[0]
             self._init_device(device)
@@ -173,9 +179,14 @@ class MainWindow(Gtk.ApplicationWindow):
             self.headerbar.set_title(f'Tuhi - {dp.device.name}')
 
     def _init_device(self, device):
-        device.connect('notify::sync-state', self._on_sync_state)
-        device.connect('notify::battery-percent', self._on_battery_changed)
-        device.connect('notify::battery-state', self._on_battery_changed)
+        sig = device.connect('notify::sync-state', self._on_sync_state)
+        self._signals.append(sig)
+        sig = device.connect('notify::battery-percent', self._on_battery_changed)
+        self._signals.append(sig)
+        sig = device.connect('notify::battery-state', self._on_battery_changed)
+        self._signals.append(sig)
+        sig = device.connect('device-error', self._on_device_error)
+        self._signals.append(sig)
         self._on_battery_changed(device, None)
 
     def _on_battery_changed(self, device, pspec):
@@ -208,6 +219,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.spinner_sync.stop()
 
     def _on_setup_dialog_closed(self, dialog, response):
+        self.overlay_reauth.set_reveal_child(False)
         device = dialog.device
         dialog.destroy()
 
@@ -222,6 +234,16 @@ class MainWindow(Gtk.ApplicationWindow):
         dp.device = device
         self._init_device(device)
         self.stack_perspectives.set_visible_child_name(dp.name)
+
+    def _on_device_error(self, device, err):
+        import errno
+        logger.info(f'Device error: {err}')
+        if err == -errno.EACCES:
+            self.overlay_reauth.set_reveal_child(True)
+            # No point to keep getting notified, it won't be able to
+            # register.
+            for sig in self._signals:
+                device.disconnect(sig)
 
     def _add_perspective(self, perspective):
         self.stack_perspectives.add_named(perspective, perspective.name)
@@ -240,3 +262,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def _on_zoom_changed(self, adjustment):
         dp = self._get_child('drawing_perspective')
         dp.zoom = int(adjustment.get_value())
+
+    @Gtk.Template.Callback('_on_reauth_clicked')
+    def _on_reauth_clicked(self, button):
+        self._register_device()
