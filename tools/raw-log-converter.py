@@ -97,7 +97,29 @@ def fetch_files():
 
 
 def main(args=sys.argv):
-    parser = argparse.ArgumentParser(description='YAML log to SVG converter')
+    long_description = '''
+    This tool is primarily a debugging tool but can be used to recover
+    "lost" files. Use this tool if Tuhi failed to convert a drawing
+    after downloading it from the device. Obviously after fixing the bug
+    that failed to convert it.
+
+    Input data is a raw log file. These are usually stored in
+    \t$XDG_DATA_HOME/tuhi/<bluetooth address>/raw/
+
+    Pass the log file to this tool and it will convert it to a JSON file and
+    an SVG file. Alternatively, use --all to convert all
+    all log files containing pen data in the above directory.
+
+    Files are placed in $CWD and use file names containing the file time
+    for easier identification.
+
+    Copying the JSON files into the $XDG_DATA_HOME/tuhi/ will make them
+    appear in the GUI.
+    '''.replace('    ', '')
+
+    parser = argparse.ArgumentParser(description='Converter tool from raw Tuhi log files to SVG and Tuhi JSON files.',
+                                     formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     epilog=long_description)
     parser.add_argument('filename', help='The YAML file to load', nargs='?')
     parser.add_argument('--verbose',
                         help='Show some debugging informations',
@@ -129,9 +151,9 @@ def main(args=sys.argv):
         files = fetch_files()
 
     model_map = {
-            'intuos-pro': WacomProtocolIntuosPro,
-            'slate': WacomProtocolSlate,
-            'spark': WacomProtocolSpark,
+        'intuos-pro': WacomProtocolIntuosPro,
+        'slate': WacomProtocolSlate,
+        'spark': WacomProtocolSpark,
     }
     for f in files:
         parse_file(f, model_map[ns.tablet_model], ns.orientation)
