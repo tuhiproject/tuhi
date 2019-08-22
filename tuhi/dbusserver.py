@@ -354,10 +354,10 @@ class TuhiDBusDevice(_TuhiDBus):
         if self.listening:
             logger.debug(f'{self} - already listening')
 
-            # silently ignore it for the current client but send EAGAIN to
+            # silently ignore it for the current client but send EBUSY to
             # other clients
             if sender != self._listening_client[0]:
-                status = GLib.Variant.new_int32(-errno.EAGAIN)
+                status = GLib.Variant.new_int32(-errno.EBUSY)
                 self.signal('ListeningStopped', status, dest=sender)
             return
 
@@ -404,10 +404,10 @@ class TuhiDBusDevice(_TuhiDBus):
         if self.live:
             logger.debug(f'{self} - already in live mode')
 
-            # silently ignore it for the current client but send EAGAIN to
+            # silently ignore it for the current client but send EBUSY to
             # other clients
             if sender != self._listening_client[0]:
-                status = GLib.Variant.new_int32(-errno.EAGAIN)
+                status = GLib.Variant.new_int32(-errno.EBUSY)
                 self.signal('LiveStopped', status, dest=sender)
             return
 
@@ -577,10 +577,10 @@ class TuhiDBusServer(_TuhiDBus):
         if self.is_searching:
             logger.debug('Already searching')
 
-            # silently ignore it for the current client but send EAGAIN to
+            # silently ignore it for the current client but send EBUSY to
             # other clients
             if sender != self._searching_client[0]:
-                status = GLib.Variant.new_int32(-errno.EAGAIN)
+                status = GLib.Variant.new_int32(-errno.EBUSY)
                 self.signal('SearchStopped', status)
             return
 

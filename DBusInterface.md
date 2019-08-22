@@ -79,7 +79,7 @@ org.freedesktop.tuhi1.Manager
       successful termination of the search process, either when a device
       has been registered or the timeout expired.
 
-      If the errno is -EAGAIN, the daemon is already searching for devices
+      If the errno is -EBUSY, the daemon is already searching for devices
       on behalf of another client. In this case, this client should wait for
       the Searching property to change and StartSearching() once the
       property is set to False.
@@ -261,7 +261,7 @@ org.freedesktop.tuhi1.Device
       StopListening(). Otherwise, the argument is a negative errno
       indicating the type of error.
 
-      If the errno is -EAGAIN, the daemon is already listening to the device
+      If the errno is -EBUSY, the daemon is already listening to the device
       on behalf of another client. In this case, this client should wait for
       the Listening property to change and StartListening() once the
       property is set to False.
@@ -288,7 +288,7 @@ org.freedesktop.tuhi1.Device
       StopLive(). Otherwise, the argument is a negative errno
       indicating the type of error.
 
-      If the errno is -EAGAIN, the daemon has already enabled live mode on
+      If the errno is -EBUSY, the daemon has already enabled live mode on
       device on behalf of another client. In this case, this client should
       wait for the Live property to change and StartLive() once the property
       is set to False.
