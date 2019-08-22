@@ -119,6 +119,12 @@ class Drawing(Gtk.EventBox):
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             import shutil
+
+            # regenerate the SVG based on the current rotation.
+            # where we used the orientation buttons, we haven't updated the
+            # file itself.
+            self.refresh()
+
             file = dialog.get_filename()
             shutil.copyfile(self.svg.filename, file)
             # FIXME: error handling
@@ -132,14 +138,16 @@ class Drawing(Gtk.EventBox):
     @Gtk.Template.Callback('_on_rotate_button_clicked')
     def _on_rotate_button_clicked(self, button):
         if button == self.btn_rotate_left:
+            self.pixbuf = self.pixbuf.rotate_simple(GdkPixbuf.PixbufRotation.COUNTERCLOCKWISE)
             advance = 1
         else:
+            self.pixbuf = self.pixbuf.rotate_simple(GdkPixbuf.PixbufRotation.CLOCKWISE)
             advance = 3
 
         orientations = ['portrait', 'landscape', 'reverse-portrait', 'reverse-landscape'] * 3
         o = orientations[orientations.index(self.orientation) + advance]
         self.orientation = o
-        self.refresh()
+        self.redraw()
 
     @Gtk.Template.Callback('_on_enter')
     def _on_enter(self, *args):
