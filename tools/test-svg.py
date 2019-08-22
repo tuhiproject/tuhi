@@ -61,12 +61,15 @@ def parse_file(filename, tablet_model, orientation):
             return
 
         f = StrokeFile(data)
+        # Spark doesn't have timestamps in the strokes, so use the file
+        # timestamp itself
+        timestamp = f.timestamp or yml['time']
         # gotta convert to Drawings, then to json string, then to json, then
         # to svg. ffs.
         svgname = f'{stem}.svg'
         jsonname = f'{stem}.json'
         ps = 5  # FIXME: fetch the point size from the settings.ini
-        d = Drawing(svgname, (width * ps, height * ps), f.timestamp)
+        d = Drawing(svgname, (width * ps, height * ps), timestamp)
 
         def normalize(p):
             NORMALIZED_RANGE = 0x10000
