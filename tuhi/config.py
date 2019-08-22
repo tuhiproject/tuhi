@@ -44,6 +44,13 @@ class TuhiConfig(GObject.Object):
             self.peek_at_drawing = False
         return cls._instance
 
+    @property
+    def log_dir(self):
+        '''
+        The pathlib.Path to the directory to store log files in.
+        '''
+        return Path(self._base_path)
+
     @GObject.Property
     def devices(self):
         '''
