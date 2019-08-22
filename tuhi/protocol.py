@@ -436,6 +436,7 @@ class DeviceError(ProtocolError):
         INVALID_STATE = 0x2
         READ_ONLY_PARAM = 0x3
         COMMAND_NOT_SUPPORTED = 0x4
+        AUTHORIZATION_ERROR = 0x7
 
     def __init__(self, errorcode, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -607,6 +608,28 @@ class MsgConnectSpark(Msg):
             super()._handle_reply(reply)
         except DeviceError as e:
             if e.errorcode == DeviceError.ErrorCode.GENERAL_ERROR:
+                raise AuthorizationError()
+            raise e
+
+
+class MsgConnectSlate(Msg):
+    interaction = Interactions.CONNECT
+    opcode = 0xe6
+    protocol = ProtocolVersion.SLATE
+
+    def __init__(self, uuid, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.uuid = uuid
+        self.args = [int(i) for i in binascii.unhexlify(uuid)]
+        if len(self.args) != 6:
+            raise ValueError('UUID must be 6 bytes long')
+
+    def _handle_reply(self, reply):
+        try:
+            super()._handle_reply(reply)
+        except DeviceError as e:
+            # Same as spark but we get 0x7 as error code
+            if e.errorcode == DeviceError.ErrorCode.AUTHORIZATION_ERROR:
                 raise AuthorizationError()
             raise e
 
