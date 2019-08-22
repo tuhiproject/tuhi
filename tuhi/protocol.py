@@ -54,6 +54,7 @@ import binascii
 import enum
 import time
 import logging
+import errno
 from collections import namedtuple
 from .util import list2hex
 
@@ -340,6 +341,8 @@ class ProtocolError(Exception):
     '''
     Base class for all Tuhi-protocol related errors.
     '''
+    errno = errno.ENOSYS
+
     def __init__(self, message=None):
         self.message = message
 
@@ -349,6 +352,8 @@ class MissingReplyError(ProtocolError):
     Thrown when we expected a reply but never got one. Usually caused by a
     timeout.
     '''
+    errno = errno.ETIME
+
     def __init__(self, request, message=None):
         self.request = request
 
@@ -360,7 +365,7 @@ class AuthorizationError(ProtocolError):
     '''
     The device does not recognize our UUID.
     '''
-    pass
+    errno = errno.EACCES
 
 
 class UnexpectedReply(ProtocolError):
@@ -375,6 +380,8 @@ class UnexpectedReply(ProtocolError):
 
         The Message that caused the unexpected reply.
     '''
+    errno = errno.EPROTO
+
     def __init__(self, msg, message=None):
         super().__init__(message)
         self.msg = msg
@@ -395,6 +402,8 @@ class UnexpectedDataError(ProtocolError):
 
         The raw bytes that caused the unexpected data.
     '''
+    errno = errno.EPROTO
+
     def __init__(self, bytes, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bytes = bytes
@@ -413,6 +422,8 @@ class DeviceError(ProtocolError):
         An error code indicating which error occured on the device.
 
     '''
+    errno = errno.EPROTO
+
     class ErrorCode(enum.IntEnum):
         '''
         List of protocol errors as used by the Device.
@@ -429,6 +440,11 @@ class DeviceError(ProtocolError):
     def __init__(self, errorcode, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.errorcode = DeviceError.ErrorCode(errorcode)
+
+        # All the other errors are something the user can't do
+        # anything about.
+        if self.errorcode == DeviceError.ErrorCode.INVALID_STATE:
+            self.errno = errno.EBADE
 
 
 class Msg(object):
