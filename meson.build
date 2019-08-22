@@ -147,7 +147,8 @@ endif
 pytest = find_program('pytest-3', required: false)
 if pytest.found()
     test('unittest', pytest,
-         args: [join_paths(meson.source_root(), 'test')])
+         args: [join_paths(meson.source_root(), 'test')],
+         timeout: 180)
 endif
 
 # A wrapper to start tuhi at the same time as tuhigui, used by the flatpak
