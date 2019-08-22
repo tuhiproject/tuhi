@@ -446,6 +446,12 @@ class DeviceError(ProtocolError):
         if self.errorcode == DeviceError.ErrorCode.INVALID_STATE:
             self.errno = errno.EBADE
 
+    def __repr__(self):
+        return f'DeviceError.{self.errorcode.name}'
+
+    def __str__(self):
+        return repr(self)
+
 
 class Msg(object):
     '''
