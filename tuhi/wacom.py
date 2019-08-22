@@ -23,7 +23,7 @@ from gi.repository import GObject
 from .drawing import Drawing
 from .uhid import UHIDDevice
 import tuhi.protocol
-from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile, UnexpectedDataError, DeviceError, MissingReplyError
+from tuhi.protocol import NordicData, Interactions, Mode, ProtocolVersion, StrokeFile, UnexpectedDataError, DeviceError, MissingReplyError, AuthorizationError
 from .util import list2hex, flatten
 from tuhi.config import TuhiConfig
 
@@ -1016,6 +1016,9 @@ class WacomDevice(GObject.Object):
                 self._wacom_protocol.retrieve_data()
         except DeviceError as e:
             logger.error(f'**** Exception: {e} ****')
+            exception = e
+        except AuthorizationError as e:
+            logger.error(f'Authorization failed, device needs to be re-registered')
             exception = e
         finally:
             self.sync_state = 0
