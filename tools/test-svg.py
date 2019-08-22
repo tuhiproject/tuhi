@@ -49,6 +49,10 @@ def parse_file(filename, tablet_model, orientation):
     stem = Path(filename).stem
     with open(filename) as fd:
         yml = yaml.load(fd, Loader=yaml.Loader)
+        if not yml:
+            print(f'{filename}: empty file.')
+            return
+
         # all recv lists that have source PEN
         pendata = [d['recv'] for d in yml['data'] if 'recv' in d and 'source' in d and d['source'] == 'PEN']
         data = list(flatten(pendata))
