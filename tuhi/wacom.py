@@ -1014,12 +1014,11 @@ class WacomDevice(GObject.Object):
                 assert self._wacom_protocol is not None
                 self.sync_state = 1
                 self._wacom_protocol.retrieve_data()
-                self.sync_state = 0
         except DeviceError as e:
             logger.error(f'**** Exception: {e} ****')
             exception = e
-            self.sync_state = 0
         finally:
+            self.sync_state = 0
             self._is_running = False
             self.emit('done', exception)
 
