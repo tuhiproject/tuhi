@@ -40,7 +40,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
 logger = logging.getLogger('tuhi')  # set the pseudo-root logger to take advantage of the other loggers
 
 
-def parse_file(filename, tablet_model, orientation):
+def parse_file(filename, file_format, tablet_model, orientation):
     width = tablet_model.width
     height = tablet_model.height
     pressure = tablet_model.pressure
@@ -81,8 +81,10 @@ def parse_file(filename, tablet_model, orientation):
                 stroke.new_abs((p.x * ps, p.y * ps), normalize(p.p))
             stroke.seal()
         d.seal()
-        with open(jsonname, 'w') as fd:
-            fd.write(d.to_json())
+        if file_format == 'json':
+            with open(jsonname, 'w') as fd:
+                fd.write(d.to_json())
+            return
 
         from io import StringIO
         js = json.load(StringIO(d.to_json()))
@@ -106,7 +108,7 @@ def main(args=sys.argv):
     Input data is a raw log file. These are usually stored in
     \t$XDG_DATA_HOME/tuhi/<bluetooth address>/raw/
 
-    Pass the log file to this tool and it will convert it to a JSON file and
+    Pass the log file to this tool and it will convert it to a JSON file or
     an SVG file. Alternatively, use --all to convert all
     all log files containing pen data in the above directory.
 
@@ -137,6 +139,10 @@ def main(args=sys.argv):
                         help='Use defaults from the given tablet model',
                         default='intuos-pro',
                         choices=['intuos-pro', 'slate', 'spark'])
+    parser.add_argument('--format',
+                        help='The format to generate. Default: svg',
+                        default='svg',
+                        choices=['svg', 'json'])
 
     ns = parser.parse_args(args[1:])
     if ns.verbose:
@@ -156,7 +162,7 @@ def main(args=sys.argv):
         'spark': WacomProtocolSpark,
     }
     for f in files:
-        parse_file(f, model_map[ns.tablet_model], ns.orientation)
+        parse_file(f, ns.format, model_map[ns.tablet_model], ns.orientation)
 
 
 if __name__ == '__main__':
