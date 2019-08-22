@@ -43,16 +43,18 @@ class Drawing(Gtk.EventBox):
 
         self.json_data = json_data
         self._zoom = zoom
-        self.refresh()  # sets self.svg
+        self.process_svg()  # sets self.svg
+        self.redraw()
 
         self.timestamp = self.svg.timestamp
         self.box_toolbar.set_opacity(0)
 
     def _on_orientation_changed(self, config, pspec):
         self.orientation = config.orientation
-        self.refresh()
+        self.process_svg()
+        self.redraw()
 
-    def refresh(self):
+    def process_svg(self):
         path = os.fspath(Path(DATA_PATH, f'{self.json_data["timestamp"]}.svg'))
         self.svg = JsonSvg(self.json_data, self.orientation, path)
         width, height = -1, -1
@@ -64,7 +66,6 @@ class Drawing(Gtk.EventBox):
                                                               width=width,
                                                               height=height,
                                                               preserve_aspect_ratio=True)
-        self.redraw()
 
     def redraw(self):
         ratio = self.pixbuf.get_height() / self.pixbuf.get_width()
@@ -123,7 +124,7 @@ class Drawing(Gtk.EventBox):
             # regenerate the SVG based on the current rotation.
             # where we used the orientation buttons, we haven't updated the
             # file itself.
-            self.refresh()
+            self.process_svg()
 
             file = dialog.get_filename()
             shutil.copyfile(self.svg.filename, file)
