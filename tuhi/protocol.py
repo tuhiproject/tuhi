@@ -602,7 +602,13 @@ class MsgConnectSpark(Msg):
         if len(self.args) != 6:
             raise ValueError('UUID must be 6 bytes long')
 
-        # uses the default 0xb3 handler
+    def _handle_reply(self, reply):
+        try:
+            super()._handle_reply(reply)
+        except DeviceError as e:
+            if e.errorcode == DeviceError.ErrorCode.GENERAL_ERROR:
+                raise AuthorizationError()
+            raise e
 
 
 class MsgGetName(Msg):
