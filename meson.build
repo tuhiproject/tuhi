@@ -127,6 +127,9 @@ if flake8.found()
         args: ['--ignore=E501,W504',
                join_paths(meson.source_root(), 'tuhi'),
                join_paths(meson.source_root(), 'tuhi', 'gui')])
+   test('flake8-tools', flake8,
+        args: ['--ignore=E501,W504',
+               join_paths(meson.source_root(), 'tools')])
    # the tests need different flake exclusions
    test('flake8-tests', flake8,
         args: ['--ignore=E501,W504,F403,F405',
