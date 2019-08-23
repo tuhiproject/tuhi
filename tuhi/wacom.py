@@ -775,6 +775,7 @@ class WacomProtocolSpark(WacomProtocolBase):
     y_max = 14800
 
     pressure = 1023
+    point_size = 10
     protocol = ProtocolVersion.SPARK
 
     orientation = 'portrait'
@@ -801,6 +802,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
     y_max = 14300
 
     pressure = 2047
+    point_size = 10
     protocol = ProtocolVersion.SLATE
 
     orientation = 'portrait'
@@ -883,6 +885,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     y_max = 29600
 
     pressure = 8192
+    point_size = 5
     protocol = ProtocolVersion.INTUOS_PRO
 
     orientation = 'landscape'

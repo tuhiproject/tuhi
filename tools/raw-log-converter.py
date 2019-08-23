@@ -44,6 +44,7 @@ def parse_file(filename, file_format, tablet_model, orientation):
     width = tablet_model.width
     height = tablet_model.height
     pressure = tablet_model.pressure
+    point_size = tablet_model.point_size
     orientation = orientation or tablet_model.orientation
 
     stem = Path(filename).stem
@@ -68,8 +69,7 @@ def parse_file(filename, file_format, tablet_model, orientation):
         # to svg. ffs.
         svgname = f'{stem}.svg'
         jsonname = f'{stem}.json'
-        ps = 5  # FIXME: fetch the point size from the settings.ini
-        d = Drawing(svgname, (width * ps, height * ps), timestamp)
+        d = Drawing(svgname, (width * point_size, height * point_size), timestamp)
 
         def normalize(p):
             NORMALIZED_RANGE = 0x10000
@@ -78,7 +78,7 @@ def parse_file(filename, file_format, tablet_model, orientation):
         for s in f.strokes:
             stroke = d.new_stroke()
             for p in s.points:
-                stroke.new_abs((p.x * ps, p.y * ps), normalize(p.p))
+                stroke.new_abs((p.x * point_size, p.y * point_size), normalize(p.p))
             stroke.seal()
         d.seal()
         if file_format == 'json':
