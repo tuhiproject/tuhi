@@ -1348,7 +1348,10 @@ class StrokeFile(object):
         Stroke = namedtuple('Stroke', ['points'])
         Point = namedtuple('Point', ['x', 'y', 'p'])
 
-        last_point = None  # abs coords for most recent point
+        # The Spark can have a delta on the first point in a file. Let's
+        # default to 0, 0, 0 because I don't know what else could be
+        # sensible here.
+        last_point = Point(0, 0, 0)  # abs coords for most recent point
         last_delta = Point(0, 0, 0)  # delta accumulates
 
         strokes = []  # all strokes
@@ -1428,8 +1431,6 @@ class StrokeFile(object):
                 # can process both the same way.
                 if packet_type == StrokeDataType.POINT:
                     packet = StrokePoint(data)
-                    if last_point is None:
-                        last_point = Point(packet.x, packet.y, packet.p)
                 else:
                     packet = StrokeDelta(data)
 
