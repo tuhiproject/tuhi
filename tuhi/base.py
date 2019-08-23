@@ -35,9 +35,6 @@ from tuhi.config import TuhiConfig
 
 DEFAULT_CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
 
-logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
-                    level=logging.INFO,
-                    datefmt='%H:%M:%S')
 logger = logging.getLogger('tuhi')
 
 WACOM_COMPANY_IDS = [0x4755, 0x4157]
@@ -426,11 +423,17 @@ class Tuhi(GObject.Object):
 def setup_logging(config_dir):
     session_log_file = Path(config_dir, 'session-logs', f'tuhi-{time.strftime("%y-%m-%d-%H:%M:%S")}.log')
     session_log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s: %(name)s: %(message)s',
+                                      datefmt='%H:%M:%S')
+
     fh = logging.FileHandler(session_log_file)
     fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
 
     ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
     logger.addHandler(ch)
     logger.addHandler(fh)
     logger.info(f'Session log: {session_log_file}')
@@ -462,6 +465,8 @@ def main(args=sys.argv):
 
     if ns.verbose:
         logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
     try:
         mainloop = GLib.MainLoop()
