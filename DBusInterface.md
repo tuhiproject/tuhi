@@ -336,11 +336,16 @@ files). The JSON objects are "drawing" (the root object), "strokes",
 class Drawing {
         version: uint32
         devicename: string
+        sessionid: string            // used for debugging
         dimensions: [uint32, uint32] // x/y physical dimensions in µm
         timestamp: uint64
         strokes: [ Stroke, Stroke, ...]
 }
 ```
+
+A session id is a random string that identifies a Tuhi session. This is
+debugging information only, it makes it possible to associate a JSON file
+with the corresponding sequence in the log. Do not use in clients.
 
 The **strokes** list contains all strokes of a single drawing, each stroke
 consisting of a number of **points**.
@@ -367,6 +372,7 @@ An expanded file looks like this:
 {
    "version" : 1,                       // JSON file format version number
    "devicename":  "Wacom Bamboo Spark", 
+   "sessionid": "somerandomstring-1",
    "dimensions": [ 100000, 200000],      // width/height in µm
    "timestamp" : 12345,
    "strokes" : [
