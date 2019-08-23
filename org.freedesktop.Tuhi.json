@@ -32,8 +32,8 @@
             "sources": [
                 {
                     "type": "archive",
-                    "url": "https://github.com/pyparsing/pyparsing/releases/download/pyparsing_2.4.0/pyparsing-2.4.0.tar.gz",
-                    "sha512": "71877dc006cce5c1b1d45e7cc89cd60e03cb80353387fb0c6498cfc0d69af465dc574d1bceb87248033e7a82694aa940e9fce1ca80b2ef538a8df51f697ef530"
+                    "url": "https://github.com/pyparsing/pyparsing/releases/download/pyparsing_2.4.2/pyparsing-2.4.2.tar.gz",
+                    "sha512": "27e5959eb1cf0c4d899746d2d32f5f000c3753278bdbbb670d24a077053e5c08caf8429f684186c502f6d9bf358702e0a8b3fea40cd2b50807cf02ea38c750dd"
                 }
             ],
             "build-commands": [
