@@ -40,6 +40,20 @@ SYSEVENT_NOTIFICATION_SERVICE_UUID = '3a340720-c572-11e5-86c5-0002a5d5c51b'  # N
 SYSEVENT_NOTIFICATION_CHRC_UUID    = '3a340721-c572-11e5-86c5-0002a5d5c51b'  # NOQA
 
 
+class IDGenerator(object):
+    _session = uuid.uuid4().hex
+    _instance = 0
+
+    @classmethod
+    def current(cls):
+        return f'{cls._session}-{cls._instance}'
+
+    @classmethod
+    def next(cls):
+        cls._instance += 1
+        return cls.current()
+
+
 @enum.unique
 class DeviceMode(enum.Enum):
     REGISTER = 1
@@ -198,6 +212,9 @@ class DataLogger(object):
         path = Path(self.logdir, fname)
         self.logfile = open(path, 'w+')
 
+        session_id = IDGenerator.next()
+        self.logger.debug(f'sessionid: {session_id}')
+        self.logfile.write(f'sessionid: {session_id}\n')
         self.logfile.write(f'name: {self.device.name}\n')
         self.logfile.write(f'bluetooth: {self.btaddr}\n')
         self.logfile.write(f'time: {timestamp} # host time: {time.strftime("%Y-%m-%d %H:%M:%S")}\n')
@@ -661,6 +678,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
         f = StrokeFile(data)
         drawing = Drawing(self.device.name, (self.width, self.height), timestamp)
+        drawing.session_id = IDGenerator.current()
         ps = self.point_size
 
         def normalize(p):

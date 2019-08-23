@@ -97,6 +97,7 @@ class Drawing(GObject.Object):
         self.timestamp = timestamp  # unix seconds
         self.strokes = []
         self._current_stroke = -1
+        self.session_id = 'unset'
 
     def seal(self):
         # Drop empty strokes
@@ -130,6 +131,7 @@ class Drawing(GObject.Object):
         json_data = {
             'version': self.JSON_FILE_FORMAT_VERSION,
             'devicename': self.name,
+            'sessionid': self.session_id,
             'dimensions': list(self.dimensions),
             'timestamp': self.timestamp,
             'strokes': [s.to_dict() for s in self.strokes]
