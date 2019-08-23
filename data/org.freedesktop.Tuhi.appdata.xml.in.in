@@ -29,16 +29,12 @@
 
   <screenshots>
     <screenshot type="default">
-      <caption>The button configuraton page</caption>
-      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-buttonpage.png</image>
+      <caption>Tuhi's main window</caption>
+      <image>https://raw.githubusercontent.com/tuhiproject/tuhi/screenshots/main-window.png</image>
     </screenshot>
     <screenshot>
-      <caption>The LED configuraton page</caption>
-      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-ledpage.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>The resolution configuraton page</caption>
-      <image>https://github.com/libratbag/piper/raw/wiki/screenshots/flathub/piper-resolutionpage.png</image>
+      <caption>Tuhi's main window (zoomed)</caption>
+      <image>https://raw.githubusercontent.com/tuhiproject/tuhi/screenshots/main-window-zoomed.png</image>
     </screenshot>
   </screenshots>
 
