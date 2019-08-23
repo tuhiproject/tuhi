@@ -324,17 +324,21 @@ class NordicData(list):
         The data length of this message. This field is guaranteed to be
         equivalent to len(data) or an exception is raised.
 
+    .. attribute:: name
+
+        The name of this message, may be None
     '''
-    def __init__(self, bs):
+    def __init__(self, bs, name=None):
         data = bs[2:]
         super().__init__(data)
         self.opcode = bs[0]
         self.length = bs[1]
+        self.name = name
         if self.length != len(data):
             raise UnexpectedDataError(bs, f'Invalid data: length field {self.length}, data length is {len(data)}')
 
     def __repr__(self):
-        return f'{self.opcode:02x} / {self.length:02x} / {as_hex_string(self)}'
+        return f'{self.name if self.Name else "UNKNOWN"}{self.opcode:02x} / {self.length:02x} / {as_hex_string(self)}'
 
 
 class ProtocolError(Exception):
@@ -543,7 +547,8 @@ class Msg(object):
         if self.opcode == Msg.OPCODE_NOOP:
             return self  # allow chaining
 
-        self.request = NordicData([self.opcode, len(self.args or []), *(self.args or [])])
+        self.request = NordicData([self.opcode, len(self.args or []), *(self.args or [])],
+                                  name=self.interaction.name)
         self.reply = self._callback(request=self.request if self.requires_request else None,
                                     requires_reply=self.requires_reply,
                                     timeout=self.timeout or None,

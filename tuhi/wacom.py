@@ -163,24 +163,6 @@ class DataLogger(object):
         def recv(self, data):
             return self.parent._recv(self.source, data)
 
-    commands = {
-        0xb1: 'set mode',
-        0xb6: 'set time',
-        0xb7: 'get firmware',
-        0xb9: 'read battery info',
-        0xbb: 'get/set name',
-        0xc1: 'check for data',
-        0xc3: 'start reading',
-        0xc5: 'fetch data',
-        0xc8: 'end of data',
-        0xca: 'ack transaction',
-        0xcc: 'fetch data',
-        0xea: 'get dimensions',
-        0xe5: 'finish registering',
-        0xe6: 'check connection',
-        0xdb: 'get name',
-    }
-
     def __init__(self, bluez_device):
         self.logger = logging.getLogger('tuhi.fw')
         self.device = bluez_device
@@ -240,20 +222,18 @@ class DataLogger(object):
 
         self.logger.debug(f'{self.btaddr}: RX {source} <-- {convert(data)}')
         self._init_file()
-        if data[0] in self.commands:
-            self.logfile.write(f'#         {self.commands[data[0]]}\n')
         self.logfile.write(f'  - recv: {list2hexlist(data)}\n')
         if source != 'NORDIC':
             self.logfile.write(f'    source: {source}\n')
 
     def _request(self, source, request):
-        if request.opcode in self.commands:
-            self.logger.debug(f'command: {self.commands[request.opcode]}')
+        if request.name:
+            self.logger.debug(f'command: {request.name}')
         self.logger.debug(f'{self.btaddr}: TX {source} --> {request.opcode:02x} / {len(request):02x} / {list2hex(request)}')
 
         self._init_file()
-        if request.opcode in self.commands:
-            self.logfile.write(f'#         {self.commands[request.opcode]}\n')
+        if request.name:
+            self.logfile.write(f'#         {request.name}\n')
 
         data = [request.opcode, len(request), *request]
         self.logfile.write(f'  - send: {list2hexlist(data)}\n')
