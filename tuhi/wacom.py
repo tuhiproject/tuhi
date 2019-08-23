@@ -124,7 +124,7 @@ class DataLogger(object):
     A wrapper to log data transfer between the device and Tuhi. Use as::
 
         logger = DataLogger()
-        logger.nordic.send([1, 2, 3...])
+        logger.nordic.request(nordic_data)
         logger.nordic.recv([1, 2, 3...])
 
     This uses a logger for stdout, but it also writes the log files to disk
@@ -142,8 +142,8 @@ class DataLogger(object):
         def recv(self, data):
             return self.parent._recv(self.source, data)
 
-        def send(self, data):
-            return self.parent._send(self.source, data)
+        def request(self, request):
+            return self.parent._request(self.source, request)
 
     class _Pen(object):
         source = 'PEN'
@@ -246,17 +246,16 @@ class DataLogger(object):
         if source != 'NORDIC':
             self.logfile.write(f'    source: {source}\n')
 
-    def _send(self, source, data):
-        command = data[0]
-        arguments = data[2:]
-
-        if data[0] in self.commands:
-            self.logger.debug(f'command: {self.commands[data[0]]}')
-        self.logger.debug(f'{self.btaddr}: TX {source} --> {command:02x} / {len(arguments):02x} / {list2hex(arguments)}')
+    def _request(self, source, request):
+        if request.opcode in self.commands:
+            self.logger.debug(f'command: {self.commands[request.opcode]}')
+        self.logger.debug(f'{self.btaddr}: TX {source} --> {request.opcode:02x} / {len(request):02x} / {list2hex(request)}')
 
         self._init_file()
-        if data[0] in self.commands:
-            self.logfile.write(f'#         {self.commands[data[0]]}\n')
+        if request.opcode in self.commands:
+            self.logfile.write(f'#         {self.commands[request.opcode]}\n')
+
+        data = [request.opcode, len(request), *request]
         self.logfile.write(f'  - send: {list2hexlist(data)}\n')
         if source != 'NORDIC':
             self.logfile.write(f'    source: {source}\n')
@@ -358,10 +357,11 @@ class WacomProtocolLowLevelComm(GObject.Object):
         self.nordic_answer += value
         self.nordic_event.release()
 
-    def send_nordic_command(self, command, arguments):
+    def send_nordic_command(self, request):
         chrc = self.device.characteristics[NORDIC_UART_CHRC_TX_UUID]
-        data = [command, len(arguments), *arguments]
-        self.fw_logger.nordic.send(data)
+        self.fw_logger.nordic.request(request)
+
+        data = [request.opcode, len(request), *request]
         chrc.write_value(data)
 
     def pop_next_message(self):
@@ -377,7 +377,7 @@ class WacomProtocolLowLevelComm(GObject.Object):
     def nordic_data_exchange(self, request, requires_reply=False,
                              userdata=None, timeout=None):
         if request is not None:
-            self.send_nordic_command(request.opcode, request)
+            self.send_nordic_command(request)
         if requires_reply:
             if not self.nordic_event.acquire(timeout=timeout or 5):
                 return None
