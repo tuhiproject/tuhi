@@ -124,11 +124,13 @@ class DataLogger(object):
     A wrapper to log data transfer between the device and Tuhi. Use as::
 
         logger = DataLogger()
-        logger.nordic.request(nordic_data)
-        logger.nordic.recv([1, 2, 3...])
+        with logger as _:
+            logger.nordic.request(nordic_data)
+            logger.nordic.recv([1, 2, 3...])
 
     This uses a logger for stdout, but it also writes the log files to disk
-    for future re-use.
+    for future re-use. The context manager ('with') helps to group the
+    requests/replies together in the yaml file.
 
     Targets for log are $HOME/.share/tuhi/12:AB:23:CD:.../<timestamp>.yml
 
@@ -177,6 +179,8 @@ class DataLogger(object):
         self.pen = DataLogger._Pen(self)
         self.sysevent = DataLogger._SysEvent(self)
         self.logfile = None
+        self._in_context = True
+        self._last_source = None
 
     def _on_bluez_connected(self, bluez_device):
         self._init_file()
@@ -222,7 +226,23 @@ class DataLogger(object):
 
         self.logger.debug(f'{self.btaddr}: RX {source} <-- {convert(data)}')
         self._init_file()
-        self.logfile.write(f'  - recv: {list2hexlist(data)}\n')
+
+        # If we're inside a context, group the request/reply together in the
+        # yaml file, unless the source changes. This means that for the
+        # majority of requests we get an entry like this:
+        #
+        # #         GET_BATTERY
+        #  - send: [0xb9, 0x01, 0x00]
+        #    recv: [0xba, 0x02, 0x44, 0x00]
+        #
+        # Which makes YAML processing a lot easier.
+        if self._last_source != source:
+            self._in_context = False
+            self._last_source = source
+            self.logfile.write(f'# resetting source to {source}\n')
+        prefix = '   ' if self._in_context else '  -'
+
+        self.logfile.write(f'{prefix} recv: {list2hexlist(data)}\n')
         if source != 'NORDIC':
             self.logfile.write(f'    source: {source}\n')
 
@@ -239,6 +259,13 @@ class DataLogger(object):
         self.logfile.write(f'  - send: {list2hexlist(data)}\n')
         if source != 'NORDIC':
             self.logfile.write(f'    source: {source}\n')
+
+    def __enter__(self):
+        self._in_context = True
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self._in_context = False
 
 
 class WacomPacket(GObject.Object):
@@ -356,12 +383,13 @@ class WacomProtocolLowLevelComm(GObject.Object):
     # The callback used by the protocol messages
     def nordic_data_exchange(self, request, requires_reply=False,
                              userdata=None, timeout=None):
-        if request is not None:
-            self.send_nordic_command(request)
-        if requires_reply:
-            if not self.nordic_event.acquire(timeout=timeout or 5):
-                return None
-            return self.pop_next_message()
+        with self.fw_logger as _:
+            if request is not None:
+                self.send_nordic_command(request)
+            if requires_reply:
+                if not self.nordic_event.acquire(timeout=timeout or 5):
+                    return None
+                return self.pop_next_message()
 
 
 class WacomRegisterHelper(WacomProtocolLowLevelComm):
