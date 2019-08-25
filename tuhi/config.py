@@ -69,8 +69,6 @@ class TuhiConfig(GObject.Object):
             config = configparser.ConfigParser()
             config.read(settings)
 
-            self._purge_drawings(directory)
-
             btaddr = directory.name
             assert config['Device']['Address'] == btaddr
             if 'Protocol' not in config['Device']:
@@ -130,19 +128,6 @@ class TuhiConfig(GObject.Object):
 
         configdir = Path(self._base_path, address)
         return [Drawing.from_json(f) for f in configdir.glob('*.json')]
-
-    def _purge_drawings(self, directory):
-        '''Removes all but the most recent 10 files from the config
-        directory. This is primarily done so that no-one relies on the tuhi
-        daemon for permanent storage.'''
-
-        files = [x for x in Path(directory).glob('*.json')]
-
-        if len(files) > 10:
-            files.sort(key=lambda e: e.name)
-            for f in files[:-10]:
-                logger.debug(f'{directory.name}: purging {f.name}')
-                f.unlink()
 
     @classmethod
     def set_base_path(cls, path):
