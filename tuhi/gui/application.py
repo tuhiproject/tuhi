@@ -52,6 +52,9 @@ class Application(Gtk.Application):
                              GLib.OptionFlags.NONE,
                              GLib.OptionArg.NONE,
                              'download first drawing only but do not remove it from the device')
+
+        self.set_accels_for_action('app.quit', ['<Ctrl>Q'])
+
         self._tuhi = None
 
     def do_startup(self):
