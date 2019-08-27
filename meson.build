@@ -28,9 +28,26 @@ i18n = import('i18n')
 subdir('po')
 subdir('data')
 
-# Find the directory to install our Python code
 pymod = import('python')
-py3 = pymod.find_installation()
+
+# external python modules that are required for running Tuhi
+python_modules = [
+    'svgwrite',
+    'xdg',
+    'gi',
+    'yaml',
+]
+if meson.version().version_compare('>=0.51')
+    py3 = pymod.find_installation(modules: python_modules)
+else
+    py3 = pymod.find_installation()
+
+    foreach module: python_modules
+        if run_command(py3, '-c', 'import @0@'.format(module)).returncode() != 0
+            error('Failed to find required python module \'@0@\'.'.format(module))
+        endif
+    endforeach
+endif
 python_dir = py3.get_install_dir()
 install_subdir('tuhi',
                install_dir: python_dir,
