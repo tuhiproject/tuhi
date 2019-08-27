@@ -18,7 +18,7 @@ import os
 import logging
 import re
 
-logger = logging.getLogger('tuhi.gui.dbus')
+logger = logging.getLogger('tuhi.dbusclient')
 
 TUHI_DBUS_NAME = 'org.freedesktop.tuhi1'
 ORG_FREEDESKTOP_TUHI1_MANAGER = 'org.freedesktop.tuhi1.Manager'

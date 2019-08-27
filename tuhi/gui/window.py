@@ -15,8 +15,8 @@ from gettext import gettext as _
 from gi.repository import Gtk, Gio, GLib, GObject
 
 from .drawingperspective import DrawingPerspective
-from .tuhi import TuhiKeteManager
 from .config import Config
+from tuhi.dbusclient import TuhiKeteManager
 
 import logging
 import gi
