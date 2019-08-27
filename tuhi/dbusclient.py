@@ -37,7 +37,7 @@ class _DBusObject(GObject.Object):
     _connection = None
 
     def __init__(self, name, interface, objpath):
-        GObject.GObject.__init__(self)
+        super().__init__()
 
         # this is not handled asynchronously because if we fail to
         # get the session bus, we have other issues
@@ -160,9 +160,7 @@ class TuhiKeteDevice(_DBusObject):
     }
 
     def __init__(self, manager, objpath):
-        _DBusObject.__init__(self, TUHI_DBUS_NAME,
-                             ORG_FREEDESKTOP_TUHI1_DEVICE,
-                             objpath)
+        super().__init__(TUHI_DBUS_NAME, ORG_FREEDESKTOP_TUHI1_DEVICE, objpath)
         self.manager = manager
         self.is_registering = False
         self._bluez_device = BlueZDevice(self.property('BlueZDevice'))
@@ -290,7 +288,7 @@ class TuhiKeteDevice(_DBusObject):
         except AttributeError:
             pass
         self._bluez_device.terminate()
-        super(TuhiKeteDevice, self).terminate()
+        super().terminate()
 
 
 class TuhiKeteManager(_DBusObject):
@@ -300,9 +298,7 @@ class TuhiKeteManager(_DBusObject):
     }
 
     def __init__(self):
-        _DBusObject.__init__(self, TUHI_DBUS_NAME,
-                             ORG_FREEDESKTOP_TUHI1_MANAGER,
-                             ROOT_PATH)
+        super().__init__(TUHI_DBUS_NAME, ORG_FREEDESKTOP_TUHI1_MANAGER, ROOT_PATH)
 
         self._devices = {}
         self._unregistered_devices = {}
@@ -350,7 +346,7 @@ class TuhiKeteManager(_DBusObject):
             dev.terminate()
         self._devices = {}
         self._unregistered_devices = {}
-        super(TuhiKeteManager, self).terminate()
+        super().terminate()
 
     def _on_properties_changed(self, proxy, changed_props, invalidated_props):
         if changed_props is None:
