@@ -5,6 +5,13 @@ import sys
 import os
 from pathlib import Path
 
+try:
+    # 3.30 is the first one with Gtk.Template
+    gi.check_version('3.30') # NOQA
+except ValueError as e:
+    print(e, file=sys.stderr)
+    sys.exit(1)
+
 gi.require_version('Gio', '2.0')  # NOQA
 gi.require_version('Gtk', '3.0')  # NOQA
 from gi.repository import Gio, Gtk, Gdk
