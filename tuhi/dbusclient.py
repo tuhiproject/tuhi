@@ -149,7 +149,7 @@ class BlueZDevice(_DBusSystemObject):
             self.notify('connected')
 
 
-class TuhiKeteDevice(_DBusObject):
+class TuhiDBusClientDevice(_DBusObject):
     __gsignals__ = {
         'button-press-required':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
@@ -291,7 +291,7 @@ class TuhiKeteDevice(_DBusObject):
         super().terminate()
 
 
-class TuhiKeteManager(_DBusObject):
+class TuhiDBusClientManager(_DBusObject):
     __gsignals__ = {
         'unregistered-device':
             (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
@@ -312,7 +312,7 @@ class TuhiKeteManager(_DBusObject):
     def _init(self, *args, **kwargs):
         logger.info('manager is online')
         for objpath in self.property('Devices'):
-            device = TuhiKeteDevice(self, objpath)
+            device = TuhiDBusClientDevice(self, objpath)
             self._devices[device.address] = device
 
     @GObject.Property
@@ -375,7 +375,7 @@ class TuhiKeteManager(_DBusObject):
                 self.emit('unregistered-device', dev)
                 return
 
-        device = TuhiKeteDevice(self, objpath)
+        device = TuhiDBusClientDevice(self, objpath)
         self._unregistered_devices[objpath] = device
 
         logger.debug(f'New unregistered device: {device}')

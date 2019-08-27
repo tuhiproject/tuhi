@@ -16,7 +16,7 @@ from gi.repository import Gtk, Gio, GLib, GObject
 
 from .drawingperspective import DrawingPerspective
 from .config import Config
-from tuhi.dbusclient import TuhiKeteManager
+from tuhi.dbusclient import TuhiDBusClientManager
 
 import logging
 import gi
@@ -132,7 +132,7 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(**kwargs)
 
         self.maximize()
-        self._tuhi = TuhiKeteManager()
+        self._tuhi = TuhiDBusClientManager()
 
         action = Gio.SimpleAction.new_stateful('orientation', GLib.VariantType('s'),
                                                GLib.Variant('s', 'landscape'))
