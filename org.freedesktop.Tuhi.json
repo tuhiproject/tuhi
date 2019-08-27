@@ -19,7 +19,7 @@
             "sources": [
                 {
                     "type": "git",
-                    "url": "https://gitlab.freedesktop.org/xdg/pyxdg",
+                    "url": "https://gitlab.freedesktop.org/xdg/pyxdg.git",
                     "tag": "rel-0.26",
                     "commit": "7db14dcf4c4305c3859a2d9fcf9f5da2db328330"
                 }
