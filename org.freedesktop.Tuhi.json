@@ -4,14 +4,14 @@
     "runtime-version": "3.32",
     "sdk": "org.gnome.Sdk",
     "command": "tuhi",
-      "finish-args": [
+    "finish-args": [
         "--share=ipc",
         "--socket=x11",
         "--socket=wayland",
         "--talk-name=org.freedesktop.tuhi1",
         "--own-name=org.freedesktop.tuhi1",
         "--system-talk-name=org.bluez"
-      ],
+    ],
     "modules": [
         {
             "name": "pyxdg",
