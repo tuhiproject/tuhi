@@ -12,7 +12,6 @@
 #
 
 from gettext import gettext as _
-from gi.repository import GObject, Gtk, GdkPixbuf, Gdk
 
 import xdg.BaseDirectory
 import os
@@ -22,6 +21,8 @@ from tuhi.svg import JsonSvg
 
 import gi
 gi.require_version("Gtk", "3.0")
+from gi.repository import GObject, Gtk, GdkPixbuf, Gdk  # NOQA
+
 
 DATA_PATH = Path(xdg.BaseDirectory.xdg_cache_home, 'tuhi', 'svg')
 
