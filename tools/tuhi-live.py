@@ -45,8 +45,6 @@ def open_uhid_process(queue_in, conn_out):
 
 
 def maybe_start_tuhi(queue):
-    sys.path
-
     try:
         should_start, verbose = queue.get()
     except KeyboardInterrupt:
