@@ -379,6 +379,25 @@ class TestProtocolAny(unittest.TestCase):
         msg = p.execute(Interactions.REGISTER_PRESS_BUTTON, uuid=uuid)
         self.assertEqual(msg.uuid, uuid)
 
+    def test_error_invalid_state(self):
+        def _cb(request, requires_reply=True, userdata=None, timeout=5):
+            return NordicData([0xb3, 0x1, 0x1])
+
+        p = Protocol(self.protocol_version, callback=_cb)
+
+        # a "random" collection of requests that we want to check for
+        with self.assertRaises(DeviceError) as cm:
+            p.execute(Interactions.CONNECT, uuid='abcdef123456')
+        self.assertEqual(cm.exception.errorcode, DeviceError.ErrorCode.GENERAL_ERROR)
+
+        with self.assertRaises(DeviceError) as cm:
+            p.execute(Interactions.GET_STROKES)
+        self.assertEqual(cm.exception.errorcode, DeviceError.ErrorCode.GENERAL_ERROR)
+
+        with self.assertRaises(DeviceError) as cm:
+            p.execute(Interactions.SET_MODE, Mode.PAPER)
+        self.assertEqual(cm.exception.errorcode, DeviceError.ErrorCode.GENERAL_ERROR)
+
 
 class TestProtocolSpark(TestProtocolAny):
     protocol_version = ProtocolVersion.SPARK

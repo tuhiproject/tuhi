@@ -523,18 +523,16 @@ class Msg(object):
         self._args = args
 
     def _handle_reply(self, reply):
-        '''Override this in the subclass to handle the reply.
+        '''
+        Override this in the subclass to handle the reply. Note that the
+        default 0xb3 message is handled automaticaly, this is only for
+        non-default replies.
 
-        This is the default reply handler that deals with the 0xb3 ACK/Error
-        messages and throws the respective exceptions.
+        No return value, just throw the appropriate exception on failure.
 
         :param reply: A :class:`NordicData` object
         '''
-        if reply.opcode != 0xb3:
-            raise UnexpectedReply(self)
-
-        if reply[0] != 0x00:
-            raise DeviceError(reply[0])
+        raise NotImplementedError(f'{reply} needs customized handling')
 
     def execute(self):
         '''
@@ -554,7 +552,14 @@ class Msg(object):
             if self.reply is None:
                 raise MissingReplyError(self.request)
             try:
-                self._handle_reply(self.reply)
+                # 0xb3 is always handled by us, anything else requires a
+                # custom reply handler
+                if self.reply.opcode == 0xb3:
+                    if self.reply[0] != 0x00:
+                        raise DeviceError(self.reply[0])
+                else:
+                    self._handle_reply(self.reply)
+
                 # no exception? we can assume success
                 self.errorcode = DeviceError.ErrorCode.SUCCESS
             except DeviceError as e:
