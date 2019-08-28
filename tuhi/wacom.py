@@ -479,7 +479,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
         device.connect_gatt_value(WACOM_OFFLINE_CHRC_PEN_DATA_UUID,
                                   self._on_pen_data_received)
 
-    @GObject.property
+    @GObject.Property
     def dimensions(self):
         return (self.width, self.height)
 
