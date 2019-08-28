@@ -11,15 +11,15 @@
 #  GNU General Public License for more details.
 #
 
-from gi.repository import GObject, Gtk
 from .drawing import Drawing
 from .config import Config
 
 import time
-import gi
 import logging
 
+import gi
 gi.require_version("Gtk", "3.0")
+from gi.repository import GObject, Gtk  # NOQA
 
 logger = logging.getLogger('tuhi.gui.drawingperspective')
 
