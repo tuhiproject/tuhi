@@ -75,6 +75,7 @@ class DrawingPerspective(Gtk.Stack):
         self.known_drawings = {}  # type {timestamp: Drawing()}
         self.flowboxes = {}
         self._zoom = 0
+        self._want_listen = True
 
     def _cache_drawings(self, device, pspec):
         # The config backend filters duplicates anyway, so don't care here
@@ -126,8 +127,13 @@ class DrawingPerspective(Gtk.Stack):
     def device(self, device):
         self._device = device
 
-        device.connect('notify::connected', self._on_connected)
-        device.connect('notify::listening', self._on_listening_stopped)
+        self._signals = []
+        sig = device.connect('notify::connected', self._on_connected)
+        self._signals.append(sig)
+        sig = device.connect('notify::listening', self._on_listening_stopped)
+        self._signals.append(sig)
+        sig = device.connect('device-error', self._on_device_error)
+        self._signals.append(sig)
 
         # This is a bit convoluted. We need to cache all drawings
         # because Tuhi doesn't have guaranteed storage. So any json that
@@ -168,10 +174,19 @@ class DrawingPerspective(Gtk.Stack):
         pass
 
     def _on_listening_stopped(self, device, pspec):
-        if not device.listening:
+        if not device.listening and self._want_listen:
             logger.debug(f'{device.name} - listening stopped, restarting')
             # We never want to stop listening
             device.start_listening()
+
+    def _on_device_error(self, device, error):
+        import errno
+        if error == -errno.EACCES:
+            # No point to keep getting notified
+            for sig in self._signals:
+                device.disconnect(sig)
+            self._signals = []
+            self._want_listen = False
 
     @Gtk.Template.Callback('_on_undo_close_clicked')
     def _on_undo_close_clicked(self, button):
