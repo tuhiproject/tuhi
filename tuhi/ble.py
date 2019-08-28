@@ -210,7 +210,7 @@ class BlueZDevice(GObject.Object):
             self.emit('connected')
             return
 
-        self.logger.info(f'Connecting')
+        self.logger.debug(f'Connecting')
         i.Connect(result_handler=self._on_connect_result)
 
     def _on_connect_result(self, obj, result, user_data):
