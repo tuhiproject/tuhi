@@ -13,8 +13,7 @@ except ValueError as e:
     sys.exit(1)
 
 gi.require_version('Gio', '2.0')  # NOQA
-gi.require_version('Gtk', '3.0')  # NOQA
-from gi.repository import Gio, Gtk, Gdk
+from gi.repository import Gio
 
 
 @devel@  # NOQA
@@ -22,61 +21,12 @@ resource = Gio.resource_load(os.fspath(Path('@pkgdatadir@', 'tuhi.gresource')))
 Gio.Resource._register(resource)
 
 
-def install_excepthook():
-    old_hook = sys.excepthook
-
-    def new_hook(etype, evalue, etb):
-        old_hook(etype, evalue, etb)
-        while Gtk.main_level():
-            Gtk.main_quit()
-        sys.exit()
-    sys.excepthook = new_hook
-
-
-def gtk_style():
-    css = b"""
-    flowboxchild:selected {
-      background-color: white;
-    }
-    .bg-white {
-      background-color: white;
-    }
-    .bg-paper {
-      border-radius: 5px;
-      background-color: #ebe9e8;
-    }
-    .drawing {
-      background-color: white;
-      border-radius: 5px;
-    }
-    """
-
-    screen = Gdk.Screen.get_default()
-    if screen is None:
-        print('Error: Unable to connect to screen. Make sure DISPLAY or WAYLAND_DISPLAY are set', file=sys.stderr)
-        sys.exit(1)
-    style_provider = Gtk.CssProvider()
-    style_provider.load_from_data(css)
-    Gtk.StyleContext.add_provider_for_screen(
-            screen,
-            style_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-            )
-
-
 if __name__ == "__main__":
     import gettext
     import locale
-    import signal
-    from tuhi.gui.application import Application
-
-    install_excepthook()
-    gtk_style()
 
     locale.bindtextdomain('tuhi', '@localedir@')
-    locale.textdomain('tuhi')
     gettext.bindtextdomain('tuhi', '@localedir@')
-    gettext.textdomain('tuhi')
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-    exit_status = Application().run(sys.argv)
-    sys.exit(exit_status)
+
+    from tuhi.gui.application import main
+    main(sys.argv)
