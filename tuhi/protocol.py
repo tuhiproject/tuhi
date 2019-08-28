@@ -144,7 +144,7 @@ def as_hex_string(data):
     elif isinstance(data, list):
         return ' '.join([f'{x:02x}' for x in data])
 
-    raise ValueError('Unsupported data format {data.__class__} for {data}')
+    raise ValueError('Unsupported data format {data.__class__.__name__} for {data}')
 
 
 def _get_protocol_dictionary(protocol):
@@ -391,7 +391,7 @@ class UnexpectedReply(ProtocolError):
         self.msg = msg
 
     def __str__(self):
-        return f'{self.__class__}: {self.msg}: {self.message}'
+        return f'{self.__class__.__name__}: {self.msg}: {self.message}'
 
 
 class UnexpectedDataError(ProtocolError):
@@ -413,7 +413,7 @@ class UnexpectedDataError(ProtocolError):
         self.bytes = bytes
 
     def __str__(self):
-        return f'{self.__class__}: {self.bytes} - {self.message}'
+        return f'{self.__class__.__name__}: {self.bytes} - {self.message}'
 
 
 class DeviceError(ProtocolError):
@@ -563,7 +563,7 @@ class Msg(object):
         return self  # allow chaining
 
     def __str__(self):
-        return f'{self.__class__}: {self.interaction} - {self.request} → {self.reply}'
+        return f'{self.__class__.__name__}: {self.interaction} - {self.request} → {self.reply}'
 
 
 class MsgConnectIntuosPro(Msg):
