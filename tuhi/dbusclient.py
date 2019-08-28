@@ -152,9 +152,9 @@ class BlueZDevice(_DBusSystemObject):
 class TuhiDBusClientDevice(_DBusObject):
     __gsignals__ = {
         'button-press-required':
-            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
         'registered':
-            (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
         'device-error':
             (GObject.SignalFlags.RUN_FIRST, None, (int,)),
     }
@@ -239,7 +239,7 @@ class TuhiDBusClientDevice(_DBusObject):
     def _on_signal_received(self, proxy, sender, signal, parameters):
         if signal == 'ButtonPressRequired':
             logger.info(f'{self}: Press button on device now')
-            self.emit('button-press-required', self)
+            self.emit('button-press-required')
         elif signal == 'ListeningStopped':
             err = parameters[0]
             if err == -errno.EACCES:
@@ -280,7 +280,7 @@ class TuhiDBusClientDevice(_DBusObject):
                 self.manager.disconnect(self.s1)
                 del(self.s1)
                 logger.info(f'{self}: Registration successful')
-                self.emit('registered', self)
+                self.emit('registered')
 
     def terminate(self):
         try:
