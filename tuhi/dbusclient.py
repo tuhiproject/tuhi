@@ -282,6 +282,23 @@ class TuhiDBusClientDevice(_DBusObject):
                 logger.info(f'{self}: Registration successful')
                 self.emit('registered')
 
+    def start_live(self, fd):
+        fd_list = Gio.UnixFDList.new()
+        fd_list.append(fd)
+
+        res, fds = self.proxy.call_with_unix_fd_list_sync('org.freedesktop.tuhi1.Device.StartLive',
+                                                          GLib.Variant('(h)', (fd,)),
+                                                          Gio.DBusCallFlags.NO_AUTO_START,
+                                                          -1,
+                                                          fd_list,
+                                                          None)
+        if res[0] == 0:
+            self.live = True
+
+    def stop_live(self):
+        self.proxy.StopLive()
+        self.live = False
+
     def terminate(self):
         try:
             self.manager.disconnect(self.s1)
