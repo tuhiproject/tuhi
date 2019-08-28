@@ -337,7 +337,7 @@ class NordicData(list):
         if self.length != len(data):
             raise UnexpectedDataError(bs, f'Invalid data: length field {self.length}, data length is {len(data)}')
 
-    def __repr__(self):
+    def __str__(self):
         return f'{self.name if self.Name else "UNKNOWN"}{self.opcode:02x} / {self.length:02x} / {as_hex_string(self)}'
 
 
@@ -361,7 +361,7 @@ class MissingReplyError(ProtocolError):
     def __init__(self, request, message=None):
         self.request = request
 
-    def __repr__(self):
+    def __str__(self):
         return f'Missing reply for request {self.request}. {self.message}'
 
 
@@ -390,7 +390,7 @@ class UnexpectedReply(ProtocolError):
         super().__init__(message)
         self.msg = msg
 
-    def __repr__(self):
+    def __str__(self):
         return f'{self.__class__}: {self.msg}: {self.message}'
 
 
@@ -412,7 +412,7 @@ class UnexpectedDataError(ProtocolError):
         super().__init__(*args, **kwargs)
         self.bytes = bytes
 
-    def __repr__(self):
+    def __str__(self):
         return f'{self.__class__}: {self.bytes} - {self.message}'
 
 
@@ -451,11 +451,8 @@ class DeviceError(ProtocolError):
         if self.errorcode == DeviceError.ErrorCode.INVALID_STATE:
             self.errno = errno.EBADE
 
-    def __repr__(self):
-        return f'DeviceError.{self.errorcode.name}'
-
     def __str__(self):
-        return repr(self)
+        return f'DeviceError.{self.errorcode.name}'
 
 
 class Msg(object):
@@ -565,7 +562,7 @@ class Msg(object):
                 raise e
         return self  # allow chaining
 
-    def __repr__(self):
+    def __str__(self):
         return f'{self.__class__}: {self.interaction} - {self.request} → {self.reply}'
 
 
@@ -1374,15 +1371,12 @@ class StrokeParsingError(ProtocolError):
         self.message = message
         self.data = data
 
-    def __repr__(self):
+    def __str__(self):
         if self.data:
             datastr = f' data: {list2hex(self.data)}'
         else:
             datastr = ''
         return f'{self.message}{datastr}'
-
-    def __str__(self):
-        return self.__repr__()
 
 
 class StrokeDataType(enum.Enum):
@@ -1636,7 +1630,7 @@ class StrokePacketUnknown(StrokePacket):
         self.size = 1 + nbytes
         self.data = data[:self.size]
 
-    def __repr__(self):
+    def __str__(self):
         return f'Unknown packet: {list2hex(self.data)}'
 
 
@@ -1672,7 +1666,7 @@ class StrokeFileHeader(StrokePacket):
         except KeyError:
             raise StrokeParsingError(f'Unknown file format:', data[:4])
 
-    def __repr__(self):
+    def __str__(self):
         t = time.strftime("%y%m%d%H%M%S", time.gmtime(self.timestamp))
         return f'FileHeader: time: {t}, stroke count: {self.nstrokes}'
 
@@ -1759,7 +1753,7 @@ class StrokeHeader(StrokePacket):
             self.pen_id = little_u64(pen_packet[:8])
             self.size += 1 + nbytes
 
-    def __repr__(self):
+    def __str__(self):
         if self.timestamp is not None:
             t = time.strftime(f'%y%m%d%H%M%S', time.gmtime(self.timestamp))
         else:
@@ -1849,7 +1843,7 @@ class StrokeDelta(object):
 
         self.size = offset
 
-    def __repr__(self):
+    def __str__(self):
         def printstring(delta, abs):
             return f'{delta:+5d}' if delta is not None \
                         else f'{abs:5d}' if abs is not None \
@@ -1888,7 +1882,7 @@ class StrokePoint(StrokeDelta):
         # self.y = little_u16(data[4:6])
         # self.pressure = little_u16(data[6:8])
 
-    def __repr__(self):
+    def __str__(self):
         return f'StrokePoint: {self.x}/{self.y} pressure: {self.p}'
 
 
@@ -1912,7 +1906,7 @@ class StrokeEndOfStroke(StrokePacket):
         self.size = nbytes + 1
         self.data = data[:self.size]
 
-    def __repr__(self):
+    def __str__(self):
         return f'EndOfStroke: {list2hex(self.data)}'
 
 
