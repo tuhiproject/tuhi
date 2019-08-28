@@ -11,18 +11,17 @@
 #  GNU General Public License for more details.
 #
 
-from gi.repository import Gio, GLib, Gtk
-import logging
-
 from .window import MainWindow
 from .config import Config
-import xdg.BaseDirectory
 from pathlib import Path
 
+import logging
+import sys
+import xdg.BaseDirectory
 import gi
 gi.require_version("Gio", "2.0")
 gi.require_version("Gtk", "3.0")
-
+from gi.repository import Gio, GLib, Gtk, Gdk  # NOQA
 
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
                     level=logging.INFO,
@@ -105,3 +104,58 @@ class Application(Gtk.Application):
     def _help(self, action, param):
         import time
         Gtk.show_uri(None, 'https://github.com/tuhiproject/tuhi/wiki', time.time())
+
+
+def install_excepthook():
+    old_hook = sys.excepthook
+
+    def new_hook(etype, evalue, etb):
+        old_hook(etype, evalue, etb)
+        while Gtk.main_level():
+            Gtk.main_quit()
+        sys.exit()
+    sys.excepthook = new_hook
+
+
+def gtk_style():
+    css = b"""
+    flowboxchild:selected {
+      background-color: white;
+    }
+    .bg-white {
+      background-color: white;
+    }
+    .bg-paper {
+      border-radius: 5px;
+      background-color: #ebe9e8;
+    }
+    .drawing {
+      background-color: white;
+      border-radius: 5px;
+    }
+    """
+
+    screen = Gdk.Screen.get_default()
+    if screen is None:
+        print('Error: Unable to connect to screen. Make sure DISPLAY or WAYLAND_DISPLAY are set', file=sys.stderr)
+        sys.exit(1)
+    style_provider = Gtk.CssProvider()
+    style_provider.load_from_data(css)
+    Gtk.StyleContext.add_provider_for_screen(screen,
+                                             style_provider,
+                                             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+
+def main(argv):
+    import gettext
+    import locale
+    import signal
+
+    install_excepthook()
+    gtk_style()
+
+    locale.textdomain('tuhi')
+    gettext.textdomain('tuhi')
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    exit_status = Application().run(argv)
+    sys.exit(exit_status)
