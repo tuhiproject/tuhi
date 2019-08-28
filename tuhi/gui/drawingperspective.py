@@ -55,7 +55,7 @@ class Flowbox(Gtk.Box):
                 self.flowbox_drawings.remove(child)
         self.flowbox_drawings.foreach(delete_matching_child, drawing)
 
-    @GObject.property
+    @GObject.Property
     def is_empty(self):
         return not self.flowbox_drawings.get_children()
 

@@ -69,7 +69,7 @@ class Config(GObject.Object):
         self.config[section][key] = value
         self._write()
 
-    @GObject.property
+    @GObject.Property
     def orientation(self):
         try:
             return self.config['Device']['Orientation']
@@ -81,7 +81,7 @@ class Config(GObject.Object):
         assert(orientation in ['landscape', 'portrait'])
         self._add_key('Device', 'Orientation', orientation)
 
-    @GObject.property
+    @GObject.Property
     def drawings(self):
         return self._drawings
 
