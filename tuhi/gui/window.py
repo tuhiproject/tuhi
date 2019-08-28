@@ -100,13 +100,13 @@ class SetupDialog(Gtk.Dialog):
         self._sig = device.connect('button-press-required', self._on_button_press_required)
         device.register()
 
-    def _on_button_press_required(self, tuhi, device):
+    def _on_button_press_required(self, device):
         device.disconnect(self._sig)
 
         self.stack.set_visible_child_name('page2')
         self._sig = device.connect('registered', self._on_registered)
 
-    def _on_registered(self, tuhi, device):
+    def _on_registered(self, device):
         device.disconnect(self._sig)
         self.device = device
         self.response(Gtk.ResponseType.OK)
