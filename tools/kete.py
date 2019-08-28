@@ -39,9 +39,6 @@ except ModuleNotFoundError:
     from tuhi.svg import JsonSvg
     import tuhi.dbusclient
 
-    # get those into our namespace for tuhi-live's beneft
-    from tuhi.dbusclient import TUHI_DBUS_NAME, ROOT_PATH, ORG_FREEDESKTOP_TUHI1_MANAGER
-
 
 CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi-kete')
 

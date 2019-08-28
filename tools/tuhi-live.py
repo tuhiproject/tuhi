@@ -19,6 +19,16 @@ import sys
 import multiprocessing
 from multiprocessing import reduction
 
+try:
+    import tuhi.dbusclient
+except ModuleNotFoundError:
+    # If PYTHONPATH isn't set up or we never installed Tuhi, the module
+    # isn't available. And since we don't install tuhi-live, we can assume that
+    # we're still in the git repo, so messing with the path is "fine".
+    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + '/..')  # noqa
+    import tuhi.dbusclient
+
+
 manager = None
 logger = None
 
@@ -84,7 +94,7 @@ def start_tuhi_server(args):
     except GLib.Error as e:
         if (e.domain == 'g-io-error-quark' and
                 e.code == Gio.IOErrorEnum.DBUS_ERROR):
-            raise kete.DBusError(e.message)
+            raise tuhi.dbusclient.DBusError(e.message)
         else:
             raise e
 
@@ -93,33 +103,32 @@ def start_tuhi_server(args):
     try:
         proxy = Gio.DBusProxy.new_sync(connection,
                                        Gio.DBusProxyFlags.NONE, None,
-                                       kete.TUHI_DBUS_NAME,
-                                       kete.ROOT_PATH,
-                                       kete.ORG_FREEDESKTOP_TUHI1_MANAGER,
+                                       tuhi.dbusclient.TUHI_DBUS_NAME,
+                                       tuhi.dbusclient.ROOT_PATH,
+                                       tuhi.dbusclient.ORG_FREEDESKTOP_TUHI1_MANAGER,
                                        None)
     except GLib.Error as e:
         if (e.domain == 'g-io-error-quark' and
                 e.code == Gio.IOErrorEnum.DBUS_ERROR):
-            raise kete.DBusError(e.message)
+            raise tuhi.dbusclient.DBusError(e.message)
         else:
             raise e
 
     started = proxy.get_name_owner() is not None
 
     if not started:
-        print(f'No-one is handling {kete.TUHI_DBUS_NAME}, attempting to start a daemon')
+        print(f'No-one is handling {tuhi.dbusclient.TUHI_DBUS_NAME}, attempting to start a daemon')
 
     queue.put((not started, args.verbose))
 
 
 def run_live(request_fd_queue, conn_fd):
-    import kete
     from gi.repository import Gio, GLib
 
     def on_name_appeared(connection, name, client):
         global manager
         logger.info('Connected to the Tuhi daemon')
-        manager = kete.TuhiKeteManager()
+        manager = tuhi.dbusclient.TuhiDBusClientManager()
 
         for device in manager.devices:
             logger.info(f'starting live on {device}, please press button on the device')
@@ -128,7 +137,7 @@ def run_live(request_fd_queue, conn_fd):
             device.start_live(fd)
 
     Gio.bus_watch_name(Gio.BusType.SESSION,
-                       kete.TUHI_DBUS_NAME,
+                       tuhi.dbusclient.TUHI_DBUS_NAME,
                        Gio.BusNameWatcherFlags.NONE,
                        on_name_appeared,
                        None)
