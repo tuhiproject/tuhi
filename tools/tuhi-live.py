@@ -56,14 +56,11 @@ def maybe_start_tuhi(queue):
     sys.path.append(os.getcwd())
 
     import tuhi.base
+    args = []
     if verbose:
-        tuhi.base.logger.setLevel(logging.DEBUG)
-    t = tuhi.base.Tuhi()
-    while True:
-        try:
-            t.run()
-        except KeyboardInterrupt:
-            pass
+        args.append('--verbose')
+
+    tuhi.base.main(args)
 
 
 def start_tuhi_server(args):
