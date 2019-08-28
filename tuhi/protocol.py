@@ -338,7 +338,7 @@ class NordicData(list):
             raise UnexpectedDataError(bs, f'Invalid data: length field {self.length}, data length is {len(data)}')
 
     def __str__(self):
-        return f'{self.name if self.Name else "UNKNOWN"}{self.opcode:02x} / {self.length:02x} / {as_hex_string(self)}'
+        return f'{self.name if self.name else "UNKNOWN"}{self.opcode:02x} / {self.length:02x} / {as_hex_string(self)}'
 
 
 class ProtocolError(Exception):
