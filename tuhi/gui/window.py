@@ -244,6 +244,7 @@ class MainWindow(Gtk.ApplicationWindow):
             # register.
             for sig in self._signals:
                 device.disconnect(sig)
+            self._signals = []
 
     def _add_perspective(self, perspective):
         self.stack_perspectives.add_named(perspective, perspective.name)
