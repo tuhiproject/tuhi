@@ -810,8 +810,8 @@ class WacomProtocolSlate(WacomProtocolSpark):
             # Here, we read real tablet dimensions before
             # starting live mode
             self.update_dimensions()
-            self.x_max = self.width - 1000
-            self.y_max = self.height - 500
+            self.x_max = int(self.width / self.point_size) - 1000
+            self.y_max = int(self.height / self.point_size) - 500
 
         return super().live_mode(mode, uhid)
 
