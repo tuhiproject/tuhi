@@ -14,6 +14,7 @@
 import sys
 import subprocess
 from pathlib import Path
+import argparse
 
 tuhi_server = Path('@libexecdir@', 'tuhi-server')
 tuhi_gui = Path('@libexecdir@', 'tuhi-gui')
@@ -25,10 +26,24 @@ if __name__ == '__main__':
     if sys.version_info < (3, 6):
         sys.exit('Python 3.6 or later required')
 
-    args = sys.argv[1:]
-    tuhi = subprocess.Popen([tuhi_server] + args)
+    parser = argparse.ArgumentParser(description='Tuhi')
+    parser.add_argument('--flatpak-compatibility-mode',
+                        help='Use the flatpak xdg directories',
+                        action='store_true',
+                        default=False)
+    ns, remainder = parser.parse_known_args()
+    if ns.flatpak_compatibility_mode:
+        import os
+
+        basedir = Path.home() / '.var' / 'app' / 'org.freedesktop.Tuhi'
+        print(f'Using flatpak xdg dirs in {basedir}')
+        os.environ['XDG_DATA_HOME'] = os.fspath(basedir / 'data')
+        os.environ['XDG_CONFIG_HOME'] = os.fspath(basedir / 'config')
+        os.environ['XDG_CACHE_HOME'] = os.fspath(basedir / 'cache')
+
+    tuhi = subprocess.Popen([tuhi_server] + remainder)
     try:
-        subprocess.run([tuhi_gui] + args)
+        subprocess.run([tuhi_gui] + remainder)
     except KeyboardInterrupt:
         pass
     tuhi.terminate()
