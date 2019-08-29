@@ -142,8 +142,6 @@ def run_live(request_fd_queue, conn_fd):
 
     mainloop = GLib.MainLoop()
 
-    connected_devices = 0
-
     def on_disconnect(dev, pspec):
         mainloop.quit()
 
@@ -154,10 +152,6 @@ def run_live(request_fd_queue, conn_fd):
     except KeyboardInterrupt:
         pass
     finally:
-        for device in manager.devices:
-            if device.live:
-                connected_devices += 1
-
         for device in manager.devices:
             if device.live and device.connected:
                 logger.info(f'stopping live on {device}')
