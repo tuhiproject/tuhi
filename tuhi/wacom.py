@@ -1028,7 +1028,7 @@ class WacomDevice(GObject.Object):
 
         mode = args[0]
 
-        logger.debug(f'{self._device.address}: starting')
+        logger.debug(f'{self._device.address}: starting for mode {mode.name}')
         self._is_running = True
         exception = None
         try:
