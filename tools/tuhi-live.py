@@ -126,6 +126,9 @@ def run_live(request_fd_queue, conn_fd):
         manager = tuhi.dbusclient.TuhiDBusClientManager()
 
         for device in manager.devices:
+            if device.live:
+                logger.info(f'{device} is already live, stopping first')
+                device.stop_live()
             logger.info(f'starting live on {device}, please press button on the device')
             request_fd_queue.put(os.getpid())
             fd = reduction.recv_handle(conn_fd)
