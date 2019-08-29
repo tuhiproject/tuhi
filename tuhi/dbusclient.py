@@ -209,6 +209,10 @@ class TuhiDBusClientDevice(_DBusObject):
     def sync_state(self):
         return self._sync_state
 
+    @GObject.Property
+    def live(self):
+        return self.property('Live')
+
     def _on_connected(self, bluez_device, pspec):
         self.notify('connected')
 
@@ -266,6 +270,8 @@ class TuhiDBusClientDevice(_DBusObject):
             self.notify('battery-percent')
         elif 'BatteryState' in changed_props:
             self.notify('battery-state')
+        elif 'Live' in changed_props:
+            self.notify('live')
 
     def __repr__(self):
         return f'{self.address} - {self.name}'
@@ -292,12 +298,9 @@ class TuhiDBusClientDevice(_DBusObject):
                                                           -1,
                                                           fd_list,
                                                           None)
-        if res[0] == 0:
-            self.live = True
 
     def stop_live(self):
         self.proxy.StopLive()
-        self.live = False
 
     def terminate(self):
         try:
