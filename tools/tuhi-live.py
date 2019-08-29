@@ -56,6 +56,12 @@ def maybe_start_tuhi(queue):
     sys.path.append(os.getcwd())
 
     import tuhi.base
+    import signal
+
+    # we don't want to kill Tuhi on ctrl+c because we won't be able to reset
+    # live mode. Instead we rely on tuhi-live to take us down when it exits
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     args = ['tuhi-live']  # argparse in tuhi.base.main skips argv[0]
     if verbose:
         args.append('--verbose')
