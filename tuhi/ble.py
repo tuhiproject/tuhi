@@ -234,7 +234,7 @@ class BlueZDevice(GObject.Object):
             self.emit('disconnected')
             return
 
-        self.logger.info(f'Disconnecting')
+        self.logger.debug(f'Disconnecting')
         i.Disconnect(result_handler=self._on_disconnect_result)
 
     def _on_disconnect_result(self, obj, result, user_data):
@@ -246,9 +246,9 @@ class BlueZDevice(GObject.Object):
 
         if 'Connected' in properties:
             if properties['Connected']:
-                self.logger.info('Connection established')
+                self.logger.debug('Connection established')
             else:
-                self.logger.info('Disconnected')
+                self.logger.debug('Disconnected')
                 self.emit('disconnected')
         if 'ServicesResolved' in properties:
             if properties['ServicesResolved']:
