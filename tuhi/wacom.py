@@ -805,12 +805,13 @@ class WacomProtocolSlate(WacomProtocolSpark):
                                   self._on_sysevent_data_received)
 
     def live_mode(self, mode, uhid):
-        # Slate tablet has two models A5 and A4
-        # Here, we read real tablet dimensions before
-        # starting live mode
-        self.update_dimensions()
-        self.x_max = self.width - 1000
-        self.y_max = self.height - 500
+        if mode:
+            # Slate tablet has two models A5 and A4
+            # Here, we read real tablet dimensions before
+            # starting live mode
+            self.update_dimensions()
+            self.x_max = self.width - 1000
+            self.y_max = self.height - 500
 
         return super().live_mode(mode, uhid)
 
