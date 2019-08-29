@@ -56,7 +56,7 @@ def maybe_start_tuhi(queue):
     sys.path.append(os.getcwd())
 
     import tuhi.base
-    args = []
+    args = ['tuhi-live']  # argparse in tuhi.base.main skips argv[0]
     if verbose:
         args.append('--verbose')
 
