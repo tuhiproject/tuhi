@@ -22,6 +22,9 @@ tuhi_gui = Path('@libexecdir@', 'tuhi-gui')
 @devel@  # NOQA
 
 if __name__ == '__main__':
+    if sys.version_info < (3, 6):
+        sys.exit('Python 3.6 or later required')
+
     args = sys.argv[1:]
     tuhi = subprocess.Popen([tuhi_server] + args)
     try:
