@@ -8,10 +8,8 @@ data/ui/ErrorPerspective.ui
 data/ui/MainWindow.ui
 data/ui/SetupPerspective.ui
 
-tuhigui/application.py
-tuhigui/config.py
-tuhigui/drawing.py
-tuhigui/drawingperspective.py
-tuhigui/svg.py
-tuhigui/tuhi.py
-tuhigui/window.py
+tuhi/gui/application.py
+tuhi/gui/config.py
+tuhi/gui/drawing.py
+tuhi/gui/drawingperspective.py
+tuhi/gui/window.py
