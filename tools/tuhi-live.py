@@ -46,7 +46,7 @@ def open_uhid_process(queue_in, conn_out):
 
 def maybe_start_tuhi(queue):
     try:
-        should_start, verbose = queue.get()
+        should_start, args = queue.get()
     except KeyboardInterrupt:
         return 0
 
@@ -62,9 +62,7 @@ def maybe_start_tuhi(queue):
     # live mode. Instead we rely on tuhi-live to take us down when it exits
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    args = ['tuhi-live']  # argparse in tuhi.base.main skips argv[0]
-    if verbose:
-        args.append('--verbose')
+    args = ['tuhi-live'] + args  # argparse in tuhi.base.main skips argv[0]
 
     tuhi.base.main(args)
 
@@ -120,7 +118,7 @@ def start_tuhi_server(args):
     if not started:
         print(f'No-one is handling {tuhi.dbusclient.TUHI_DBUS_NAME}, attempting to start a daemon')
 
-    queue.put((not started, args.verbose))
+    queue.put((not started, args))
 
 
 def run_live(request_fd_queue, conn_fd):
@@ -193,21 +191,16 @@ def drop_privileges():
 
 
 def parse(args):
-    desc = 'tool to start the live mode on all devices tuhi knows about'
-    parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('-v', '--verbose',
-                        help='Show some debugging informations',
-                        action='store_true',
-                        default=False)
-
-    return parser.parse_args(args[1:])
+    parser = argparse.ArgumentParser(description='Tool to start live mode')
+    ns, remaining_args = parser.parse_known_args(args[1:])
+    return ns, remaining_args
 
 
 def main(args=sys.argv):
     if not os.geteuid() == 0:
         sys.exit('Script must be run as root')
 
-    args = parse(args)
+    our_args, remaining_args = parse(args)
 
     request_fd_queue = multiprocessing.Queue()
     conn_in, conn_out = multiprocessing.Pipe()
@@ -218,7 +211,7 @@ def main(args=sys.argv):
 
     drop_privileges()
 
-    start_tuhi_server(args)
+    start_tuhi_server(remaining_args)
     run_live(request_fd_queue, conn_in)
 
 
