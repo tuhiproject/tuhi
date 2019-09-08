@@ -2,6 +2,7 @@ data/org.freedesktop.Tuhi.appdata.xml.in.in
 data/org.freedesktop.Tuhi.desktop.in
 
 data/ui/AboutDialog.ui.in
+data/ui/AppMenu.ui
 data/ui/Drawing.ui
 data/ui/DrawingPerspective.ui
 data/ui/ErrorPerspective.ui

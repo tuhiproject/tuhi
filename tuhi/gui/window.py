@@ -24,36 +24,6 @@ from gi.repository import Gtk, Gio, GLib, GObject  # NOQA
 
 logger = logging.getLogger('tuhi.gui.window')
 
-MENU_XML = """
-<?xml version="1.0" encoding="UTF-8"?>
-<interface>
-  <menu id="primary-menu">
-  <section>
-      <item>
-        <attribute name="label" translatable="yes">Portrait</attribute>
-        <attribute name="action">win.orientation</attribute>
-        <attribute name="target">portrait</attribute>
-      </item>
-      <item>
-        <attribute name="label" translatable="yes">Landscape</attribute>
-        <attribute name="action">win.orientation</attribute>
-        <attribute name="target">landscape</attribute>
-      </item>
-  </section>
-  <section>
-      <item>
-        <attribute name="label" translatable="yes">Help</attribute>
-        <attribute name="action">app.help</attribute>
-      </item>
-      <item>
-        <attribute name="label" translatable="yes">About</attribute>
-        <attribute name="action">app.about</attribute>
-      </item>
-    </section>
-  </menu>
-</interface>
-"""
-
 
 @Gtk.Template(resource_path="/org/freedesktop/Tuhi/ui/ErrorPerspective.ui")
 class ErrorPerspective(Gtk.Box):
@@ -140,7 +110,7 @@ class MainWindow(Gtk.ApplicationWindow):
         action.set_state(GLib.Variant.new_string(Config().orientation))
         self.add_action(action)
 
-        builder = Gtk.Builder.new_from_string(MENU_XML, -1)
+        builder = Gtk.Builder.new_from_resource('/org/freedesktop/Tuhi/ui/AppMenu.ui')
         menu = builder.get_object("primary-menu")
         self.menubutton1.set_menu_model(menu)
 
