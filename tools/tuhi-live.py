@@ -192,6 +192,11 @@ def drop_privileges():
 
 def parse(args):
     parser = argparse.ArgumentParser(description='Tool to start live mode')
+    parser.add_argument('--flatpak-compatibility-mode',
+                        help='Use the flatpak xdg directories',
+                        action='store_true',
+                        default=False)
+
     ns, remaining_args = parser.parse_known_args(args[1:])
     return ns, remaining_args
 
@@ -201,7 +206,6 @@ def main(args=sys.argv):
         sys.exit('Script must be run as root')
 
     our_args, remaining_args = parse(args)
-
     request_fd_queue = multiprocessing.Queue()
     conn_in, conn_out = multiprocessing.Pipe()
 
@@ -210,6 +214,18 @@ def main(args=sys.argv):
     fd_process.start()
 
     drop_privileges()
+
+    if our_args.flatpak_compatibility_mode:
+        from pathlib import Path
+
+        # tuhi-live is usually started through sudo, so let's get to the
+        # user's home directory here.
+        userhome = Path(os.path.expanduser('~' + os.getlogin()))
+        basedir = userhome / '.var' / 'app' / 'org.freedesktop.Tuhi'
+        print(f'Using flatpak xdg dirs in {basedir}')
+        os.environ['XDG_DATA_HOME'] = os.fspath(basedir / 'data')
+        os.environ['XDG_CONFIG_HOME'] = os.fspath(basedir / 'config')
+        os.environ['XDG_CACHE_HOME'] = os.fspath(basedir / 'cache')
 
     start_tuhi_server(remaining_args)
     run_live(request_fd_queue, conn_in)
