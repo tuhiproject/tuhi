@@ -35,7 +35,6 @@ python_modules = [
     'svgwrite',
     'xdg',
     'gi',
-    'yaml',
     'cairo',
 ]
 if meson.version().version_compare('>=0.51')
