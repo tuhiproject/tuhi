@@ -1,0 +1,208 @@
+# Polish translation for tuhi.
+# Copyright © 2019 the tuhi authors.
+# This file is distributed under the same license as the tuhi package.
+# Piotr Drąg <piotrdrag@gmail.com>, 2019.
+# Aviary.pl <community-poland@mozilla.org>, 2019.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: tuhi\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-09-15 12:38+0200\n"
+"PO-Revision-Date: 2019-09-15 12:55+0200\n"
+"Last-Translator: Piotr Drąg <piotrdrag@gmail.com>\n"
+"Language-Team: Polish <community-poland@mozilla.org>\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
+"|| n%100>=20) ? 1 : 2);\n"
+
+#: data/org.freedesktop.Tuhi.appdata.xml.in.in:7
+#: data/org.freedesktop.Tuhi.desktop.in:3
+msgid "Tuhi"
+msgstr "Tuhi"
+
+#: data/org.freedesktop.Tuhi.appdata.xml.in.in:8
+#: data/org.freedesktop.Tuhi.desktop.in:4
+msgid "Utility to download drawings from the Wacom Ink range of devices"
+msgstr "Narzędzie do pobierania rysunków z rodziny urządzeń Wacom Ink"
+
+#: data/org.freedesktop.Tuhi.appdata.xml.in.in:10
+msgid ""
+"Tuhi is a graphical user interface to download drawings stored on tablet "
+"devices from the Wacom Ink range, e.g. Intuos Pro Paper or Bamboo Slate."
+msgstr ""
+"Tuhi to graficzny interfejs użytkownika do pobierania rysunków "
+"przechowywanych na tabletach z rodziny Wacom Ink, np. Intuos Pro Paper "
+"i Bamboo Slate."
+
+#: data/org.freedesktop.Tuhi.appdata.xml.in.in:15
+msgid ""
+"Tuhi requires Tuhi, the daemon to actually communicate with the devices. "
+"ThiGui is merely a front end to Tuhi, Tuhi must be installed and running "
+"when Tuhi is launched."
+msgstr ""
+"TuhiGUI wymaga Tuhi, usługi komunikującej się z urządzeniem. TuhiGUI to "
+"interfejs dla usługi Tuhi, która musi być zainstalowana i uruchomiona, aby "
+"narzędzie Tuhi mogło działać."
+
+#: data/org.freedesktop.Tuhi.appdata.xml.in.in:32
+msgid "Tuhi's main window"
+msgstr "Główne okno Tuhi"
+
+#: data/org.freedesktop.Tuhi.appdata.xml.in.in:36
+msgid "Tuhi's main window (zoomed)"
+msgstr "Główne okno Tuhi (powiększone)"
+
+#. Translators: Do NOT translate or transliterate this text (this is an icon file name)!
+#: data/org.freedesktop.Tuhi.desktop.in:7
+msgid "org.freedesktop.Tuhi"
+msgstr "org.freedesktop.Tuhi"
+
+#. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
+#: data/org.freedesktop.Tuhi.desktop.in:12
+msgid "tablet;wacom;ink;"
+msgstr "tablet;wacom;ink;"
+
+#: data/ui/AboutDialog.ui.in:13
+msgid "Visit Tuhi’s website"
+msgstr "Witryna programu Tuhi"
+
+#: data/ui/AppMenu.ui:5
+msgid "Portrait"
+msgstr "Pionowo"
+
+#: data/ui/AppMenu.ui:10
+msgid "Landscape"
+msgstr "Poziomo"
+
+#: data/ui/AppMenu.ui:17
+msgid "Help"
+msgstr "Pomoc"
+
+#: data/ui/AppMenu.ui:21
+msgid "About"
+msgstr "O programie"
+
+#: data/ui/DrawingPerspective.ui:68
+msgid "Undo delete drawing"
+msgstr "Cofnij usunięcie rysunku"
+
+#: data/ui/DrawingPerspective.ui:132
+msgid "Press the button on the device to synchronize drawings"
+msgstr "Proszę nacisnąć przycisk na urządzeniu, aby zsynchronizować rysunki"
+
+#: data/ui/DrawingPerspective.ui:143 data/ui/SetupPerspective.ui:121
+msgid "page0"
+msgstr "strona 0"
+
+#: data/ui/ErrorPerspective.ui:21
+msgid ""
+"TuhiGUI is an interactive GUI to download data from Tuhi.\n"
+"\n"
+"Tuhi connects to tablets of the Wacom Ink range. It allows you to download "
+"the drawings stored on those devices as SVGs for processing later.\n"
+"\n"
+"Tuhi is a DBus server that needs to be running for the Tuhi GUI to connect "
+"to it. Connecting to the DBus server should take less than a second. If you "
+"read this far, your Tuhi DBus server is not running or responsing and needs "
+"to be restarted."
+msgstr ""
+"TuhiGUI to interaktywny interfejs użytkownika do pobierania danych z usługi "
+"Tuhi.\n"
+"\n"
+"Tuhi łączy się z tabletami z rodziny Wacom Ink. Umożliwia pobieranie obrazów "
+"przechowywanych na tych urządzeniach jako pliki SVG do przetwarzania "
+"w późniejszym czasie.\n"
+"\n"
+"Tuhi to serwer D-Bus, który musi być uruchomiony, aby interfejs Tuhi mógł "
+"się z nim połączyć. Połączenie z serwerem D-Bus powinno zająć mniej niż "
+"sekundę. Jeśli jeszcze czytasz ten tekst, to znaczy że serwer D-Bus Tuhi nie "
+"jest uruchomiony lub nie odpowiada i wymaga ponownego uruchomienia."
+
+#: data/ui/ErrorPerspective.ui:69
+msgid "Connecting to Tuhi"
+msgstr "Łączenie z usługą Tuhi"
+
+#: data/ui/ErrorPerspective.ui:96
+msgid ""
+"This should take less than a second. Make sure the Tuhi DBus server is "
+"running."
+msgstr ""
+"To powinno zająć mniej niż sekundę. Proszę się upewnić, że serwer D-Bus Tuhi "
+"jest uruchomiony."
+
+#: data/ui/MainWindow.ui:166
+msgid "Authorization error while connecting to the device "
+msgstr "Błąd upoważnienia podczas łączenia z urządzeniem "
+
+#: data/ui/MainWindow.ui:176
+msgid "Register"
+msgstr "Zarejestruj"
+
+#: data/ui/SetupPerspective.ui:7
+msgid "Initial Device Setup"
+msgstr "Pierwsza konfiguracja urządzenia"
+
+#: data/ui/SetupPerspective.ui:30
+msgid "Quit"
+msgstr "Zakończ"
+
+#: data/ui/SetupPerspective.ui:70
+msgid "Hold the button on the device until the blue light is flashing."
+msgstr ""
+"Proszę przytrzymać przycisk na urządzeniu, aż niebieska dioda zacznie migać."
+
+#: data/ui/SetupPerspective.ui:103
+msgid "Searching for device"
+msgstr "Wyszukiwanie urządzenia"
+
+#: data/ui/SetupPerspective.ui:137
+msgid "Connecting to LE Paper"
+msgstr "Łączenie z LE Paper"
+
+#: data/ui/SetupPerspective.ui:170
+msgid "Connecting to device..."
+msgstr "Łączenie z urządzeniem…"
+
+#: data/ui/SetupPerspective.ui:188
+msgid "page1"
+msgstr "1. strona"
+
+#: data/ui/SetupPerspective.ui:206
+msgid "Press the button on the device now!"
+msgstr "Proszę teraz nacisnąć przycisk na urządzeniu."
+
+#: data/ui/SetupPerspective.ui:240
+msgid "waiting for reply"
+msgstr "oczekiwanie na odpowiedź"
+
+#: data/ui/SetupPerspective.ui:258
+msgid "page2"
+msgstr "2. strona"
+
+#: tuhi/gui/drawing.py:100
+msgid "Please choose a file"
+msgstr "Proszę wybrać plik"
+
+#. Translators: the default filename to save to
+#: tuhi/gui/drawing.py:108
+msgid "untitled.svg"
+msgstr "bez tytułu.svg"
+
+#. Translators: filter name to show all/any files
+#: tuhi/gui/drawing.py:112
+msgid "Any files"
+msgstr "Wszystkie pliki"
+
+#. Translators: filter to show svg files only
+#: tuhi/gui/drawing.py:116
+msgid "SVG files"
+msgstr "Pliki SVG"
+
+#: tuhi/gui/window.py:68
+#, python-brace-format
+msgid "Connecting to {device.name}"
+msgstr "Łączenie z urządzeniem {device.name}"
