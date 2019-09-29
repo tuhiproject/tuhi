@@ -17,14 +17,16 @@ import xdg.BaseDirectory
 import os
 from pathlib import Path
 from .config import Config
-from tuhi.svg import JsonSvg
+from tuhi.export import JsonSvg, JsonPng
 
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GObject, Gtk, GdkPixbuf, Gdk  # NOQA
 
 
-DATA_PATH = Path(xdg.BaseDirectory.xdg_cache_home, 'tuhi', 'svg')
+DATA_PATH = Path(xdg.BaseDirectory.xdg_cache_home, 'tuhi')
+SVG_DATA_PATH = Path(DATA_PATH, 'svg')
+PNG_DATA_PATH = Path(DATA_PATH, 'png')
 
 
 @Gtk.Template(resource_path='/org/freedesktop/Tuhi/ui/Drawing.ui')
@@ -40,7 +42,8 @@ class Drawing(Gtk.EventBox):
         super().__init__()
         self.orientation = Config().orientation
         Config().connect('notify::orientation', self._on_orientation_changed)
-        DATA_PATH.mkdir(parents=True, exist_ok=True)
+        SVG_DATA_PATH.mkdir(parents=True, exist_ok=True)
+        PNG_DATA_PATH.mkdir(parents=True, exist_ok=True)
 
         self.json_data = json_data
         self._zoom = zoom
@@ -56,8 +59,12 @@ class Drawing(Gtk.EventBox):
         self.redraw()
 
     def process_svg(self):
-        path = os.fspath(Path(DATA_PATH, f'{self.json_data["timestamp"]}.svg'))
-        self.svg = JsonSvg(self.json_data, self.orientation, path)
+        path = os.fspath(Path(SVG_DATA_PATH, f'{self.json_data["timestamp"]}.svg'))
+        self.svg = JsonSvg(
+            self.json_data,
+            self.orientation,
+            path
+        )
         width, height = -1, -1
         if 'portrait' in self.orientation:
             height = 1000
@@ -67,6 +74,14 @@ class Drawing(Gtk.EventBox):
                                                               width=width,
                                                               height=height,
                                                               preserve_aspect_ratio=True)
+
+    def process_png(self):
+        path = os.fspath(Path(PNG_DATA_PATH, f'{self.json_data["timestamp"]}.png'))
+        self.png = JsonPng(
+            self.json_data,
+            self.orientation,
+            path
+        )
 
     def redraw(self):
         ratio = self.pixbuf.get_height() / self.pixbuf.get_width()
@@ -115,21 +130,33 @@ class Drawing(Gtk.EventBox):
         # Translators: filter to show svg files only
         filter_svg.set_name(_('SVG files'))
         filter_svg.add_pattern('*.svg')
+        filter_png = Gtk.FileFilter()
+        # Translators: filter to show png files only
+        filter_png.set_name(_('PNG files'))
+        filter_png.add_pattern('*.png')
         dialog.add_filter(filter_svg)
+        dialog.add_filter(filter_png)
         dialog.add_filter(filter_any)
 
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             import shutil
 
-            # regenerate the SVG based on the current rotation.
-            # where we used the orientation buttons, we haven't updated the
-            # file itself.
-            self.process_svg()
-
             file = dialog.get_filename()
-            shutil.copyfile(self.svg.filename, file)
-            # FIXME: error handling
+
+            if file.lower().endswith('.png'):
+                # regenerate the PNG based on the current rotation.
+                # where we used the orientation buttons, we haven't updated the
+                # file itself.
+                self.process_png()
+                shutil.move(self.png.filename, file)
+            else:
+                # regenerate the SVG based on the current rotation.
+                # where we used the orientation buttons, we haven't updated the
+                # file itself.
+                self.process_svg()
+                shutil.copyfile(self.svg.filename, file)
+                # FIXME: error handling
 
         dialog.destroy()
 

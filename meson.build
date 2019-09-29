@@ -36,6 +36,7 @@ python_modules = [
     'xdg',
     'gi',
     'yaml',
+    'cairo',
 ]
 if meson.version().version_compare('>=0.51')
     py3 = pymod.find_installation(modules: python_modules)
