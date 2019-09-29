@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + '/..')  # noqa
 from tuhi.util import flatten
 from tuhi.drawing import Drawing
 from tuhi.protocol import StrokeFile
-from tuhi.svg import JsonSvg
+from tuhi.export import JsonSvg, JsonPng
 from tuhi.wacom import WacomProtocolSpark, WacomProtocolIntuosPro, WacomProtocolSlate
 
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
@@ -68,6 +68,7 @@ def parse_file(filename, file_format, tablet_model, orientation):
         # gotta convert to Drawings, then to json string, then to json, then
         # to svg. ffs.
         svgname = f'{stem}.svg'
+        pngname = f'{stem}.png'
         jsonname = f'{stem}.json'
         d = Drawing(svgname, (width * point_size, height * point_size), timestamp)
 
@@ -85,10 +86,13 @@ def parse_file(filename, file_format, tablet_model, orientation):
             with open(jsonname, 'w') as fd:
                 fd.write(d.to_json())
             return
-
-        from io import StringIO
-        js = json.load(StringIO(d.to_json()))
-        JsonSvg(js, orientation, d.name)
+        else:
+            from io import StringIO
+            js = json.load(StringIO(d.to_json()))
+            if file_format == 'svg':
+                JsonSvg(js, orientation, d.name)
+            elif file_format == 'png':
+                JsonPng(js, orientation, pngname)
 
 
 def fetch_files():
@@ -142,7 +146,7 @@ def main(args=sys.argv):
     parser.add_argument('--format',
                         help='The format to generate. Default: svg',
                         default='svg',
-                        choices=['svg', 'json'])
+                        choices=['svg', 'png', 'json'])
 
     ns = parser.parse_args(args[1:])
     if ns.verbose:

@@ -29,14 +29,14 @@ import configparser
 from pathlib import Path
 
 try:
-    from tuhi.svg import JsonSvg
+    from tuhi.export import JsonSvg, JsonPng
     import tuhi.dbusclient
 except ModuleNotFoundError:
     # If PYTHONPATH isn't set up or we never installed Tuhi, the module
     # isn't available. And since we don't install kete, we can assume that
     # we're still in the git repo, so messing with the path is "fine".
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + '/..')  # noqa
-    from tuhi.svg import JsonSvg
+    from tuhi.export import JsonSvg, JsonPng
     import tuhi.dbusclient
 
 
@@ -289,6 +289,7 @@ class Fetcher(Worker):
         super(Fetcher, self).__init__(manager)
         self.device = None
         self.timestamps = None
+        self.format = args.format
         address = args.address
         index = args.index
 
@@ -326,8 +327,12 @@ class Fetcher(Worker):
             data = json.loads(jsondata)
             t = time.localtime(data['timestamp'])
             t = time.strftime('%Y-%m-%d-%H-%M', t)
-            path = f'{data["devicename"]}-{t}.svg'
-            JsonSvg(data, self.orientation, filename=path)
+            if self.format == 'png':
+                path = f'{data["devicename"]}-{t}.png'
+                JsonPng(data, self.orientation, filename=path)
+            else:
+                path = f'{data["devicename"]}-{t}.svg'
+                JsonSvg(data, self.orientation, filename=path)
             logger.info(f'{data["devicename"]}: saved file "{path}"')
 
 
@@ -699,6 +704,9 @@ class TuhiKeteShell(cmd.Cmd):
                             type=is_index_or_all,
                             const='all', nargs='?', default='all',
                             help='the index of the drawing to fetch or a literal "all"')
+        parser.add_argument('--format', metavar='{svg|png}',
+                            default='svg',
+                            help='output file format')
 
         try:
             parsed_args = parser.parse_args(args.split())
