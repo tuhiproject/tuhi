@@ -11,7 +11,6 @@
 #  GNU General Public License for more details.
 #
 
-import os.path
 from gi.repository import GObject
 import svgwrite
 from svgwrite import mm
