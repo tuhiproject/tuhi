@@ -706,6 +706,7 @@ class TuhiKeteShell(cmd.Cmd):
                             help='the index of the drawing to fetch or a literal "all"')
         parser.add_argument('--format', metavar='{svg|png}',
                             default='svg',
+                            choices=['svg', 'png'],
                             help='output file format')
 
         try:
