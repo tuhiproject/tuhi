@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tuhi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-09-15 12:38+0200\n"
-"PO-Revision-Date: 2019-09-15 12:55+0200\n"
+"POT-Creation-Date: 2019-10-24 16:22+0200\n"
+"PO-Revision-Date: 2019-10-24 16:23+0200\n"
 "Last-Translator: Piotr Drąg <piotrdrag@gmail.com>\n"
 "Language-Team: Polish <community-poland@mozilla.org>\n"
 "Language: pl\n"
@@ -183,24 +183,29 @@ msgstr "oczekiwanie na odpowiedź"
 msgid "page2"
 msgstr "2. strona"
 
-#: tuhi/gui/drawing.py:100
+#: tuhi/gui/drawing.py:115
 msgid "Please choose a file"
 msgstr "Proszę wybrać plik"
 
 #. Translators: the default filename to save to
-#: tuhi/gui/drawing.py:108
+#: tuhi/gui/drawing.py:123
 msgid "untitled.svg"
 msgstr "bez tytułu.svg"
 
 #. Translators: filter name to show all/any files
-#: tuhi/gui/drawing.py:112
+#: tuhi/gui/drawing.py:127
 msgid "Any files"
 msgstr "Wszystkie pliki"
 
 #. Translators: filter to show svg files only
-#: tuhi/gui/drawing.py:116
+#: tuhi/gui/drawing.py:131
 msgid "SVG files"
 msgstr "Pliki SVG"
+
+#. Translators: filter to show png files only
+#: tuhi/gui/drawing.py:135
+msgid "PNG files"
+msgstr "Pliki PNG"
 
 #: tuhi/gui/window.py:68
 #, python-brace-format
