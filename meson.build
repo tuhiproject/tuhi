@@ -1,12 +1,13 @@
 project('tuhi',
 	version: '0.3',
 	license: 'GPLv2',
-	meson_version: '>= 0.48.0')
+	meson_version: '>= 0.50.0')
 # The tag date of the project_version(), update when the version bumps.
 version_date='2019-09-12'
 
 # Dependencies
-dependency('python3', required: true)
+dependency('python3', required: true,
+           not_found_message: 'python3 development package missing (try python3-devel or python3-dev)')
 dependency('pygobject-3.0', required: true)
 
 prefix = get_option('prefix')
