@@ -6,8 +6,6 @@ project('tuhi',
 version_date='2019-09-12'
 
 # Dependencies
-dependency('python3', required: true,
-           not_found_message: 'python3 development package missing (try python3-devel or python3-dev)')
 dependency('pygobject-3.0', required: true)
 
 prefix = get_option('prefix')
