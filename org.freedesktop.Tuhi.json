@@ -10,7 +10,8 @@
         "--socket=wayland",
         "--talk-name=org.freedesktop.tuhi1",
         "--own-name=org.freedesktop.tuhi1",
-        "--system-talk-name=org.bluez"
+        "--system-talk-name=org.bluez",
+        "--filesystem=home"
     ],
     "modules": [
         {
