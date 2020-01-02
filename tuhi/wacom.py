@@ -423,6 +423,13 @@ class WacomRegisterHelper(WacomProtocolLowLevelComm):
             except AuthorizationError:
                 # this is expected
                 pass
+            except Exception as e:
+                logger.exception('Got other Exception while registering Spark device')
+                if e.errorcode == DeviceError.ErrorCode.GENERAL_ERROR:
+                    logger.debug('Got GENERAL_ERROR while registering Spark device')
+                    pass
+                else:
+                    raise
 
             # The "press button now command" on the spark
             self.p.execute(Interactions.REGISTER_PRESS_BUTTON)
