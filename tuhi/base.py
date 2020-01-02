@@ -37,7 +37,7 @@ DEFAULT_CONFIG_PATH = Path(xdg.BaseDirectory.xdg_data_home, 'tuhi')
 
 logger = logging.getLogger('tuhi')
 
-WACOM_COMPANY_IDS = [0x4755, 0x4157]
+WACOM_COMPANY_IDS = [0x4755, 0x4157, 0x424d]
 
 
 class TuhiDevice(GObject.Object):
