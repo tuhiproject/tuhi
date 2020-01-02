@@ -651,11 +651,18 @@ class MsgGetName(Msg):
     opcode = 0xbb
     protocol = ProtocolVersion.ANY
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = ""
+
     def _handle_reply(self, reply):
         if reply.opcode != 0xbc:
             raise UnexpectedReply(f'Unknown reply: {reply.opcode}')
-        self.name = bytes(reply).decode('utf-8')
-
+        self.name += bytes(reply).decode('utf-8')
+        if bytes(reply)[-1] != 0x0a:
+            self.requires_request = False
+            self.execute()
+            self.requires_request = True
 
 class MsgGetNameIntuosPro(Msg):
     '''
