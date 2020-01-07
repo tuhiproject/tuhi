@@ -158,7 +158,7 @@ class TestProtocolAny(unittest.TestCase):
             uuid = 'uvwxyz123456'
             p.execute(Interactions.CONNECT, uuid)
 
-    def test_get_name(self, cb=None, name='test dev name'):
+    def test_get_name(self, cb=None, name='test dev name\x0a'):
         def _cb(request, requires_reply=True, userdata=None, timeout=5):
             self.assertEqual(request.opcode, 0xbb)
             self.assertEqual(request.length, 1)
