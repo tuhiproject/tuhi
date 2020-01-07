@@ -664,6 +664,7 @@ class MsgGetName(Msg):
             self.execute()
             self.requires_request = True
 
+
 class MsgGetNameIntuosPro(Msg):
     '''
     .. attribute:: name
