@@ -6,7 +6,7 @@ project('tuhi',
 version_date='2019-09-12'
 
 # Dependencies
-dependency('pygobject-3.0', required: true)
+dependency('pygobject-3.0', version: '>= 3.30', required: true)
 
 prefix = get_option('prefix')
 datadir = join_paths(prefix, get_option('datadir'))
