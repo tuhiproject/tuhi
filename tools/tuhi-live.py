@@ -183,11 +183,15 @@ def drop_privileges():
     os.setresuid(uid, uid, uid)
 
     pw = pwd.getpwuid(uid)
+    path = os.environ['PATH']
+    display = os.environ['DISPLAY']
 
     # we completely clear the environment and start a new and controlled one
     os.environ.clear()
     os.environ['XDG_RUNTIME_DIR'] = f'/run/user/{uid}'
     os.environ['HOME'] = pw.pw_dir
+    os.environ['PATH'] = path
+    os.environ['DISPLAY'] = display
 
 
 def parse(args):
