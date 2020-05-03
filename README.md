@@ -18,6 +18,13 @@ Devices tested and known to be supported:
 * Bamboo Slate
 * Intuos Pro Paper
 
+Install Dependencies on Debian/Ubuntu
+-------------------------------------
+
+```
+ $> sudo apt install meson python-gi-dev python3-svgwrite python3-xdg python3-gi-cairo gettext
+```
+
 Building Tuhi
 -------------
 
