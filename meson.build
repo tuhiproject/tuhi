@@ -1,9 +1,9 @@
 project('tuhi',
-	version: '0.3',
+	version: '0.4',
 	license: 'GPLv2',
 	meson_version: '>= 0.50.0')
 # The tag date of the project_version(), update when the version bumps.
-version_date='2019-09-12'
+version_date='2020-06-21'
 
 # Dependencies
 dependency('pygobject-3.0', version: '>= 3.30', required: true)
