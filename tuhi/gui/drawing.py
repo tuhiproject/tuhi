@@ -112,11 +112,9 @@ class Drawing(Gtk.EventBox):
 
     @Gtk.Template.Callback('_on_download_button_clicked')
     def _on_download_button_clicked(self, button):
-        dialog = Gtk.FileChooserDialog(_('Please choose a file'),
-                                       None,
-                                       Gtk.FileChooserAction.SAVE,
-                                       (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                        Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
+        dialog = Gtk.FileChooserNative()
+        dialog.set_action(Gtk.FileChooserAction.SAVE)
+        dialog.set_transient_for(self.get_toplevel())
 
         dialog.set_do_overwrite_confirmation(True)
         # Translators: the default filename to save to
@@ -139,7 +137,7 @@ class Drawing(Gtk.EventBox):
         dialog.add_filter(filter_any)
 
         response = dialog.run()
-        if response == Gtk.ResponseType.OK:
+        if response == Gtk.ResponseType.ACCEPT:
             import shutil
 
             file = dialog.get_filename()
