@@ -74,6 +74,11 @@ class DrawingPerspective(Gtk.Stack):
         super().__init__(*args, **kwargs)
         self.known_drawings = {}  # type {timestamp: Drawing()}
         self.flowboxes = {}
+        # Add an expanding emtpy label to the bottom - this pushes all the
+        # real stuff up to the top, forcing a nice alignment
+        l = Gtk.Label("")
+        l.show()
+        self.box_all_drawings.pack_end(l, expand=True, fill=True, padding=100)
         self._zoom = 0
         self._want_listen = True
 
@@ -102,7 +107,7 @@ class DrawingPerspective(Gtk.Stack):
             except KeyError:
                 fb = Flowbox(time.gmtime(drawing.timestamp))
                 self.flowboxes[key] = fb
-                self.box_all_drawings.pack_end(fb, expand=True, fill=True, padding=0)
+                self.box_all_drawings.pack_end(fb, expand=False, fill=True, padding=0)
             finally:
                 fb.insert(drawing)
 
