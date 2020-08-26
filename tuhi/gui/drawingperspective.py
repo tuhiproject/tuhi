@@ -76,9 +76,9 @@ class DrawingPerspective(Gtk.Stack):
         self.flowboxes = {}
         # Add an expanding emtpy label to the bottom - this pushes all the
         # real stuff up to the top, forcing a nice alignment
-        l = Gtk.Label("")
-        l.show()
-        self.box_all_drawings.pack_end(l, expand=True, fill=True, padding=100)
+        fake_label = Gtk.Label("")
+        fake_label.show()
+        self.box_all_drawings.pack_end(fake_label, expand=True, fill=True, padding=100)
         self._zoom = 0
         self._want_listen = True
 
