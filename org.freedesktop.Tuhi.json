@@ -35,8 +35,8 @@
             "sources": [
                 {
                     "type": "archive",
-                    "url": "https://github.com/pyparsing/pyparsing/releases/download/pyparsing_2.4.2/pyparsing-2.4.2.tar.gz",
-                    "sha512": "27e5959eb1cf0c4d899746d2d32f5f000c3753278bdbbb670d24a077053e5c08caf8429f684186c502f6d9bf358702e0a8b3fea40cd2b50807cf02ea38c750dd"
+                    "url": "https://github.com/pyparsing/pyparsing/releases/download/pyparsing_2.4.7/pyparsing-2.4.7.tar.gz",
+                    "sha512": "0b9f8f18907f65cb3af1b48ed57989e183f28d71646f2b2f820e772476f596ca15ee1a689f3042f18458206457f4683d10daa6e73dfd3ae82d5e4405882f9dd2"
                 }
             ],
             "build-commands": [
@@ -50,8 +50,8 @@
                 {
                     "type": "git",
                     "url": "https://github.com/mozman/svgwrite.git",
-                    "tag": "v1.3.1",
-                    "commit": "13633ad13d7a4b3253d1304d31db8fc2c8d1dd9e"
+                    "tag": "v1.4",
+                    "commit": "c95543ce5f296b5fbd0fd6fff4586ecce84d3d01"
                 }
             ],
             "build-commands": [
