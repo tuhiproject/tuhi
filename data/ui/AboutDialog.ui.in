@@ -8,7 +8,7 @@
     <property name="type_hint">normal</property>
     <property name="program_name">Tuhi</property>
     <property name="version">@version@</property>
-    <property name="copyright">Copyright © 2019 Tuhi Developers</property>
+    <property name="copyright">Copyright © 2020 Tuhi Developers</property>
     <property name="website">@url@</property>
     <property name="website_label" translatable="yes">Visit Tuhi’s website</property>
     <property name="logo_icon_name">org.freedesktop.Tuhi</property>
