@@ -1,4 +1,4 @@
-# Polish translation for tuhi.
+# Italian translation for tuhi.
 # Copyright © 2019 the tuhi authors.
 # This file is distributed under the same license as the tuhi package.
 # ALBANO BATTISTELLA <albano_battistella@hotmail.com>, 2020.
@@ -62,7 +62,7 @@ msgstr "org.freedesktop.Tuhi"
 #. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
 #: data/org.freedesktop.Tuhi.desktop.in:12
 msgid "tablet;wacom;ink;"
-msgstr "tablet;wacom;ink;"
+msgstr "tablet;wacom;inchiostro;"
 
 #: data/ui/AboutDialog.ui.in:13
 msgid "Visit Tuhi’s website"
@@ -94,7 +94,7 @@ msgstr "Premere il pulsante sul dispositivo per sincronizzare i disegni"
 
 #: data/ui/DrawingPerspective.ui:143 data/ui/SetupPerspective.ui:121
 msgid "page0"
-msgstr "pagina0"
+msgstr "page0"
 
 #: data/ui/ErrorPerspective.ui:21
 msgid ""
@@ -165,7 +165,7 @@ msgstr "Connessione al dispositivo..."
 
 #: data/ui/SetupPerspective.ui:188
 msgid "page1"
-msgstr "pagina1"
+msgstr "page1"
 
 #: data/ui/SetupPerspective.ui:206
 msgid "Press the button on the device now!"
@@ -177,7 +177,7 @@ msgstr "in attesa di risposta"
 
 #: data/ui/SetupPerspective.ui:258
 msgid "page2"
-msgstr "pagina2"
+msgstr "page2"
 
 #: tuhi/gui/drawing.py:115
 msgid "Please choose a file"
