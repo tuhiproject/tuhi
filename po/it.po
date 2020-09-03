@@ -127,7 +127,7 @@ msgid ""
 "This should take less than a second. Make sure the Tuhi DBus server is "
 "running."
 msgstr ""
-"Questo dovrebbe richiedere meno di un secondo. Assicurati che il server Tuhi DBus sia"
+"Questo dovrebbe richiedere meno di un secondo. Assicurati che il server Tuhi DBus sia "
 "in esecuzione."
 
 #: data/ui/MainWindow.ui:166
