@@ -42,7 +42,7 @@ msgid ""
 "ThiGui is merely a front end to Tuhi, Tuhi must be installed and running "
 "when Tuhi is launched."
 msgstr ""
-Tuhi richiede Tuhi, il demone per comunicare effettivamente con i dispositivi. "
+Tuhi richiede Tuhi, il demone per comunicare effettivamente con i dispositivi."
 "ThiGui è semplicemente un front-end di Tuhi, Tuhi deve essere installato e funzionante"
 "quando Tuhi viene lanciato."
 
