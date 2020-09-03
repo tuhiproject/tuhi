@@ -38,7 +38,7 @@ msgstr ""
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:15
 msgid ""
-"Tuhi requires Tuhi, the daemon to actually communicate with the devices. "
+"Tuhi requires Tuhi, the daemon to actually communicate with the devices."
 "ThiGui is merely a front end to Tuhi, Tuhi must be installed and running "
 "when Tuhi is launched."
 msgstr ""
