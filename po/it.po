@@ -33,7 +33,7 @@ msgid ""
 "Tuhi is a graphical user interface to download drawings stored on tablet "
 "devices from the Wacom Ink range, e.g. Intuos Pro Paper or Bamboo Slate."
 msgstr ""
-"Tuhi è un'interfaccia utente grafica per scaricare disegni archiviati su tablet"
+"Tuhi è un'interfaccia utente grafica per scaricare disegni archiviati su tablet "
 "dispositivi della gamma Wacom, ad esempio Intuos Pro Paper o Bamboo Slate."
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:15
@@ -43,7 +43,7 @@ msgid ""
 "when Tuhi is launched."
 msgstr ""
 Tuhi richiede Tuhi, il demone per comunicare effettivamente con i dispositivi."
-"ThiGui è semplicemente un front-end di Tuhi, Tuhi deve essere installato e funzionante"
+"ThiGui è semplicemente un front-end di Tuhi, Tuhi deve essere installato e funzionante "
 "quando Tuhi viene lanciato."
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:32
@@ -82,11 +82,11 @@ msgstr "Aiuto"
 
 #: data/ui/AppMenu.ui:21
 msgid "About"
-msgstr "Informazioni"
+msgstr "Informazioni su"
 
 #: data/ui/DrawingPerspective.ui:68
 msgid "Undo delete drawing"
-msgstr "Annulla l'eliminazione del disegno"
+msgstr "Annulla cancellazione del disegno"
 
 #: data/ui/DrawingPerspective.ui:132
 msgid "Press the button on the device to synchronize drawings"
