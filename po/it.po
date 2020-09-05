@@ -195,12 +195,12 @@ msgstr "Qualsiasi file"
 #. Translators: filter to show svg files only
 #: tuhi/gui/drawing.py:131
 msgid "SVG files"
-msgstr "file SVG"
+msgstr "File SVG"
 
 #. Translators: filter to show png files only
 #: tuhi/gui/drawing.py:135
 msgid "PNG files"
-msgstr "PNG files"
+msgstr "File PNG"
 
 #: tuhi/gui/window.py:68
 #, python-brace-format
