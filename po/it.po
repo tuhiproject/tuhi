@@ -26,7 +26,7 @@ msgstr "Tuhi"
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:8
 #: data/org.freedesktop.Tuhi.desktop.in:4
 msgid "Utility to download drawings from the Wacom Ink range of devices"
-msgstr "Utilità per scaricare i disegni dalla gamma di dispositivi Wacom"
+msgstr "Utilità per scaricare i disegni dalla gamma Inchiostro di dispositivi Wacom"
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:10
 msgid ""
@@ -34,7 +34,7 @@ msgid ""
 "devices from the Wacom Ink range, e.g. Intuos Pro Paper or Bamboo Slate."
 msgstr ""
 "Tuhi è un'interfaccia utente grafica per scaricare disegni archiviati su tablet "
-"dispositivi della gamma Wacom, ad esempio Intuos Pro Paper o Bamboo Slate."
+"dispositivi della gamma di Inchiostro Wacom, ad esempio Intuos Pro Paper o Bamboo Slate."
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:15
 msgid ""
@@ -42,7 +42,7 @@ msgid ""
 "ThiGui is merely a front end to Tuhi, Tuhi must be installed and running "
 "when Tuhi is launched."
 msgstr ""
-Tuhi richiede Tuhi, il demone per comunicare effettivamente con i dispositivi."
+"Tuhi richiede Tuhi, il demone per comunicare effettivamente con i dispositivi."
 "ThiGui è semplicemente un front-end di Tuhi, Tuhi deve essere installato e funzionante "
 "quando Tuhi viene lanciato."
 
