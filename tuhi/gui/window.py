@@ -137,7 +137,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         dp = DrawingPerspective()
         self._add_perspective(dp)
-        self.headerbar.set_title(f'Tuhi')
+        self.headerbar.set_title('Tuhi')
         self.stack_perspectives.set_visible_child_name(dp.name)
 
         if not self._tuhi.devices:

@@ -46,7 +46,7 @@ class Config(GObject.Object):
         if not self.path.exists():
             return
 
-        logger.debug(f'configuration found')
+        logger.debug('configuration found')
         self.config.read(self.path)
 
     def _load_cached_drawings(self):

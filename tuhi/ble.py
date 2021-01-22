@@ -206,11 +206,11 @@ class BlueZDevice(GObject.Object):
         '''
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if self.connected:
-            self.logger.info(f'Device is already connected')
+            self.logger.info('Device is already connected')
             self.emit('connected')
             return
 
-        self.logger.debug(f'Connecting')
+        self.logger.debug('Connecting')
         i.Connect(result_handler=self._on_connect_result)
 
     def _on_connect_result(self, obj, result, user_data):
@@ -219,7 +219,7 @@ class BlueZDevice(GObject.Object):
                 result.code == Gio.IOErrorEnum.DBUS_ERROR and
                 Gio.dbus_error_get_remote_error(result) == 'org.bluez.Error.Failed' and
                 'Operation already in progress' in result.message):
-            self.logger.debug(f'Already connecting')
+            self.logger.debug('Already connecting')
         elif isinstance(result, Exception):
             self.logger.error(f'Connection failed: {result}')
 
@@ -230,11 +230,11 @@ class BlueZDevice(GObject.Object):
         '''
         i = self.obj.get_interface(ORG_BLUEZ_DEVICE1)
         if not i.get_cached_property('Connected').get_boolean():
-            self.logger.info(f'Device is already disconnected')
+            self.logger.info('Device is already disconnected')
             self.emit('disconnected')
             return
 
-        self.logger.debug(f'Disconnecting')
+        self.logger.debug('Disconnecting')
         i.Disconnect(result_handler=self._on_disconnect_result)
 
     def _on_disconnect_result(self, obj, result, user_data):

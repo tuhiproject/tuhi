@@ -21,11 +21,11 @@ from pathlib import Path
 try:
     from gi.repository import GObject, GLib
 except Exception as e:
-    print(f'************ Importing gi.repository failed **********')
-    print(f'* This is an issue with the gi module, not with tuhi *')
-    print(f'******************************************************')
-    print(f'The full exception is below:')
-    print(f'')
+    print('************ Importing gi.repository failed **********')
+    print('* This is an issue with the gi module, not with tuhi *')
+    print('******************************************************')
+    print('The full exception is below:')
+    print('')
     raise e
 
 from tuhi.dbusserver import TuhiDBusServer

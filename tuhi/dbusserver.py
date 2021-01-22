@@ -426,7 +426,7 @@ class TuhiDBusDevice(_TuhiDBus):
         fds_list = message.get_unix_fd_list()
 
         if fds_list is None or fds_list.get_length() != 1:
-            logger.error(f'uhid fds not provided')
+            logger.error('uhid fds not provided')
             result = GLib.Variant.new_int32(-errno.EINVAL)
             invocation.return_value(GLib.Variant.new_tuple(result))
             return
