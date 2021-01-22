@@ -23,6 +23,8 @@ libexecdir = join_paths(get_option('prefix'), get_option('libexecdir'), 'tuhi')
 
 
 i18n = import('i18n')
+# Workaround for https://github.com/mesonbuild/meson/issues/6165
+find_program('gettext')
 
 subdir('po')
 subdir('data')
