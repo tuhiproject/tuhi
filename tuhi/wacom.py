@@ -204,7 +204,7 @@ class DataLogger(object):
         self.logfile.write(f'name: {self.device.name}\n')
         self.logfile.write(f'bluetooth: {self.btaddr}\n')
         self.logfile.write(f'time: {timestamp} # host time: {time.strftime("%Y-%m-%d %H:%M:%S")}\n')
-        self.logfile.write(f'data:\n')
+        self.logfile.write('data:\n')
 
     def _close_file(self):
         if self.logfile is None:
@@ -441,7 +441,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
             data = value[2:]
             while data:
                 if bytes(data) == b'\xff\xff\xff\xff\xff\xff':
-                    logger.debug(f'Pen left proximity')
+                    logger.debug('Pen left proximity')
 
                     if self._uhid_device is not None:
                         self._uhid_device.call_input_event([1, 0, 0, 0, 0, 0, 0, 0])
@@ -485,7 +485,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
 
         tdelta = time.mktime(time.gmtime()) - time.mktime(t)
         if abs(tdelta) > 300:
-            logger.error(f'device time is out by more than 5 minutes')
+            logger.error('device time is out by more than 5 minutes')
 
     def get_battery_info(self):
         msg = self.p.execute(Interactions.GET_BATTERY)
@@ -652,7 +652,7 @@ class WacomProtocolBase(WacomProtocolLowLevelComm):
                 self.emit('drawing', drawing)
             file_count -= 1
             if TuhiConfig().peek_at_drawing:
-                logger.info(f'Not deleting drawing from device')
+                logger.info('Not deleting drawing from device')
                 if file_count > 0:
                     logger.info(f'{file_count} more files on device but I can only download the oldest one')
                 break
@@ -886,7 +886,7 @@ class WacomDevice(GObject.Object):
                 protocol = ProtocolVersion.from_string(self._config['Protocol'])
                 self._init_protocol(protocol)
             except (KeyError, ValueError):
-                logger.error(f'Missing or invalid Protocol entry in config file. Treating this device as unregistered')
+                logger.error('Missing or invalid Protocol entry in config file. Treating this device as unregistered')
                 self._uuid = None
 
     def _init_protocol(self, protocol):
@@ -980,7 +980,7 @@ class WacomDevice(GObject.Object):
             logger.error(f'**** Exception: {e} ****')
             exception = e
         except AuthorizationError as e:
-            logger.error(f'Authorization failed, device needs to be re-registered')
+            logger.error('Authorization failed, device needs to be re-registered')
             exception = e
         finally:
             self.sync_state = 0

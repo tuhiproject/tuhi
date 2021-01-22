@@ -208,7 +208,7 @@ class Searcher(Worker):
             logger.error('Another client is already searching')
             return
 
-        logger.debug(f'Starting searching')
+        logger.debug('Starting searching')
         self.manager.start_search()
 
     def stop(self):

@@ -1616,7 +1616,7 @@ class StrokeFile(object):
                 points.append(last_point)
             else:
                 # should never get here
-                raise StrokeParsingError(f'Failed to parse', data[:16])
+                raise StrokeParsingError('Failed to parse', data[:16])
 
             logger.debug(f'Offset {consumed}: {packet}')
             consumed += packet.size
@@ -1677,7 +1677,7 @@ class StrokeFileHeader(StrokePacket):
             func = file_formats[key]
             func(data)
         except KeyError:
-            raise StrokeParsingError(f'Unknown file format:', data[:4])
+            raise StrokeParsingError('Unknown file format:', data[:4])
 
     def __str__(self):
         t = time.strftime("%y%m%d%H%M%S", time.gmtime(self.timestamp))
@@ -1726,7 +1726,7 @@ class StrokeHeader(StrokePacket):
         elif payload[0:3] == [0xff, 0xee, 0xee]:
             self._parse_slate(data, header, payload)
         else:
-            raise StrokeParsingError(f'Invalid StrokeHeader, expected ff fa or ff ee.', data[:8])
+            raise StrokeParsingError('Invalid StrokeHeader, expected ff fa or ff ee.', data[:8])
 
     def _parse_slate(self, data, header, payload):
         self.pen_id = 0
@@ -1768,7 +1768,7 @@ class StrokeHeader(StrokePacket):
 
     def __str__(self):
         if self.timestamp is not None:
-            t = time.strftime(f'%y%m%d%H%M%S', time.gmtime(self.timestamp))
+            t = time.strftime('%y%m%d%H%M%S', time.gmtime(self.timestamp))
         else:
             t = time.strftime(f'boot+{self.time_offset/1000}s')
         return f'StrokeHeader: time: {t} new layer: {self.is_new_layer}, pen type: {self.pen_type}, pen id: {self.pen_id:#x}'
@@ -1822,7 +1822,7 @@ class StrokeDelta(object):
                 # 8 bit delta
                 delta = int.from_bytes(bytes([databytes[0]]), byteorder='little', signed=True)
                 if delta == 0:
-                    raise StrokeParsingError(f'StrokeDelta: invalid delta of zero', data)
+                    raise StrokeParsingError('StrokeDelta: invalid delta of zero', data)
                 assert delta != 0
                 size = 1
             elif mask == 3:
@@ -1832,7 +1832,7 @@ class StrokeDelta(object):
             return value, delta, size
 
         if (data[0] & 0b11) != 0:
-            raise NotImplementedError(f'LSB two bits set in mask - this is not supposed to happen')
+            raise NotImplementedError('LSB two bits set in mask - this is not supposed to happen')
 
         xmask = (data[0] & 0b00001100) >> 2
         ymask = (data[0] & 0b00110000) >> 4
@@ -1877,7 +1877,7 @@ class StrokePoint(StrokeDelta):
         header = data[0]
         payload = data[1:]
         if payload[:2] != [0xff, 0xff]:
-            raise StrokeParsingError(f'Invalid StrokePoint, expected ff ff ff', data[:9])
+            raise StrokeParsingError('Invalid StrokePoint, expected ff ff ff', data[:9])
 
         # This is a wrapper around StrokeDelta which does the mask parsing.
         # In theory the StrokePoint would be a separate packet but it
@@ -1905,7 +1905,7 @@ class StrokeEOF(StrokePacket):
         payload = data[1:]
         nbytes = bin(header).count('1')
         if payload[:nbytes] != [0xff] * nbytes:
-            raise StrokeParsingError(f'Invalid EOF, expected 0xff only', data[:9])
+            raise StrokeParsingError('Invalid EOF, expected 0xff only', data[:9])
         self.size = nbytes + 1
 
 
@@ -1915,7 +1915,7 @@ class StrokeEndOfStroke(StrokePacket):
         payload = data[1:]
         nbytes = bin(header).count('1')
         if payload[:nbytes] != [0xff] * nbytes:
-            raise StrokeParsingError(f'Invalid EndOfStroke, expected 0xff only', data[:9])
+            raise StrokeParsingError('Invalid EndOfStroke, expected 0xff only', data[:9])
         self.size = nbytes + 1
         self.data = data[:self.size]
 
@@ -1936,6 +1936,6 @@ class StrokeLostPoint(StrokePacket):
         header = data[0]
         payload = data[1:]
         if payload[:2] != [0xdd, 0xdd]:
-            raise StrokeParsingError(f'Invalid StrokeLostPoint, expected ff dd dd', data[:9])
+            raise StrokeParsingError('Invalid StrokeLostPoint, expected ff dd dd', data[:9])
         self.nlost = little_u16(payload[2:4])
         self.size = bin(header).count('1') + 1
