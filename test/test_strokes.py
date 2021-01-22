@@ -27,8 +27,8 @@ import logging
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + '/..')  # noqa
 
-from tuhi.protocol import *
-from tuhi.util import flatten
+from tuhi.protocol import *  # noqa
+from tuhi.util import flatten  # noqa
 
 logger = logging.getLogger('tuhi')  # piggyback the debug messages
 logger.setLevel(logging.DEBUG)

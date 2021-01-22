@@ -25,7 +25,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + '/..')  # noqa
 
-from tuhi.protocol import *
+from tuhi.protocol import *  # noqa
 
 
 SUCCESS = NordicData([0xb3, 0x1, 0x00])
