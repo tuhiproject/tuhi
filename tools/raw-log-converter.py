@@ -28,11 +28,11 @@ import logging
 # This tool isn't installed, so we can assume that the tuhi module is always
 # in the parent directory
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + '/..')  # noqa
-from tuhi.util import flatten
-from tuhi.drawing import Drawing
-from tuhi.protocol import StrokeFile
-from tuhi.export import JsonSvg, JsonPng
-from tuhi.wacom import WacomProtocolSpark, WacomProtocolIntuosPro, WacomProtocolSlate
+from tuhi.util import flatten  # noqa
+from tuhi.drawing import Drawing  # noqa
+from tuhi.protocol import StrokeFile  # noqa
+from tuhi.export import JsonSvg, JsonPng  # noqa
+from tuhi.wacom import WacomProtocolSpark, WacomProtocolIntuosPro, WacomProtocolSlate  # noqa
 
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(name)s: %(message)s',
                     level=logging.INFO,
