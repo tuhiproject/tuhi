@@ -12,13 +12,13 @@
 #
 
 
-def list2hex(l, groupsize=8):
+def list2hex(lst, groupsize=8):
     '''Converts a list of integers to a two-letter hex string in the form
     "1a 2b c3"'''
 
     slices = []
-    for idx in range(0, len(l), groupsize):
-        s = ' '.join([f'{x:02x}' for x in l[idx:idx + groupsize]])
+    for idx in range(0, len(lst), groupsize):
+        s = ' '.join([f'{x:02x}' for x in lst[idx:idx + groupsize]])
         slices.append(s)
 
     return '    '.join(slices)

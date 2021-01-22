@@ -113,10 +113,10 @@ def b2hex(bs):
     return ' '.join([''.join(s) for s in zip(hx[::2], hx[1::2])])
 
 
-def list2hexlist(l):
+def list2hexlist(lst):
     '''Converts a list of integers to a two-letter prefixed hex string in the form
     "[0x1a, 0x32, 0xab]"'''
-    return '[' + ', '.join([f'{x:#04x}' for x in l]) + ']'
+    return '[' + ', '.join([f'{x:#04x}' for x in lst]) + ']'
 
 
 class DataLogger(object):
