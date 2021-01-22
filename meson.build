@@ -137,7 +137,7 @@ appdata = i18n.merge_file(input: appdata_intl,
 
 install_data('data/org.freedesktop.Tuhi.svg', install_dir: icondir)
 
-flake8 = find_program('flake8-3', required: false)
+flake8 = find_program('flake8-3', 'flake8', required: false)
 if flake8.found()
    test('flake8', flake8,
         args: ['--ignore=E501,W504',
