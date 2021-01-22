@@ -1,0 +1,24 @@
+on: [ push, pull_request ]
+
+env:
+  CFLAGS: "-Werror -Wall -Wextra -Wno-error=sign-compare -Wno-error=unused-parameter -Wno-error=missing-field-initializers"
+  UBUNTU_PACKAGES: meson gettext python3-dev python-gi-dev flake8 desktop-file-utils libappstream-glib-dev appstream-util python3-pytest python3-xdg python3-yaml python3-svgwrite python3-cairo
+
+jobs:
+  meson_test:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install dependencies
+        run: sudo apt-get install -yq --no-install-suggests --no-install-recommends $UBUNTU_PACKAGES
+      - uses: actions/checkout@v2
+      - name: meson
+        run: meson builddir
+      - name: ninja
+        run: ninja -C builddir test
+      - name: capture build logs
+        uses: actions/upload-artifact@v2
+        if: ${{ always() }}  # even if we fail
+        with:
+          name: meson logs
+          path: |
+            builddir/meson-logs
