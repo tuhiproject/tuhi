@@ -22,7 +22,7 @@
 
 Tuhi connects to tablets of the Wacom Ink range. It allows you to download the drawings stored on those devices as SVGs for processing later.
 
-Tuhi is a DBus server that needs to be running for the Tuhi GUI to connect to it. Connecting to the DBus server should take less than a second. If you read this far, your Tuhi DBus server is not running or responsing and needs to be restarted.</property>
+Tuhi is a DBus server that needs to be running for the Tuhi GUI to connect to it. Connecting to the DBus server should take less than a second. If you read this far, your Tuhi DBus server is not running or responding and needs to be restarted.</property>
             <property name="wrap">True</property>
             <property name="max_width_chars">55</property>
           </object>
