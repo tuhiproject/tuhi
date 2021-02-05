@@ -50,7 +50,7 @@ msgstr "Tuhi ana penceresi"
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:36
 msgid "Tuhi's main window (zoomed)"
-msgstr "Tuhi ana pencerei (yakın)"
+msgstr "Tuhi ana penceresi (yakın)"
 
 #. Translators: Do NOT translate or transliterate this text (this is an icon file name)!
 #: data/org.freedesktop.Tuhi.desktop.in:7
@@ -177,7 +177,7 @@ msgstr "Lütfen bir dosya seçin"
 #. Translators: the default filename to save to
 #: tuhi/gui/drawing.py:123
 msgid "untitled.svg"
-msgstr "adsızbelge.svg"
+msgstr "yenibelge.svg"
 
 #. Translators: filter name to show all/any files
 #: tuhi/gui/drawing.py:127
