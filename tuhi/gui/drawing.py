@@ -17,6 +17,7 @@ import xdg.BaseDirectory
 import os
 from pathlib import Path
 from .config import Config
+from .splitter import Splitter
 from tuhi.export import JsonSvg, JsonPng
 
 import gi
@@ -155,6 +156,13 @@ class Drawing(Gtk.EventBox):
                 self.process_svg()
                 shutil.copyfile(self.svg.filename, file)
                 # FIXME: error handling
+
+        dialog.destroy()
+
+    @Gtk.Template.Callback('_on_split_button_clicked')
+    def _on_split_button_clicked(self, button):
+        dialog = Splitter(self.json_data)
+        response = dialog.run()
 
         dialog.destroy()
 
