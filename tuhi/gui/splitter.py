@@ -63,11 +63,8 @@ class Splitter(Gtk.Dialog):
     def _on_split_value_changed(self, adjustment):
         self.max_strokes = int(adjustment.get_value())
         self.drawing_area.queue_draw()
-        #print("Split value: ", adjustment.get_value(), max_strokes)
-        #self.image_svg.set_from_pixbuf(self.exporter.generate_pixbuf(max_strokes))
 
     def _on_draw_image(self, widget, cr):
-        print("Drawing")
         display_width, display_height = float(widget.get_allocated_width()), float(widget.get_allocated_height())
 
         dimensions = self.json_data["dimensions"]
@@ -82,22 +79,21 @@ class Splitter(Gtk.Dialog):
             drawing_height = float(dimensions[1])
 
 
-        #aspect_ratio = drawing_width / drawing_height
+        aspect_ratio = drawing_width / drawing_height
 
-        #margin_x, margin_y = 0.0, 0.0
+        # Calculate margins and true display width to keep aspect ratio
+        margin_x, margin_y = 0.0, 0.0
+        if (display_width / display_height) < aspect_ratio:
+            reduced_display_height = display_width / aspect_ratio
+            margin_y = display_height - reduced_display_height
+            display_height = reduced_display_height
+        else:
+            reduced_display_width = display_height * aspect_ratio
+            margin_x = display_width - reduced_display_width
+            display_width = reduced_display_width
 
-        #if (display_width / display_height) < aspect_ratio:
-        #    reduced_display_height = display_width / aspect_ratio
-        #    margin_y = display_height - reduced_display_height
-        #    display_height = reduced_display_height
-        #else:
-        #    reduced_display_width = display_height * aspect_ratio
-        #    margin_x = display_width - reduced_display_width
-        #    display_width = reduced_display_width
-
-
-        #print(display_width, display_height)
-
+        # Set up Cairo's transformation matrix to convert from Wacom device
+        # coordinates to display coordinates (pixels)
 
         transform_matrix = cairo.Matrix()
         if self.orientation == 'reverse-portrait':
@@ -113,39 +109,34 @@ class Splitter(Gtk.Dialog):
                                             yx=0.0,  yy=-1.0,
                                             x0=1.0,  y0=1.0)
 
+        # Apply Transformations:
+        # 1. Normalize device coordinates to [0, 1] x [0, 1]
+        # 2. Apply orientation specific transformation
+        # 3. Scale up to display size in pixels
+        # 4. Translate by half the margin to keep it centered
+        #
+        # In Code they are listed in reverse order, since transformations that
+        # are multiplied last into the transformation matrix apply first.
 
-        scale_down = cairo.Matrix(xx=1.0/dimensions[0], yy=1.0/dimensions[1])
-
-        scale_up = cairo.Matrix(xx=display_width, yy=display_height)
-
-        cr.identity_matrix()
-        #a = scale_down.multiply(transform_matrix)
-        #cr.transform(a.multiply(scale_up))
-        cr.transform(scale_up)
+        cr.translate(margin_x / 2.0, margin_y / 2.0)
+        cr.scale(display_width, display_height)
         cr.transform(transform_matrix)
-        cr.transform(scale_down)
+        cr.scale(1.0 / dimensions[0], 1.0 / dimensions[1])
 
-        print(cr.get_matrix())
-
+        cr.set_line_width(300) # 0.3mm
+        cr.set_source_rgb(0.0, 0.0, 0.0) # black
+        cr.set_line_cap(cairo.LineCap.ROUND)
 
         for stroke in self.json_data["strokes"][:self.max_strokes]:
             cr.new_path()
-            cr.set_line_width(drawing_width / display_width * 1.0)
-            cr.set_source_rgb(0.0, 0.0, 0.0)
 
-            first_iteration = True
-            for point in stroke["points"]:
+            for iteration, point in enumerate(stroke["points"]):
                 x, y = point["position"]
-                display_x = float(x)
-                display_y = float(y)
 
-                if first_iteration:
-                    cr.move_to(display_x, display_y)
-                    first_iteration = False
-                    print(cr.get_matrix().transform_point(display_x, display_y))
+                if iteration == 0:
+                    cr.move_to(x, y)
                 else:
-                    cr.line_to(display_x, display_y)
+                    cr.line_to(x, y)
 
             cr.stroke()
-
 
