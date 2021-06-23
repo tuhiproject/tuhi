@@ -161,7 +161,7 @@ class Drawing(Gtk.EventBox):
 
     @Gtk.Template.Callback('_on_split_button_clicked')
     def _on_split_button_clicked(self, button):
-        dialog = Splitter(self.json_data)
+        dialog = Splitter(self)
         response = dialog.run()
 
         dialog.destroy()

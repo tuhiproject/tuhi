@@ -34,10 +34,10 @@ class Splitter(Gtk.Dialog):
     cancel_button = Gtk.Template.Child("cancel_button")
     drawing_area = Gtk.Template.Child("drawing_area")
 
-    def __init__(self, json_data):
+    def __init__(self, drawing):
         super().__init__()
-        self.json_data = json_data
-        self.orientation = Config().orientation
+        self.json_data = drawing.json_data
+        self.orientation = drawing.orientation
 
         self.num_strokes = len(self.json_data["strokes"])
         self.max_strokes = self.num_strokes
