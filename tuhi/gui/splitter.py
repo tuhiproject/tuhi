@@ -13,10 +13,9 @@ import os
 import math
 from pathlib import Path
 from .config import Config
-from tuhi.export import JsonPartialSvg
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import GObject, Gtk, GdkPixbuf, Gdk  # NOQA
+from gi.repository import GObject, Gtk
 import cairo
 
 
@@ -46,10 +45,6 @@ class Splitter(Gtk.Dialog):
         self.adjustment.set_value(self.num_strokes)
         self.drawing_area.connect("draw", self._on_draw_image)
 
-
-
-
-
     @Gtk.Template.Callback('_on_cancel')
     def _on_cancel(self, button):
         super().response(Gtk.ResponseType.CANCEL)
@@ -59,6 +54,14 @@ class Splitter(Gtk.Dialog):
     def _on_ok(self, button):
         super().response(Gtk.ResponseType.OK)
         print("OK")
+        json_data1 = self.json_data
+        json_data2 = self.json_data.copy()
+
+        json_data1["strokes"] = json_data1["strokes"][:self.max_strokes]
+        json_data2["strokes"] = json_data2["strokes"][self.max_strokes:]
+        json_data2["timestamp"] += 1
+
+        self.split_drawings = [json_data1, json_data2]
 
     def _on_split_value_changed(self, adjustment):
         self.max_strokes = int(adjustment.get_value())
