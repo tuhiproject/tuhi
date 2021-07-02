@@ -172,22 +172,21 @@ class Drawing(Gtk.EventBox):
 
     def _save_split_drawings(self, json1, json2):
         timestamp1 = json1["timestamp"]
-        timestamp2 = json2["timestamp"]
-
+        timestamp2 = json1["timestamp"]
 
         if timestamp2 in map(lambda d: d["timestamp"], Config().drawings):
             error_dialog = Gtk.MessageDialog(
-                    transient_for=self,
                     flags=0,
                     message_type=Gtk.MessageType.ERROR,
                     buttons=Gtk.ButtonsType.OK,
                     text="Error while splitting drawing"
             )
             error_dialog.format_secondary_text(
-                    f"A drawing with timestamp {timestamp} already exists. Cannot proceed to save split drawing, otherwise data loss might occur"
+                    f"A drawing with timestamp {timestamp2} already exists. Cannot proceed to save split drawing, otherwise data loss might occur"
             )
             error_dialog.run()
             error_dialog.destroy()
+            return
 
         Config().replace_drawing(timestamp1, json.dumps(json1))
         Config().add_drawing(timestamp2, json.dumps(json2))

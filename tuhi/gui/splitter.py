@@ -59,7 +59,7 @@ class Splitter(Gtk.Dialog):
 
         json_data1["strokes"] = json_data1["strokes"][:self.max_strokes]
         json_data2["strokes"] = json_data2["strokes"][self.max_strokes:]
-        json_data2["timestamp"] += 1
+        json_data2["timestamp"] = json_data1["timestamp"] + self.max_strokes * 1e-5
 
         self.split_drawings = [json_data1, json_data2]
 
