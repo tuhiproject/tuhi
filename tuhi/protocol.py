@@ -1759,7 +1759,10 @@ class StrokeHeader(StrokePacket):
                 raise StrokeParsingError('Missing pen ID packet')
 
             header = data[0]
-            if not header in [0xff, 0xbf]:
+
+            if header != 0xbf:
+                self.size += 2
+            else if header != 0xff:
                 raise StrokeParsingError(f'Unexpected pen id packet header: {header}.', data[:9])
 
             nbytes = bin(header).count('1')
@@ -1817,11 +1820,7 @@ class StrokeDelta(object):
                 # If this would exist, it would throw off the byte count
                 # anyway, so this cannot ever exist without breaking
                 # everything.
-
-                # thinking this may be a weird firmware quirk or some really new feature
-                # FW: firmware is B181207a-C338.000
-                # TABLET: Intuos Pro Paper M
-                raise RuntimeWarning('This device is not supposed to exist (uses opmask 0x10), please file a bug report if you have encountered this corner case.')
+                raise NotImplementedError('This device is not supposed to be exist')
             elif mask == 2:
                 # 8 bit delta
                 delta = int.from_bytes(bytes([databytes[0]]), byteorder='little', signed=True)
