@@ -1759,7 +1759,7 @@ class StrokeHeader(StrokePacket):
                 raise StrokeParsingError('Missing pen ID packet')
 
             header = data[0]
-            if header != 0xff:
+            if header != 0xff or header != 0xfa:
                 raise StrokeParsingError(f'Unexpected pen id packet header: {header}.', data[:9])
 
             nbytes = bin(header).count('1')
