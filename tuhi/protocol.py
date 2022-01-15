@@ -1762,7 +1762,7 @@ class StrokeHeader(StrokePacket):
 
             if header != 0xbf:
                 self.size += 2
-            else if header != 0xff:
+            elif header != 0xff:
                 raise StrokeParsingError(f'Unexpected pen id packet header: {header}.', data[:9])
 
             nbytes = bin(header).count('1')
