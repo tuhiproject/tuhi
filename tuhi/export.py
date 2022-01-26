@@ -82,27 +82,44 @@ class JsonSvg(ImageExportBase):
     _base_pen_width = 0.4
     _pen_pressure_width_factor = 0.2
 
+    # Change this value down to reduce size, change it up to improve accuracy. measured in px
+    _width_precision = 10
+
     def _convert(self):
 
         width, height = self.output_dimensions
         size = width * mm, height * mm
-        svg = svgwrite.Drawing(filename=self.filename, size=size)
+
+        # Make sure to set viewBox here so mm doesn't have to be specified in all later parts
+        svg = svgwrite.Drawing(filename=self.filename, size=size, viewBox=(f'0 0 {width} {height}'))
 
         g = svgwrite.container.Group(id='layer0')
         for sk_num, stroke_points in enumerate(self.output_strokes):
-            lines = svgwrite.container.Group(id=f'sk_{sk_num}', stroke='black')
+            path = None
+            stroke_width_p = None
             for i, (x, y, stroke_width) in enumerate(stroke_points):
-                if i != 0:
-                    xp, yp, stroke_width_p = stroke_points[i - 1]
-                    lines.add(
-                        svg.line(
-                            start=(xp * mm, yp * mm),
-                            end=(x * mm, y * mm),
-                            stroke_width=stroke_width,
-                            style='fill:none'
-                        )
-                    )
-            g.add(lines)
+                if not x or not y:
+                    continue
+
+                # Reduce precision of the width
+                stroke_width = int(stroke_width * self._width_precision) / self._width_precision
+
+                # Create a new path per object and per unique width
+                if stroke_width_p != stroke_width:
+                    if path:
+                        g.add(path)
+                    # Reduce width by mm to px at 96dpi (see SVG/CSS specification)
+                    width_px = stroke_width * 0.26458
+                    path = svg.path(id=f'sk_{sk_num}_{i}', style=f'fill:none;stroke:black;stroke-width:{width_px}')
+                    stroke_width_p = stroke_width
+                    path.push("M", f'{x:.2f}', f'{y:.2f}')
+
+                else:
+                    # Continue writing segment line with next coords
+                    path.push("L", f'{x:.2f}', f'{y:.2f}')
+
+            if path:
+                g.add(path)
 
         svg.add(g)
         svg.save()
