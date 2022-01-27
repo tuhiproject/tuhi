@@ -1754,16 +1754,17 @@ class StrokeHeader(StrokePacket):
         # if the pen id flag is set, the pen ID comes in the next 8-byte
         # packet (plus 0xff header)
         if needs_pen_id:
-            pen_packet = data[self.size + 1:]
+            pen_packet = data[self.size:]  # header + 8 bytes payload
             if not pen_packet:
                 raise StrokeParsingError('Missing pen ID packet')
 
-            header = data[0]
-            if header != 0xff:
-                raise StrokeParsingError(f'Unexpected pen id packet header: {header}.', data[:9])
+            pen_header = pen_packet[0]
+            if pen_header != 0xff:
+                raise StrokeParsingError(f'Unexpected pen id packet header: {pen_header}.', pen_packet[:9])
 
-            nbytes = bin(header).count('1')
-            self.pen_id = little_u64(pen_packet[:8])
+            pen_payload = pen_packet[1:]
+            nbytes = bin(pen_header).count('1')
+            self.pen_id = little_u64(pen_payload[:8])
             self.size += 1 + nbytes
 
     def __str__(self):
