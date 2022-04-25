@@ -1,14 +1,14 @@
 # Italian translation for tuhi.
 # Copyright © 2019 the tuhi authors.
 # This file is distributed under the same license as the tuhi package.
-# ALBANO BATTISTELLA <albano_battistella@hotmail.com>, 2020.
+# ALBANO BATTISTELLA <albano_battistella@hotmail.com>, 2020,2022.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: tuhi\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-10-24 16:22+0200\n"
-"PO-Revision-Date: 2020-09-05 13:23+0100\n"
+"PO-Revision-Date: 2022-04-25 18:23+0100\n"
 "Last-Translator: Albano Battistella <piotrd>\n"
 "Language-Team: Italian <>\n"
 "Language: it\n"
@@ -82,7 +82,7 @@ msgstr "Aiuto"
 
 #: data/ui/AppMenu.ui:21
 msgid "About"
-msgstr "Informazioni su"
+msgstr "Informazioni"
 
 #: data/ui/DrawingPerspective.ui:68
 msgid "Undo delete drawing"
@@ -94,7 +94,7 @@ msgstr "Premere il pulsante sul dispositivo per sincronizzare i disegni"
 
 #: data/ui/DrawingPerspective.ui:143 data/ui/SetupPerspective.ui:121
 msgid "page0"
-msgstr "page0"
+msgstr "pagina0"
 
 #: data/ui/ErrorPerspective.ui:21
 msgid ""
@@ -114,8 +114,8 @@ msgstr ""
 "i disegni memorizzati su tali dispositivi come SVG per l'elaborazione successiva.\n"
 "\n"
 "Tuhi è un server DBus che deve essere in esecuzione perché la GUI Tuhi possa connettersi "
-"ad esso. La connessione al server DBus dovrebbe richiedere meno di un secondo. Se si "
-"legge fin qui, il tuo server Tuhi DBus non è in esecuzione o non risponde e ha bisogno di "
+"ad esso. La connessione al server DBus dovrebbe richiedere meno di un secondo. Se hai "
+"letto fin qui, il tuo server Tuhi DBus non è in esecuzione o non risponde e ha bisogno di "
 "essere riavviato."
 
 #: data/ui/ErrorPerspective.ui:69
@@ -164,7 +164,7 @@ msgstr "Connessione al dispositivo..."
 
 #: data/ui/SetupPerspective.ui:188
 msgid "page1"
-msgstr "page1"
+msgstr "pagina1"
 
 #: data/ui/SetupPerspective.ui:206
 msgid "Press the button on the device now!"
@@ -176,7 +176,7 @@ msgstr "in attesa di risposta"
 
 #: data/ui/SetupPerspective.ui:258
 msgid "page2"
-msgstr "page2"
+msgstr "pagina2"
 
 #: tuhi/gui/drawing.py:115
 msgid "Please choose a file"
