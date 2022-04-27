@@ -7,42 +7,47 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tuhi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-02 12:03+0200\n"
+"POT-Creation-Date: 2022-04-28 09:34+1000\n"
+"PO-Revision-Date: \n"
 "Last-Translator: Gündüzhan Gündüz <gunduzhan@gmail.com>\n"
 "Language-Team: Turkish <gnome-turk@gnome.org>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n"
-"%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
+"|| n%100>=20) ? 1 : 2);\n"
 "X-Generator: Poedit 2.4.1\n"
-"PO-Revision-Date: \n"
 
-#: data/org.freedesktop.Tuhi.appdata.xml.in.in:7 data/org.freedesktop.Tuhi.desktop.in:3
+#: data/org.freedesktop.Tuhi.appdata.xml.in.in:7
+#: data/org.freedesktop.Tuhi.desktop.in:3
 msgid "Tuhi"
 msgstr "Tuhi"
 
-#: data/org.freedesktop.Tuhi.appdata.xml.in.in:8 data/org.freedesktop.Tuhi.desktop.in:4
+#: data/org.freedesktop.Tuhi.appdata.xml.in.in:8
+#: data/org.freedesktop.Tuhi.desktop.in:4
 msgid "Utility to download drawings from the Wacom Ink range of devices"
 msgstr "Wacom Ink cihazlarınızdan çizimlerinizi indirmek için bir araç"
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:10
 msgid ""
-"Tuhi is a graphical user interface to download drawings stored on tablet devices from the "
-"Wacom Ink range, e.g. Intuos Pro Paper or Bamboo Slate."
+"Tuhi is a graphical user interface to download drawings stored on tablet "
+"devices from the Wacom Ink range, e.g. Intuos Pro Paper or Bamboo Slate."
 msgstr ""
-"Tuhi, Wacom Ink serisi cihazlarda depolanan çizimlerinizi indirmenize olanak sağlayan bir "
-"grafik kullanıcı arayüzüdür. Ör. Intuos Pro Paper veya Bamboo Slate."
+"Tuhi, Wacom Ink serisi cihazlarda depolanan çizimlerinizi indirmenize olanak "
+"sağlayan bir grafik kullanıcı arayüzüdür. Ör. Intuos Pro Paper veya Bamboo "
+"Slate."
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:15
+#, fuzzy
 msgid ""
-"Tuhi requires Tuhi, the daemon to actually communicate with the devices.ThiGui is merely "
-"a front end to Tuhi, Tuhi must be installed and running when Tuhi is launched."
+"Tuhi requires Tuhi, the daemon to actually communicate with the devices. "
+"ThiGui is merely a front end to Tuhi, Tuhi must be installed and running "
+"when Tuhi is launched."
 msgstr ""
-"Tuhi cihazınız ile iletişim kurmak için arka plan programı Tuhi'ye ihtiyaç duyar. ThiGui, "
-"Tuhi için sadece bir başlangıç aşamasıdır. Tuhi başlatıldığında kurulmalı ve "
-"çalıştırılmalıdır."
+"Tuhi cihazınız ile iletişim kurmak için arka plan programı Tuhi'ye ihtiyaç "
+"duyar. ThiGui, Tuhi için sadece bir başlangıç aşamasıdır. Tuhi "
+"başlatıldığında kurulmalı ve çalıştırılmalıdır."
 
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:32
 msgid "Tuhi's main window"
@@ -51,11 +56,6 @@ msgstr "Tuhi ana penceresi"
 #: data/org.freedesktop.Tuhi.appdata.xml.in.in:36
 msgid "Tuhi's main window (zoomed)"
 msgstr "Tuhi ana penceresi (yakın)"
-
-#. Translators: Do NOT translate or transliterate this text (this is an icon file name)!
-#: data/org.freedesktop.Tuhi.desktop.in:7
-msgid "org.freedesktop.Tuhi"
-msgstr "org.freedesktop.Tuhi"
 
 #. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
 #: data/org.freedesktop.Tuhi.desktop.in:12
@@ -90,37 +90,39 @@ msgstr "Silinen çizimi geri al"
 msgid "Press the button on the device to synchronize drawings"
 msgstr "Çizimlerinizi senkron etmek için cihazdaki düğmeye basın"
 
-#: data/ui/DrawingPerspective.ui:143 data/ui/SetupPerspective.ui:121
-msgid "page0"
-msgstr "sayfa 0"
-
 #: data/ui/ErrorPerspective.ui:21
+#, fuzzy
 msgid ""
 "TuhiGUI is an interactive GUI to download data from Tuhi.\n"
 "\n"
-"Tuhi connects to tablets of the Wacom Ink range. It allows you to download the drawings "
-"stored on those devices as SVGs for processing later.\n"
+"Tuhi connects to tablets of the Wacom Ink range. It allows you to download "
+"the drawings stored on those devices as SVGs for processing later.\n"
 "\n"
-"Tuhi is a DBus server that needs to be running for the Tuhi GUI to connect to it. "
-"Connecting to the DBus server should take less than a second. If you read this far, your "
-"Tuhi DBus server is not running or responsing and needs to be restarted."
+"Tuhi is a DBus server that needs to be running for the Tuhi GUI to connect "
+"to it. Connecting to the DBus server should take less than a second. If you "
+"read this far, your Tuhi DBus server is not running or responding and needs "
+"to be restarted."
 msgstr ""
 "TuhiGUI, Tuhi'den çizimlerinizi indirmek için bir araçtır.\n"
 "\n"
-"Tuhi Wacom Ink serisi cihazlara bağlanır. Ayrıca cihazlarda depolanan çizimlerinizi "
-"işlemek üzere SVG olarak indirmenizi sağlar.\n"
+"Tuhi Wacom Ink serisi cihazlara bağlanır. Ayrıca cihazlarda depolanan "
+"çizimlerinizi işlemek üzere SVG olarak indirmenizi sağlar.\n"
 "\n"
-"Tuhi, TuhiGUI'nin bağlanabilmesi için çalışan bir DBus sunucusudur. DBus sunucusuna "
-"bağlanmak saniyeden çok daha kısa sürede gerçekleşir. Eğer buraya kadar okuduysanız, Tuhi "
-"DBus sunucusu çalışmıyor, yanıt vermiyor ve yeniden başlatılması gerekiyordur."
+"Tuhi, TuhiGUI'nin bağlanabilmesi için çalışan bir DBus sunucusudur. DBus "
+"sunucusuna bağlanmak saniyeden çok daha kısa sürede gerçekleşir. Eğer buraya "
+"kadar okuduysanız, Tuhi DBus sunucusu çalışmıyor, yanıt vermiyor ve yeniden "
+"başlatılması gerekiyordur."
 
 #: data/ui/ErrorPerspective.ui:69
 msgid "Connecting to Tuhi"
 msgstr "Tuhi'ye bağlanılıyor"
 
 #: data/ui/ErrorPerspective.ui:96
-msgid "This should take less than a second. Make sure the Tuhi DBus server is running."
-msgstr "Bir saniyeden daha kısa sürer. Tuhi DBus sunucusunun çalıştığından emin olun."
+msgid ""
+"This should take less than a second. Make sure the Tuhi DBus server is "
+"running."
+msgstr ""
+"Bir saniyeden daha kısa sürer. Tuhi DBus sunucusunun çalıştığından emin olun."
 
 #: data/ui/MainWindow.ui:166
 msgid "Authorization error while connecting to the device "
@@ -154,10 +156,6 @@ msgstr "LE Paper'a bağlanıyor"
 msgid "Connecting to device..."
 msgstr "Cihaza bağlanıyor ..."
 
-#: data/ui/SetupPerspective.ui:188
-msgid "page1"
-msgstr "sayfa 1"
-
 #: data/ui/SetupPerspective.ui:206
 msgid "Press the button on the device now!"
 msgstr "Şimdi cihazdaki düğmeye basın!"
@@ -166,31 +164,23 @@ msgstr "Şimdi cihazdaki düğmeye basın!"
 msgid "waiting for reply"
 msgstr "yanıt bekleniyor"
 
-#: data/ui/SetupPerspective.ui:258
-msgid "page2"
-msgstr "sayfa 2"
-
-#: tuhi/gui/drawing.py:115
-msgid "Please choose a file"
-msgstr "Lütfen bir dosya seçin"
-
 #. Translators: the default filename to save to
-#: tuhi/gui/drawing.py:123
+#: tuhi/gui/drawing.py:121
 msgid "untitled.svg"
 msgstr "yenibelge.svg"
 
 #. Translators: filter name to show all/any files
-#: tuhi/gui/drawing.py:127
+#: tuhi/gui/drawing.py:125
 msgid "Any files"
 msgstr "Herhangi bir dosya"
 
 #. Translators: filter to show svg files only
-#: tuhi/gui/drawing.py:131
+#: tuhi/gui/drawing.py:129
 msgid "SVG files"
 msgstr "SVG dosyaları"
 
 #. Translators: filter to show png files only
-#: tuhi/gui/drawing.py:135
+#: tuhi/gui/drawing.py:133
 msgid "PNG files"
 msgstr "PNG dosyaları"
 

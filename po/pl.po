@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tuhi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-24 16:22+0200\n"
+"POT-Creation-Date: 2022-04-28 09:34+1000\n"
 "PO-Revision-Date: 2019-10-24 16:23+0200\n"
 "Last-Translator: Piotr Drąg <piotrdrag@gmail.com>\n"
 "Language-Team: Polish <community-poland@mozilla.org>\n"
@@ -56,11 +56,6 @@ msgstr "Główne okno Tuhi"
 msgid "Tuhi's main window (zoomed)"
 msgstr "Główne okno Tuhi (powiększone)"
 
-#. Translators: Do NOT translate or transliterate this text (this is an icon file name)!
-#: data/org.freedesktop.Tuhi.desktop.in:7
-msgid "org.freedesktop.Tuhi"
-msgstr "org.freedesktop.Tuhi"
-
 #. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
 #: data/org.freedesktop.Tuhi.desktop.in:12
 msgid "tablet;wacom;ink;"
@@ -94,11 +89,8 @@ msgstr "Cofnij usunięcie rysunku"
 msgid "Press the button on the device to synchronize drawings"
 msgstr "Proszę nacisnąć przycisk na urządzeniu, aby zsynchronizować rysunki"
 
-#: data/ui/DrawingPerspective.ui:143 data/ui/SetupPerspective.ui:121
-msgid "page0"
-msgstr "strona 0"
-
 #: data/ui/ErrorPerspective.ui:21
+#, fuzzy
 msgid ""
 "TuhiGUI is an interactive GUI to download data from Tuhi.\n"
 "\n"
@@ -107,7 +99,7 @@ msgid ""
 "\n"
 "Tuhi is a DBus server that needs to be running for the Tuhi GUI to connect "
 "to it. Connecting to the DBus server should take less than a second. If you "
-"read this far, your Tuhi DBus server is not running or responsing and needs "
+"read this far, your Tuhi DBus server is not running or responding and needs "
 "to be restarted."
 msgstr ""
 "TuhiGUI to interaktywny interfejs użytkownika do pobierania danych z usługi "
@@ -167,10 +159,6 @@ msgstr "Łączenie z LE Paper"
 msgid "Connecting to device..."
 msgstr "Łączenie z urządzeniem…"
 
-#: data/ui/SetupPerspective.ui:188
-msgid "page1"
-msgstr "1. strona"
-
 #: data/ui/SetupPerspective.ui:206
 msgid "Press the button on the device now!"
 msgstr "Proszę teraz nacisnąć przycisk na urządzeniu."
@@ -179,31 +167,23 @@ msgstr "Proszę teraz nacisnąć przycisk na urządzeniu."
 msgid "waiting for reply"
 msgstr "oczekiwanie na odpowiedź"
 
-#: data/ui/SetupPerspective.ui:258
-msgid "page2"
-msgstr "2. strona"
-
-#: tuhi/gui/drawing.py:115
-msgid "Please choose a file"
-msgstr "Proszę wybrać plik"
-
 #. Translators: the default filename to save to
-#: tuhi/gui/drawing.py:123
+#: tuhi/gui/drawing.py:121
 msgid "untitled.svg"
 msgstr "bez tytułu.svg"
 
 #. Translators: filter name to show all/any files
-#: tuhi/gui/drawing.py:127
+#: tuhi/gui/drawing.py:125
 msgid "Any files"
 msgstr "Wszystkie pliki"
 
 #. Translators: filter to show svg files only
-#: tuhi/gui/drawing.py:131
+#: tuhi/gui/drawing.py:129
 msgid "SVG files"
 msgstr "Pliki SVG"
 
 #. Translators: filter to show png files only
-#: tuhi/gui/drawing.py:135
+#: tuhi/gui/drawing.py:133
 msgid "PNG files"
 msgstr "Pliki PNG"
 
