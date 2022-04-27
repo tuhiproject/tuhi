@@ -1,7 +1,7 @@
 {
     "app-id": "org.freedesktop.Tuhi",
     "runtime": "org.gnome.Platform",
-    "runtime-version": "3.36",
+    "runtime-version": "42",
     "sdk": "org.gnome.Sdk",
     "command": "tuhi",
     "finish-args": [
@@ -21,8 +21,8 @@
                 {
                     "type": "git",
                     "url": "https://gitlab.freedesktop.org/xdg/pyxdg.git",
-                    "tag": "rel-0.26",
-                    "commit": "7db14dcf4c4305c3859a2d9fcf9f5da2db328330"
+                    "tag": "rel-0.27",
+                    "commit": "f097a66923a65e93640c48da83e6e9cfbddd86ba"
                 }
             ],
             "build-commands": [
@@ -50,8 +50,8 @@
                 {
                     "type": "git",
                     "url": "https://github.com/mozman/svgwrite.git",
-                    "tag": "v1.4",
-                    "commit": "c95543ce5f296b5fbd0fd6fff4586ecce84d3d01"
+                    "tag": "v1.4.2",
+                    "commit": "e2617741ab018956e638e18aa21827405bd8edd1"
                 }
             ],
             "build-commands": [
