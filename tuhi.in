@@ -11,13 +11,18 @@
 #  GNU General Public License for more details.
 #
 
+import os
 import sys
 import subprocess
 from pathlib import Path
 import argparse
 
-tuhi_server = Path('@libexecdir@', 'tuhi-server')
-tuhi_gui = Path('@libexecdir@', 'tuhi-gui')
+if "TUHI_DEVEL" in os.environ:
+    tuhi_server = Path(os.environ["TUHI_DEVEL"], 'tuhi-server')
+    tuhi_gui = Path(os.environ["TUHI_DEVEL"], 'tuhi-gui')
+else:
+    tuhi_server = Path('@libexecdir@', 'tuhi-server')
+    tuhi_gui = Path('@libexecdir@', 'tuhi-gui')
 
 
 @devel@  # NOQA
