@@ -17,12 +17,8 @@ import subprocess
 from pathlib import Path
 import argparse
 
-if "TUHI_DEVEL" in os.environ:
-    tuhi_server = Path(os.environ["TUHI_DEVEL"], 'tuhi-server')
-    tuhi_gui = Path(os.environ["TUHI_DEVEL"], 'tuhi-gui')
-else:
-    tuhi_server = Path('@libexecdir@', 'tuhi-server')
-    tuhi_gui = Path('@libexecdir@', 'tuhi-gui')
+tuhi_server = Path(os.environ.get("TUHI_DEVEL", "@libexecdir@"), 'tuhi-server')
+tuhi_gui = Path(os.environ.get("TUHI_DEVEL", "@libexecdir@"), 'tuhi-gui')
 
 
 @devel@  # NOQA

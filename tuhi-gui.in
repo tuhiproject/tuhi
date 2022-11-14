@@ -18,9 +18,11 @@ from gi.repository import Gio
 
 @devel@  # NOQA
 if "TUHI_DEVEL" in os.environ:
-    resource = Gio.resource_load(os.fspath(Path(os.environ["TUHI_DEVEL"], 'data', 'tuhi.gresource')))
+    resource_path = Path(os.environ["TUHI_DEVEL"], 'data', 'tuhi.gresource')
 else:
-    resource = Gio.resource_load(os.fspath(Path('@pkgdatadir@', 'tuhi.gresource')))
+    resource_path = Path('@pkgdatadir@', 'tuhi.gresource')
+    
+resource = Gio.resource_load(os.fspath(resource_path))
 Gio.Resource._register(resource)
 
 
