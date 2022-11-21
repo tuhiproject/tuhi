@@ -17,8 +17,8 @@ from gi.repository import Gio
 
 
 @devel@  # NOQA
-if "TUHI_DEVEL" in os.environ:
-    resource_path = Path(os.environ["TUHI_DEVEL"], 'data', 'tuhi.gresource')
+if "TUHI_DEVEL_BUILD_DIR" in os.environ:
+    resource_path = Path(os.environ["TUHI_DEVEL_BUILD_DIR"], 'data', 'tuhi.gresource')
 else:
     resource_path = Path('@pkgdatadir@', 'tuhi.gresource')
     
@@ -30,9 +30,9 @@ if __name__ == "__main__":
     import gettext
     import locale
 
-    if "TUHI_DEVEL" in os.environ:
-        locale.bindtextdomain('tuhi', Path(os.environ["TUHI_DEVEL"], "po"))
-        gettext.bindtextdomain('tuhi', Path(os.environ["TUHI_DEVEL"], "po"))
+    if "TUHI_DEVEL_BUILD_DIR" in os.environ:
+        locale.bindtextdomain('tuhi', Path(os.environ["TUHI_DEVEL_BUILD_DIR"], "po"))
+        gettext.bindtextdomain('tuhi', Path(os.environ["TUHI_DEVEL_BUILD_DIR"], "po"))
     else:
         locale.bindtextdomain('tuhi', '@localedir@')
         gettext.bindtextdomain('tuhi', '@localedir@')
