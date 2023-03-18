@@ -26,7 +26,7 @@ To build and run Tuhi from the repository directly:
 ```
  $> git clone http://github.com/tuhiproject/tuhi
  $> cd tuhi
- $> meson builddir
+ $> meson setup builddir
  $> ninja -C builddir
  $> ./builddir/tuhi.devel
 ```
@@ -41,7 +41,7 @@ To install and run Tuhi:
 ```
  $> git clone http://github.com/tuhiproject/tuhi
  $> cd tuhi
- $> meson builddir
+ $> meson setup builddir
  $> ninja -C builddir install
 ```
 
