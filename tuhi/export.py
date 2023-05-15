@@ -13,6 +13,7 @@
 
 from gi.repository import GObject
 import svgwrite
+import os
 from svgwrite import mm
 import cairo
 
@@ -86,6 +87,8 @@ class JsonSvg(ImageExportBase):
     _width_precision = 10
 
     def _convert(self):
+        if os.path.isfile(self.filename):
+            return
 
         width, height = self.output_dimensions
         size = width * mm, height * mm

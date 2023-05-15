@@ -15,8 +15,10 @@ from gettext import gettext as _
 
 import xdg.BaseDirectory
 import os
+import json
 from pathlib import Path
 from .config import Config
+from .splitter import Splitter
 from tuhi.export import JsonSvg, JsonPng
 
 import gi
@@ -157,6 +159,42 @@ class Drawing(Gtk.EventBox):
                 # FIXME: error handling
 
         dialog.destroy()
+
+    @Gtk.Template.Callback('_on_split_button_clicked')
+    def _on_split_button_clicked(self, button):
+        dialog = Splitter(self)
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            self._save_split_drawings(*dialog.split_drawings)
+
+        dialog.destroy()
+
+    def _save_split_drawings(self, json1, json2):
+        timestamp1 = json1["timestamp"]
+        timestamp2 = json1["timestamp"]
+
+        if timestamp2 in map(lambda d: d["timestamp"], Config().drawings):
+            error_dialog = Gtk.MessageDialog(
+                    flags=0,
+                    message_type=Gtk.MessageType.ERROR,
+                    buttons=Gtk.ButtonsType.OK,
+                    text="Error while splitting drawing"
+            )
+            error_dialog.format_secondary_text(
+                    f"A drawing with timestamp {timestamp2} already exists. Cannot proceed to save split drawing, otherwise data loss might occur"
+            )
+            error_dialog.run()
+            error_dialog.destroy()
+            return
+
+        Config().replace_drawing(timestamp1, json.dumps(json1))
+        Config().add_drawing(timestamp2, json.dumps(json2))
+
+        # Force redraw of this drawing
+        os.remove(self.svg.filename)
+        self.process_svg()
+        self.redraw()
 
     @Gtk.Template.Callback('_on_delete_button_clicked')
     def _on_delete_button_clicked(self, button):
