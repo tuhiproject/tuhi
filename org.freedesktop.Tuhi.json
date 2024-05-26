@@ -1,7 +1,7 @@
 {
     "app-id": "org.freedesktop.Tuhi",
     "runtime": "org.gnome.Platform",
-    "runtime-version": "42",
+    "runtime-version": "46",
     "sdk": "org.gnome.Sdk",
     "command": "tuhi",
     "finish-args": [
