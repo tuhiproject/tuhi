@@ -20,7 +20,7 @@ import sys
 # This tool isn't installed, so we can assume that the tuhi module is always
 # in the parent directory
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + '/..')  # noqa
-from tuhi.export import JsonSvg, JsonPng
+from tuhi.export import JsonSvg, JsonPng  # noqa: E402
 
 parser = argparse.ArgumentParser(description='Converter tool from Tuhi JSON files to SVG or PNG.')
 parser.add_argument('filename', help='The JSON file to export ($HOME/.local/share/tuhi/*.json)')
