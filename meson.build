@@ -159,10 +159,10 @@ if desktop_validate.found()
     test('desktop-file-validate', desktop_validate, args: [desktop_file])
 endif
 
-appstream_util = find_program('appstream-util', required: false)
-if appstream_util.found()
-    test('appstream-util validate-relax', appstream_util,
-         args: ['validate-relax', appdata])
+appstreamcli = find_program('appstreamcli', required: false)
+if appstreamcli.found()
+    test('appstreamcli validate', appstreamcli,
+         args: ['validate', '--no-net', '--explain', appdata])
 endif
 
 pytest = find_program('pytest-3', required: false)
