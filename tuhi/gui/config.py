@@ -106,6 +106,31 @@ class Config(GObject.Object):
         self._drawings.append(json.loads(json_string))
         self.notify('drawings')
 
+    def replace_drawing(self, timestamp, json_string):
+        '''Replace the drawing JSON identified by the timestamp in the backend
+        storage. This will update self.drawings.'''
+        self.base_path.mkdir(parents=True, exist_ok=True)
+
+        path = Path(self.base_path, f'{timestamp}.json')
+        if not path.exists():
+            return
+
+        replaced_drawing = list(filter(lambda d: d["timestamp"] == timestamp,
+                                self._drawings))
+
+        if len(replaced_drawing) <= 0:
+            return
+        else:
+            replaced_drawing = replaced_drawing[0]
+
+        with open(path, 'w') as fd:
+            fd.write(json_string)
+
+        self._drawings.remove(replaced_drawing)
+        self._drawings.append(json.loads(json_string))
+        self.notify('drawings')
+
+
     def delete_drawing(self, timestamp):
         # We don't delete json files immediately, we just rename them
         # so we can resurrect them in the future if need be.
