@@ -176,3 +176,8 @@ endif
 configure_file(input: 'tools/tuhi-gui-flatpak.py',
                output: 'tuhi-gui-flatpak.py',
                copy: true)
+
+tuhi_devenv = environment()
+tuhi_devenv.set('TUHI_DEVEL_BUILD_DIR', meson.current_build_dir())
+tuhi_devenv.set('PYTHONPATH', meson.current_source_dir())
+meson.add_devenv(tuhi_devenv)
