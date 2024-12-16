@@ -1771,7 +1771,7 @@ class StrokeHeader(StrokePacket):
         if self.timestamp is not None:
             t = time.strftime('%y%m%d%H%M%S', time.gmtime(self.timestamp))
         else:
-            t = time.strftime(f'boot+{self.time_offset/1000}s')
+            t = time.strftime(f'boot+{self.time_offset / 1000}s')
         return f'StrokeHeader: time: {t} new layer: {self.is_new_layer}, pen type: {self.pen_type}, pen id: {self.pen_id:#x}'
 
 
