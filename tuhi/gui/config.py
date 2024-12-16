@@ -78,7 +78,7 @@ class Config(GObject.Object):
 
     @orientation.setter
     def orientation(self, orientation):
-        assert(orientation in ['landscape', 'portrait'])
+        assert orientation in ['landscape', 'portrait']
         self._add_key('Device', 'Orientation', orientation)
 
     @GObject.Property

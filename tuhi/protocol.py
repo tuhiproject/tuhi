@@ -68,10 +68,10 @@ def little_u16(x):
     2-byte array, the return value is a 16-bit integer.
     '''
     if isinstance(x, int):
-        assert(x <= 0xffff and x >= 0x0000)
+        assert x <= 0xffff and x >= 0x0000
         return x.to_bytes(2, byteorder='little')
     else:
-        assert(len(x) == 2)
+        assert len(x) == 2
         return int.from_bytes(x, byteorder='little')
 
 
@@ -82,10 +82,10 @@ def little_u32(x):
     4-byte array, the return value is a 16-bit integer.
     '''
     if isinstance(x, int):
-        assert(x <= 0xffffffff and x >= 0x00000000)
+        assert x <= 0xffffffff and x >= 0x00000000
         return x.to_bytes(4, byteorder='little')
     else:
-        assert(len(x) == 4)
+        assert len(x) == 4
         return int.from_bytes(x, byteorder='little')
 
 
@@ -96,10 +96,10 @@ def little_u64(x):
     4-byte array, the return value is a 64-bit integer.
     '''
     if isinstance(x, int):
-        assert(x <= 0xffffffffffffffff and x >= 0x0000000000000000)
+        assert x <= 0xffffffffffffffff and x >= 0x0000000000000000
         return x.to_bytes(8, byteorder='little')
     else:
-        assert(len(x) == 8)
+        assert len(x) == 8
         return int.from_bytes(x, byteorder='little')
 
 
