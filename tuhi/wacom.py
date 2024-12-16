@@ -707,7 +707,7 @@ class WacomProtocolSpark(WacomProtocolBase):
     orientation = 'portrait'
 
     def __init__(self, device, uuid, protocol_version=ProtocolVersion.SPARK):
-        assert(protocol_version >= ProtocolVersion.SPARK)
+        assert protocol_version >= ProtocolVersion.SPARK
         super().__init__(device, uuid, protocol_version=protocol_version)
 
 
@@ -734,7 +734,7 @@ class WacomProtocolSlate(WacomProtocolSpark):
     orientation = 'portrait'
 
     def __init__(self, device, uuid, protocol_version=ProtocolVersion.SLATE):
-        assert(protocol_version >= ProtocolVersion.SLATE)
+        assert protocol_version >= ProtocolVersion.SLATE
         super().__init__(device, uuid, protocol_version=protocol_version)
         device.connect_gatt_value(SYSEVENT_NOTIFICATION_CHRC_UUID,
                                   self._on_sysevent_data_received)
@@ -808,7 +808,7 @@ class WacomProtocolIntuosPro(WacomProtocolSlate):
     orientation = 'landscape'
 
     def __init__(self, device, uuid, protocol_version=ProtocolVersion.INTUOS_PRO):
-        assert(protocol_version >= ProtocolVersion.INTUOS_PRO)
+        assert protocol_version >= ProtocolVersion.INTUOS_PRO
         super().__init__(device, uuid, protocol_version=protocol_version)
 
     @classmethod

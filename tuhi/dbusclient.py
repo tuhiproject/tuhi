@@ -111,7 +111,7 @@ class _DBusObject(GObject.Object):
         return p
 
     def terminate(self):
-        del(self.proxy)
+        del self.proxy
 
 
 class _DBusSystemObject(_DBusObject):
@@ -284,7 +284,7 @@ class TuhiDBusClientDevice(_DBusObject):
             if d.address == self.address:
                 self.is_registering = False
                 self.manager.disconnect(self.s1)
-                del(self.s1)
+                del self.s1
                 logger.info(f'{self}: Registration successful')
                 self.emit('registered')
 

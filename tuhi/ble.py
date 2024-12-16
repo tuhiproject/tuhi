@@ -36,8 +36,8 @@ class BlueZCharacteristic(GObject.Object):
         '''
         self.obj = obj
 
-        assert(self.interface is not None)
-        assert(self.uuid is not None)
+        assert self.interface is not None
+        assert self.uuid is not None
 
         self._property_callbacks = {}
         self.interface.connect('g-properties-changed',
@@ -117,7 +117,7 @@ class BlueZDevice(GObject.Object):
         self.om = om
         self.logger = logger.getChild(self.address)
 
-        assert(self.interface is not None)
+        assert self.interface is not None
 
         self.logger.debug(f'Device {self.objpath} - {self.name}')
 
